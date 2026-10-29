@@ -18,6 +18,10 @@ The initial screen opens before inbox badges load. One aggregate counts request 
 
 These changes reduce avoidable application work. They do not eliminate free-host cold starts, database/network latency, or the Astro build needed to publish. No production latency guarantee is implied by local tests.
 
+## Editable public headings
+
+In Pond Desk, open **The site → Home titles & text, Croak and Legal**. The home page headings, labels above them, contact heading, Gram introduction, and Croak link text can now be edited and published. Existing sites keep their current default text until edited. Technical zone labels such as “Stone links” are no longer displayed above public page titles; the actual navigation links remain.
+
 ## Regression coverage
 
 `scripts/migration.test.mjs` holds a simulated publication open and checks that seven authenticated reads finish without session/state writes. It verifies anonymous access is rejected for Desk, public A stays separate from editor APIs, public forms are disabled, and www redirects correctly. Existing tests cover persistence, conflicts, publication failures, private data isolation, and real static builds. CI also runs the PostgreSQL integration tests with a disposable local database.

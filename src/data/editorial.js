@@ -1,5 +1,14 @@
 // Stable addresses; owners can change the visible labels in Pond Desk.
+export const homeLabelDefaults = {
+  homeLatestKicker: 'Latest work', homeLatestTitle: 'Fresh from the pond.',
+  homeNewsKicker: 'News from the pond', homeNewsTitle: "What's happening.",
+  homeTeamKicker: 'The pond', homeTeamTitle: "Who's in the pond.",
+  homeContactTitle: "Got a project? Let's make some noise.",
+  homeGramDescription: 'Behind the scenes: people, process and work in progress.',
+  homeCroakLink: 'Song of the Week',
+};
 export const editorialDefaults = {
+  ...homeLabelDefaults,
   grandCentral: 'Grand Central', tagline: 'Inspire the world for it inspires you',
   croakTitle: 'Demo — Song of the Week', croakText: 'A weekly listening pick will appear here. This is a demonstration.', croakUrl: '',
   legalPrivacy: 'Demo — Privacy Policies. This space is reserved for the studio’s approved privacy information. Do not submit real personal documents during this demonstration.',

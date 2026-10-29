@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {prepareStructure,collectionKinds} from './structure.js';
-import { editorialDefaults, navigationDefaults } from './editorial.js';
+import { editorialDefaults, navigationDefaults, homeLabelDefaults } from './editorial.js';
 
 // Build-time boundary for the public site content edited in Pond Desk (everything except
 // Case Studies, which keep their own snapshot). Strings stay data: Astro escapes them.
@@ -93,7 +93,7 @@ export function prepareSiteContent(snapshot, options = {}) {
   plain(snapshot.home.gram, ['label', 'url'], 'home.gram');
   const editorial = { ...editorialDefaults, ...snapshot.home.editorial };
   plain(editorial, Object.keys(editorialDefaults), 'home.editorial');
-  for (const key of Object.keys(editorial)) editorial[key] = key === 'croakUrl' ? url(editorial[key], key, audioHosts) : text(editorial[key], key.startsWith('legal') ? 4000 : 240, key, false);
+  for (const key of Object.keys(editorial)) editorial[key] = key === 'croakUrl' ? url(editorial[key], key, audioHosts) : text(editorial[key], key.startsWith('legal') ? 4000 : key in homeLabelDefaults ? 120 : 240, key, key in homeLabelDefaults && key.endsWith('Title'));
   const navigation = { ...navigationDefaults, ...snapshot.home.navigation };
   plain(navigation, Object.keys(navigationDefaults), 'home.navigation');
   for (const key of Object.keys(navigation)) navigation[key] = text(navigation[key], 40, key);

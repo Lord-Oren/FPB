@@ -99,7 +99,18 @@ const FIELDS = {
     { name: 'quote', label: 'A line to quote', max: 200, optional: true }],
 };
 const PAGES = {
-  home: { title: 'Home, navigation, Croak and Legal', small: 'Published text and menu labels', fields: [
+  home: { title: 'Home titles, text, Croak and Legal', small: 'Headings and text shown on your website', fields: [
+    ...[
+      ['homeLatestTitle','Latest work heading — Fresh from the pond',true],
+      ['homeLatestKicker','Label above latest work',false],
+      ['homeNewsTitle',"News heading — What's happening",true],
+      ['homeNewsKicker','Label above the news',false],
+      ['homeTeamTitle',"Team heading — Who's in the pond (version B)",true],
+      ['homeTeamKicker','Label above the team (version B)',false],
+      ['homeContactTitle','Contact heading',true],
+      ['homeGramDescription','Gram introduction',false],
+      ['homeCroakLink','Croak link text',false]
+    ].map(([key,label,required])=>({name:'editorial_'+key,label,max:120,required,optional:!required,hint:'Use Publish to the site to save and publish this page.'})),
     ...[
       ['grandCentral','Home subtitle',240],['tagline','Tagline',240],['croakTitle','Croak — song title (Demo until supplied)',240],['croakText','Croak — description',240],['croakUrl','Croak — listening link',300],
       ['legalPrivacy','Legal — Privacy Policies',4000],['legalCookies','Legal — Cookie Settings',4000],['legalTerms','Legal — Terms of Services',4000],['legalConduct','Legal — Code of Conduct',4000],['legalValues','Legal — Values',4000]
@@ -185,7 +196,7 @@ async function listSite(showWelcome=true){
  if(state.demo){return listLegacySite();}
  try{siteTree=await call('GET','/structure');}catch(e){toast(e.message);return;}
  const body=$('#list-body');body.replaceChildren();
- body.append(h('button',{class:'row',type:'button',onclick:()=>{if(guardLeave())openPage('home');}},h('span',{class:'row-text'},h('b',{text:'Home text, Croak and Legal'}),h('small',{text:'Edit your existing site content'}))));
+ body.append(h('button',{class:'row',type:'button',onclick:()=>{if(guardLeave())openPage('home');}},h('span',{class:'row-text'},h('b',{text:'Home titles & text, Croak and Legal'}),h('small',{text:'Edit your existing site content'}))));
  const render=(node,depth=0)=>{
   const row=h('div',{class:'tree-node','data-search':node.title.toLowerCase(),style:`--tree-depth:${Math.min(depth,5)}`},
    h('button',{class:'tree-open',type:'button',onclick:()=>{if(guardLeave()){state.dirty=false;openNode(node.id);}}},node.title,h('small',{text:node.visible?'':'Hidden — content kept'})),

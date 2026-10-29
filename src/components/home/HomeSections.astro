@@ -25,14 +25,14 @@ const day = value => new Date(value + ':00Z').toLocaleDateString('en-US', { week
 ---
 <div class="home-more">
   {latest.length > 0 && <section data-reveal class="hm-band hm-work" id="latest" aria-labelledby="hm-work">
-    <div class="hm-head"><p class="hm-kicker">Latest work</p><h2 id="hm-work">Fresh from the pond.</h2></div>
+    <div class="hm-head"><p class="hm-kicker">{site.home.editorial.homeLatestKicker}</p><h2 id="hm-work">{site.home.editorial.homeLatestTitle}</h2></div>
     <ul class="hm-mosaic">{latest.map((item, index) => <li class:list={['hm-tile', { 'hm-tile--big': index === 0 }]}>
       <a href={item.href}><img src={item.image.src} alt={item.image.alt} loading="lazy" decoding="async" /><span class="hm-cap"><small>{item.kind}</small><b>{item.title}</b></span></a>
     </li>)}</ul>
   </section>}
 
   <section data-reveal class="hm-band hm-news" id="news" aria-labelledby="hm-news">
-    <div class="hm-head"><p class="hm-kicker">News from the pond</p><h2 id="hm-news">What's happening.</h2></div>
+    <div class="hm-head"><p class="hm-kicker">{site.home.editorial.homeNewsKicker}</p><h2 id="hm-news">{site.home.editorial.homeNewsTitle}</h2></div>
     <div class="hm-cards">
       <article class="hm-card"><span class="hm-tag">Announcement</span><h3>{site.home.announcement.title}</h3><p>{site.home.announcement.text}</p></article>
       {next && <article class="hm-card"><span class="hm-tag">Next event · {day(next.start)}</span><h3>{next.title}</h3><p>{next.venue}{next.city && <>, {next.city}</>}{next.description && <> — {next.description}</>}</p></article>}
@@ -41,17 +41,17 @@ const day = value => new Date(value + ':00Z').toLocaleDateString('en-US', { week
   </section>
 
   {look !== 'pixel' && team.length > 0 && <section data-reveal class="hm-band hm-team" aria-labelledby="hm-team">
-    <div class="hm-head"><p class="hm-kicker">The pond</p><h2 id="hm-team">Who's in the pond.</h2></div>
+    <div class="hm-head"><p class="hm-kicker">{site.home.editorial.homeTeamKicker}</p><h2 id="hm-team">{site.home.editorial.homeTeamTitle}</h2></div>
     <ul class="hm-people">{team.map((person, index) => <li style={`--frog-skin:${['var(--aero-blue)', 'var(--dandelion)', '#7cc4ff', 'var(--blue-marine)'][index]}`}>
       {person.photo ? <img src={person.photo.src} alt={person.photo.alt} loading="lazy" /> : <svg class="hm-frog" viewBox="0 0 64.95 60.992" aria-hidden="true" focusable="false"><use href="#art-frog" /></svg>}
       <b>{person.name}</b><span>{person.role}</span>
     </li>)}</ul>
   </section>}
 
-  {gramNode && visibleNode(tree,gramNode) && <section data-reveal class="hm-band"><div class="hm-head"><h2>{gramNode.title}</h2></div><p>Behind the scenes: people, process and work in progress.</p><a class="hm-btn" href="gram.html" target={gramNode.newTab?'_blank':undefined} rel="noopener noreferrer">Explore {gramNode.title} →</a></section>}
-  {croakNode && visibleNode(tree,croakNode) && <section data-reveal class="hm-band"><div class="hm-head"><h2>{croakNode.title}</h2></div><p>{site.home.editorial.croakTitle}</p><a class="hm-btn" href="croak.html">Song of the Week →</a></section>}
+  {gramNode && visibleNode(tree,gramNode) && <section data-reveal class="hm-band"><div class="hm-head"><h2>{gramNode.title}</h2></div><p>{site.home.editorial.homeGramDescription}</p><a class="hm-btn" href="gram.html" target={gramNode.newTab?'_blank':undefined} rel="noopener noreferrer">Explore {gramNode.title} →</a></section>}
+  {croakNode && visibleNode(tree,croakNode) && <section data-reveal class="hm-band"><div class="hm-head"><h2>{croakNode.title}</h2></div><p>{site.home.editorial.croakTitle}</p><a class="hm-btn" href="croak.html">{site.home.editorial.homeCroakLink} →</a></section>}
   {(site.contact.email || socials.length > 0) && <section data-reveal class="hm-band hm-cta" aria-labelledby="hm-cta">
-    <h2 id="hm-cta">Got a project? Let's make some noise.</h2>
+    <h2 id="hm-cta">{site.home.editorial.homeContactTitle}</h2>
     <p>{site.contact.intro}</p>
     {site.contact.email && <p class="hm-mail"><a class="hm-btn" href={`mailto:${site.contact.email}`}>{site.contact.email}</a></p>}
     {socials.length > 0 && <p class="hm-channels">{socials.map(link => <a href={link.url} rel="noopener"><SocialIcon name={link.label}/> {link.label}</a>)}</p>}

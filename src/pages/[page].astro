@@ -27,11 +27,11 @@ const siblings = pages.filter(item => item.node.parentId === page.node.parentId 
 <SiteLayout title={`${page.title} — Frog Pond Boys`} operations={operations} cases={page.slug === 'case-studies'} form={['contact', 'join'].includes(page.slug)}>
   <PageNavigation />
   <main id="main" class:list={['content-page', { 'content-page--operations': operations }]}>
-    <p class="page-group">{page.group}</p>
+    {page.node.parentId && <p class="page-group">{page.group}</p>}
     <div class="page-head"><h1>{page.title}</h1>{site.intros[page.section] && <p class="page-lede">{site.intros[page.section]}</p>}</div>
     <div class="page-content">{Single ? <Single /> : List ? <List rubric={page.section} /> : <p class="section-body">{page.node.text || 'New content is on its way.'}</p>}</div>
     {subsections.length>0 && <section class="subsections"><h2>Explore {page.title}</h2><ul>{subsections.map(node=><li><a href={nodeHref(node)} target={node.newTab?'_blank':undefined} rel={node.newTab?'noopener noreferrer':undefined}>{node.title} →</a></li>)}</ul></section>}
-    <nav class="related-pages" aria-label={`${page.group} pages`}>
+    <nav class="related-pages" aria-label="Related pages">
       {siblings.map(item => <a href={`${item.slug}.html`} target={item.node.newTab?'_blank':undefined} rel={item.node.newTab?'noopener noreferrer':undefined} aria-current={item.slug === page.slug ? 'page' : undefined}>{item.title}</a>)}
     </nav>
     <a class="back-link" href="index.html">← Back to the pond</a>

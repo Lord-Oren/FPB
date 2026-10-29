@@ -54,6 +54,13 @@ test('authenticated reads stay responsive during a publication and never rewrite
   const page=await(await f.req(f.desk,'/api/v2/pages/contact')).json();
   const saved=await f.req(f.desk,'/api/v2/pages/contact','PUT',{revision:page.revision,fields:page.fields});assert.equal(saved.status,200);
   assert.equal(f.counts().sessionWrites,before.sessionWrites+1,'page revision context must still be durable');
+  const home=await(await f.req(f.desk,'/api/v2/pages/home')).json();
+  home.fields.editorial_homeLatestTitle='From our studio';home.fields.editorial_homeNewsTitle='Studio news';
+  assert.equal((await f.req(f.desk,'/api/v2/pages/home','PUT',{revision:home.revision,fields:home.fields})).status,200);
+  assert.equal((await f.req(f.desk,'/api/v2/pages/home/publish','POST',{})).status,200);
+  const published=await(await f.req(f.desk,'/api/v2/pages/home')).json();
+  assert.equal(published.live.editorial_homeLatestTitle,'From our studio');
+  assert.equal(published.live.editorial_homeNewsTitle,'Studio news');
  }finally{release();await f.close();}
 });
 
