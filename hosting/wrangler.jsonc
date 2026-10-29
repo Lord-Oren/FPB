@@ -4,11 +4,15 @@
   "compatibility_date": "2026-10-25",
   "workers_dev": false,
   "preview_urls": false,
-  // Deliberately empty: add routes only during the approved domain cutover.
-  "routes": [],
+  // Approved production routes. Keep preview B unrouted.
+  "routes": [
+    { "pattern": "frogpondboys.com/*", "zone_name": "frogpondboys.com" },
+    { "pattern": "www.frogpondboys.com/*", "zone_name": "frogpondboys.com" },
+    { "pattern": "desk.frogpondboys.com/*", "zone_name": "frogpondboys.com" }
+  ],
   "vars": {
-    "RENDER_ORIGIN_HOST": "REPLACE-WITH-RENDER-HOST",
-    "POND_PUBLIC_SITE": "false",
+    "RENDER_ORIGIN_HOST": "frog-pond-boys.onrender.com",
+    "POND_PUBLIC_SITE": "true",
     "POND_PUBLIC_HOST": "frogpondboys.com",
     "POND_WWW_HOST": "www.frogpondboys.com",
     "POND_DESK_HOST": "desk.frogpondboys.com",

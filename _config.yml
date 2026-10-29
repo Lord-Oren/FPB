@@ -1,0 +1,15 @@
+# GitHub Pages only retains a redirect; the application runs on Render.
+# Exclude application source so Jekyll does not parse Astro front matter.
+exclude:
+  - src
+  - editor
+  - hosting
+  - scripts
+  - docs
+  - node_modules
+  - README.md
+  - Dockerfile
+  - astro.config.mjs
+  - package.json
+  - package-lock.json
+  - render.yaml

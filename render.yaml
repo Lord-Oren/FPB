@@ -1,6 +1,6 @@
-# Preparation template only. Reuse the existing client database; do not create a duplicate.
+# Production reference. Reuse the existing service and database; do not create duplicates.
 # DATABASE_URL and DATABASE_RENDER_INTERNAL_HOST must come from that database.
-# Apply after review; no domain is configured here.
+# Public routing is managed by the Cloudflare Worker.
 services:
   - type: web
     name: frog-pond-boys
@@ -26,7 +26,7 @@ services:
       - key: POND_TESTER_EMAILS
         sync: false
       - key: POND_PUBLIC_SITE
-        value: "false"
+        value: "true"
       - key: POND_PUBLIC_HOST
         value: frogpondboys.com
       - key: POND_WWW_HOST
