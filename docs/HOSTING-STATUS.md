@@ -5,7 +5,7 @@
 - Render web service: `frog-pond-boys`, Free, Virginia (US), Docker, one instance.
 - Render PostgreSQL: `frog-pond-boys-db`, Free, PostgreSQL 17, Virginia; external connections disabled. The trial expires on November 28, 2026. Upgrade or complete a verified migration before expiration.
 - Source: `Lord-Oren/FPB`, branch `migration/pond-desk`. The desired Render deployment trigger is after GitHub checks pass; the Git deployment credential connection still needs to be completed and verified. The production `main` branch and `archive/original-site` still contain the original website.
-- Cloudflare Access: `Pond Desk` at `desk.frogpondboys.com`, email one-time PIN only, seven-day sessions. Only the two owner email addresses explicitly approved during setup are allowed. The Render allowlist matches Access.
+- Cloudflare Access: `Pond Desk` at `desk.frogpondboys.com`, email one-time PIN only, seven-day sessions. The four explicitly approved owner/tester email addresses are allowed. The Render allowlist matches Access.
 - Cloudflare Worker: `frog-pond-boys-router`. Only `desk.frogpondboys.com/*` is routed to it. Both workers.dev access and preview URLs are disabled. No keep-alive schedule is configured.
 
 ## Current routing
@@ -26,7 +26,7 @@ This new database starts from the repository snapshot. No private messages, draf
 
 ## Deployment scope
 
-Automatic deployments are not verified yet: the documentation push passed CI, but no new Render deployment appeared. Connect the owner's GitHub deployment credentials in Render, authorize `Lord-Oren/FPB`, and confirm a subsequent push deploys after checks pass. After the separately approved cutover, switch Render to `main`. Worker changes need a separate controlled upload; the application pipeline does not deploy edge routing or DNS. `hosting/wrangler.jsonc` remains a route-free preparation template to prevent accidental changes to the live site.
+Automatic deployments are not verified yet: the documentation push passed CI, but no new Render deployment appeared. The repository owner has now reported authorizing the Render GitHub app for `Lord-Oren/FPB`. Verify that this service uses an authorized Git deployment credential and that the next push deploys after checks pass. After the separately approved cutover, switch Render to `main`. Worker changes need a separate controlled upload; the application pipeline does not deploy edge routing or DNS. `hosting/wrangler.jsonc` remains a route-free preparation template to prevent accidental changes to the live site.
 
 ## Before the public cutover
 
