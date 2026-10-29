@@ -1,0 +1,20 @@
+---
+import { artworkMode } from '../../data/presentation.js';
+import Decor from './Decor.html';
+import RubenArtwork from './RubenArtwork.astro';
+import Frogs from './Frogs.astro';
+import Brand from './Brand.astro';
+import LilyScreens from './LilyScreens.astro';
+import Stones from './Stones.astro';
+---
+<section class="pond-page" id="home" data-artwork-mode={artworkMode}>
+  <RubenArtwork />
+  <div class="pixel-water" aria-hidden="true"></div>
+  <Decor />
+  <Frogs />
+  <Brand />
+  <div class="pond-lower">
+    <LilyScreens />
+    <Stones />
+  </div>
+</section>

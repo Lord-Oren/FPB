@@ -1,0 +1,7 @@
+---
+import {site} from '../../data/public-site-content.js';
+import {nodeHref} from '../../data/public-pages.js';
+const {node}=Astro.props;
+const label=node.id==='announcements'?site.home.announcement.title:node.id==='gram'?site.home.gram.label:node.id==='recents'?'Latest work':node.id==='croak'?'Song of the Week':node.title;
+---
+<div class="screen-content"><a href={nodeHref(node)||'contact.html#demo-socials'} target={node.newTab?'_blank':undefined} rel={node.newTab?'noopener noreferrer':undefined}><strong>{label}</strong><span aria-hidden="true">{node.newTab?'↗':'→'}</span></a></div>

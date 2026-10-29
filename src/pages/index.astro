@@ -1,0 +1,11 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { look } from '../data/presentation.js';
+import PondB from '../components/pond/PondB.astro';
+import HomeSections from '../components/home/HomeSections.astro';
+import Pond from '../components/pond/Pond.astro';
+import Footer from '../components/Footer.astro';
+---
+<SiteLayout pond>
+  {look === 'modern' ? <PondB><HomeSections /></PondB> : <><main id="main"><Pond /></main><HomeSections /><Footer /></>}
+</SiteLayout>

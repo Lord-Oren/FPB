@@ -1,0 +1,75 @@
+/* Fly cursor */
+body.fly-cursor-active, body.fly-cursor-active a, body.fly-cursor-active button {
+  cursor: none;
+}
+.fly-cursor{
+  position:fixed;
+  z-index:9999;
+  left:0;
+  top:0;
+  width:24px;
+  height:14px;
+  pointer-events:none;
+  opacity:0;
+  transform:translate(-50%,-50%);
+  transition:opacity .15s ease;
+}
+.fly-cursor.visible{opacity:1}
+.fly-cursor .body{
+  position:absolute;
+  left:7px;
+  top:4px;
+  width:11px;
+  height:7px;
+  border-radius:50%;
+  background:#191833;
+  border:2px solid #05353a;
+}
+.fly-cursor .wing{
+  position:absolute;
+  width:12px;
+  height:7px;
+  background:rgba(171,216,213,.9);
+  border:2px solid #05353a;
+  border-radius:50%;
+}
+.fly-cursor .wing.one{left:0;top:0;transform:rotate(-24deg)}
+.fly-cursor .wing.two{right:0;top:0;transform:rotate(24deg)}
+.fly-cursor .leg{
+  position:absolute;
+  width:7px;
+  height:2px;
+  background:#05353a;
+  top:10px;
+}
+.fly-cursor .leg.one{left:5px;transform:rotate(24deg)}
+.fly-cursor .leg.two{right:4px;transform:rotate(-24deg)}
+.fly-cursor .buzz{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:32px;
+  height:24px;
+  border:1px solid rgba(171,216,213,.5);
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  animation:buzz 1.2s ease-in-out infinite;
+}
+@keyframes buzz{
+  0%,100%{transform:translate(-50%,-50%) rotate(-8deg) scale(.9);opacity:.35}
+  50%{transform:translate(-50%,-50%) rotate(8deg) scale(1.12);opacity:.8}
+}
+@media (pointer:coarse){
+  .fly-cursor{display:none}
+  body.fly-cursor-active, body.fly-cursor-active a, body.fly-cursor-active button{cursor:auto}
+}
+/* Text fields keep their usual cursor so typing stays easy. */
+body.fly-cursor-active :is(input,textarea,select) { cursor:auto }
+@media(prefers-reduced-motion:reduce) {
+  .fly-cursor { display:none !important }
+  body.fly-cursor-active,body.fly-cursor-active a,body.fly-cursor-active button { cursor:auto !important }
+}
+/* Note shown while the site still carries sample content (kept here because this sheet loads on every page). */
+.demo-note { position:relative; z-index:60; margin:0; padding:5px 16px; text-align:center; background:#191833; color:#abd8d5; font:700 .72rem/1.4 'Nunito Sans', system-ui, sans-serif; letter-spacing:.02em; grid-column:1 / -1 }
+/* On both home pages the body is a grid: keep the strip out of it so the pond keeps its full height. */
+body.home-page > .demo-note, body.variant-b > .demo-note { position:absolute; top:0; left:0; right:0 }

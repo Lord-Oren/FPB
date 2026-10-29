@@ -1,0 +1,11 @@
+---
+import {zoneNodes,childNodes,nodeHref} from '../../data/public-pages.js';
+const roots=zoneNodes('menus');
+---
+<div class="frogs" role="group" aria-label="Explore Frog Pond Boys" style={`grid-template-columns:repeat(${Math.max(1,roots.length)},minmax(0,1fr))`}>
+{roots.map((node,index)=><div class={`frog-wrap f${index+1}`} data-frog-color={['aero-blue','dandelion','blue-marine'][index%3]}><div class="frog">
+<svg class="frog-art" viewBox="0 0 64.95 60.992" aria-hidden="true" focusable="false"><use href="#art-frog"/></svg><span class="mouth" aria-hidden="true"></span>
+<span class="frog-label" aria-hidden="true">{node.title}</span><button class="frog-button" type="button" aria-label={`${node.title} menu`} aria-expanded="false" aria-controls={`menu-${node.id}`}></button>
+<div class="tongue" id={`menu-${node.id}`} hidden><nav class="menu-flies" aria-label={node.title}>{(childNodes(node.id).length?childNodes(node.id):[node]).map(child=><a class="fly" href={nodeHref(child)} target={child.newTab?'_blank':undefined} rel={child.newTab?'noopener noreferrer':undefined}>{child.title}</a>)}</nav></div>
+</div></div>)}
+</div>

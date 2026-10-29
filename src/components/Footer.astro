@@ -1,0 +1,7 @@
+---
+import SocialIcon from "./SocialIcon.astro";
+import {site} from '../data/public-site-content.js';
+import {zoneNodes,nodeHref} from '../data/public-pages.js';
+const links=zoneNodes('footer').map(n=>({...n,url:nodeHref(n)||site.contact.socials.find(s=>s.label.toLowerCase()===n.id.replace(/^footer-/, ''))?.url||''}));
+---
+<footer><strong>FROG POND BOYS</strong><span>{site.home.editorial.tagline}</span><nav class="footer-socials" aria-label="Footer links">{links.map(n=><a href={n.url||'contact.html#demo-socials'} target={n.newTab?'_blank':undefined} rel="noopener noreferrer"><SocialIcon name={n.id}/> {n.title}{!n.url&&' · Demo'}</a>)}</nav><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>© 2026 Frog Pond Boys</span></footer>

@@ -1,0 +1,3 @@
+/* Optional B background. Append after neo-b.css to select cream. */
+:root { --b-surface:var(--cream); --b-text:var(--midnight); --b-grid:rgb(25 24 51 / .06) }
+.pond-glow { opacity:.35 }

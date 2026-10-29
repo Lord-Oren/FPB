@@ -1,0 +1,23 @@
+---
+// Section page for events (Events & Shows, Events & Launches): upcoming first, then a collapsible list of past ones.
+// Upcoming/past is decided at build time (the hosted site rebuilds nightly so dates stay right).
+import { site, } from '../../data/public-site-content.js';
+import { splitEvents } from '../../data/site-content.js';
+import Empty from './Empty.astro';
+const { rubric } = Astro.props;
+const { upcoming, past } = splitEvents(site.events.filter(item => item.rubric === rubric));
+const day = value => new Date(value + ':00Z');
+const parts = value => { const d = day(value); return { month: d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase(), date: String(d.getUTCDate()).padStart(2, '0'), year: d.getUTCFullYear() }; };
+const time = value => day(value).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
+---
+{upcoming.length === 0 && past.length === 0 ? <Empty /> : <>
+  <h2 class="section-title">Upcoming</h2>
+  {upcoming.length === 0 ? <p class="events-none">No date announced right now. Follow us to hear first.</p> : <ul class="event-list">
+    {upcoming.map(item => { const p = parts(item.start); return <li class="event-card">
+      <p class="event-date" aria-hidden="true"><span>{p.month}</span><b>{p.date}</b><span>{p.year}</span></p>
+      <div class="event-body"><h3>{item.title}</h3><p class="event-meta"><time datetime={item.start}>{day(item.start).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })} · {time(item.start)}</time> · {item.venue}{item.city && <>, {item.city}</>}</p>{item.description && <p>{item.description}</p>}</div>
+      {item.link && <a class="event-link" href={item.link} rel="noopener">Details <span aria-hidden="true">↗</span></a>}
+    </li>; })}
+  </ul>}
+  {past.length > 0 && <details class="events-past"><summary>Past events ({past.length})</summary><ul class="past-list">{past.map(item => <li><time datetime={item.start}>{day(item.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time> — {item.title}, {item.venue}</li>)}</ul></details>}
+</>}

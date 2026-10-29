@@ -1,0 +1,31 @@
+# Preparation template only. Apply after review; no domain is configured here.
+services:
+  - type: web
+    name: frog-pond-boys
+    runtime: docker
+    repo: https://github.com/Lord-Oren/FPB
+    branch: main
+    region: virginia
+    plan: free
+    numInstances: 1
+    autoDeployTrigger: checksPass
+    healthCheckPath: /livez
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ACCESS_ISSUER
+        sync: false
+      - key: ACCESS_AUDIENCE
+        sync: false
+      - key: POND_TESTER_EMAILS
+        sync: false
+      - key: POND_PUBLIC_SITE
+        value: "false"
+      - key: POND_PUBLIC_HOST
+        value: frogpondboys.com
+      - key: POND_WWW_HOST
+        value: www.frogpondboys.com
+      - key: POND_DESK_HOST
+        value: desk.frogpondboys.com
+      - key: POND_PREVIEW_HOST
+        value: preview.frogpondboys.com

@@ -1,0 +1,58 @@
+---
+import { artworkMode, look } from '../data/presentation.js';
+import interiorStyles from '../styles/interior-variants.css?raw';
+import pixelLily from '../assets/ruben/lily-1.svg?raw';
+import pixelFrog from '../assets/ruben/frog.svg?raw';
+import pixelStone from '../assets/ruben/stone.svg?raw';
+import pixelPond from '../assets/pixel-pond-a.svg?raw';
+import retroA from '../styles/retro-a.css?raw';
+import homeRetroA from '../styles/home-retro-a.css?raw';
+import variantB from '../styles/variant-b.css?raw';
+import pondExpansionA from '../styles/pond-expansion-a.css?raw';
+import clientMeeting from '../styles/client-meeting.css?raw';
+import neoB from '../styles/neo-b.css?raw';
+import originalArtwork from '../styles/original-artwork.css?raw';
+import styles from '../styles/site.css?raw';
+import flyStyles from '../styles/fly-cursor.css?raw';
+import reveal from '../scripts/reveal.js?raw';
+import motion from '../scripts/motion.js?raw';
+import motionStyles from '../styles/motion.css?raw';
+import contentStyles from '../styles/content.css?raw';
+import homeSections from '../styles/home-sections.css?raw';
+import infoStyles from '../styles/info-pages.css?raw';
+import caseStyles from '../styles/case-studies.css?raw';
+import localForms from '../scripts/local-forms.js?raw';
+import inquiryForms from '../scripts/inquiry-forms.js?raw';
+import fonts from '../styles/fonts.js';
+import frogMenus from '../scripts/frog-menus.js?raw';
+import flyCursor from '../scripts/fly-cursor.js?raw';
+import pondMotion from '../scripts/pond-motion.js?raw';
+import FlyCursor from '../components/FlyCursor.html';
+import { isDemo } from '../data/public-site-content.js';
+const svgUrl = svg => 'url("data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64') + '")';
+const lilyStyle = `:root{--h2-lily:${svgUrl(pixelLily)};--px-frog:${svgUrl(pixelFrog)};--px-stone:${svgUrl(pixelStone)}}`;
+const { title = 'Frog Pond Boys — Creative Agency', pond = false, operations = false, form = false, cases = false } = Astro.props;
+---
+<!doctype html>
+<html lang="en" data-skin={look}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{title}</title>
+  <style is:inline set:html={fonts + flyStyles + motionStyles + (pond && look === 'modern' ? variantB + homeSections : styles) + (operations ? infoStyles : '') + (cases ? caseStyles : '') + (pond && artworkMode === 'original' ? originalArtwork + homeRetroA + `:root{--px-pond:${svgUrl(pixelPond)}}` : '') + (!pond ? contentStyles + interiorStyles + (look === 'pixel' ? lilyStyle + retroA : '') : '') + (look === 'modern' ? neoB : '') + clientMeeting + (pond && look === 'pixel' ? pondExpansionA : '')}></style>
+</head>
+<body class:list={{ 'interior-page': !pond, 'home-page': pond && look !== 'modern', 'variant-b': pond && look === 'modern' }}>
+  <a class="skip-link" href="#main">Skip to content</a>
+  {isDemo && <p class="demo-note" role="note">Sample content for review — texts and images will be replaced</p>}
+  <FlyCursor />
+  <slot />
+  {pond && <script is:inline set:html={frogMenus}></script>}
+  <script is:inline set:html={pondMotion}></script>
+  {form && <script is:inline set:html={inquiryForms}></script>}
+  {form && (import.meta.env.DEV || import.meta.env.POND_HOSTED_BUILD === '1') && <script is:inline set:html={localForms}></script>}
+  <script is:inline set:html={flyCursor}></script>
+  <script is:inline set:html={reveal}></script>
+  <script is:inline set:html={motion}></script>
+</body>
+</html>

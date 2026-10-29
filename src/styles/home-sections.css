@@ -1,0 +1,135 @@
+/* Our modern version (B): content under the pond. Wide screens get a real grid; phones get their own rhythm. */
+body.variant-b { display:block }
+.home-more { --hm-max:1440px; background:linear-gradient(#062a30, #05262b 35%, var(--midnight)); }
+.hm-band { max-width:var(--hm-max); margin:auto; padding:clamp(56px,7vw,112px) clamp(16px,4vw,64px) 0 }
+.hm-band:last-child { padding-bottom:clamp(56px,7vw,112px) }
+.hm-head { margin-bottom:clamp(20px,3vw,36px) }
+.hm-head--row { display:flex; justify-content:space-between; align-items:end; gap:16px; flex-wrap:wrap }
+.hm-kicker { margin:0; color:var(--aero-blue); text-transform:uppercase; letter-spacing:.14em; font-weight:800; font-size:.8rem }
+.hm-band h2 { margin:.15em 0 0; font-family:Boohong,sans-serif; font-weight:400; color:var(--dandelion); font-size:clamp(2.2rem,5vw,4.2rem); line-height:1 }
+.hm-more { color:var(--dandelion); font-weight:800; text-decoration:none; min-height:44px; display:inline-flex; align-items:center }
+.hm-more:hover { text-decoration:underline }
+.hm-trio { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(14px,2vw,28px) }
+.hm-service { background:rgb(171 216 213 / .06); border:1px solid rgb(171 216 213 / .16); border-radius:24px; padding:clamp(20px,2.4vw,34px); transition:border-color .2s, transform .2s }
+.hm-service:hover { border-color:var(--dandelion); transform:translateY(-3px) }
+.hm-frog { width:72px; height:68px; display:block }
+.hm-service h3 { margin:.35em 0 .15em; font-family:Boohong,sans-serif; font-weight:400; color:var(--dandelion); font-size:clamp(1.6rem,2.4vw,2.2rem) }
+.hm-service p { margin:0 0 16px; color:#d5e9e7; font-size:1.05rem }
+.hm-service ul { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:8px }
+.hm-service a { display:inline-flex; align-items:center; min-height:40px; padding:4px 14px; border-radius:999px; background:rgb(255 219 118 / .1); color:var(--dandelion); font-weight:700; text-decoration:none; font-size:.92rem }
+.hm-service a:hover, .hm-service a:focus-visible { background:var(--dandelion); color:var(--midnight) }
+.hm-mosaic { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-auto-rows:clamp(180px,17vw,280px); gap:clamp(12px,1.6vw,22px) }
+.hm-tile--big { grid-column:span 2; grid-row:span 2 }
+.hm-tile a { position:relative; display:block; height:100%; border-radius:22px; overflow:hidden; color:#fff; text-decoration:none; background:#0b4a50 }
+.hm-tile img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .4s }
+.hm-tile a:hover img { transform:scale(1.04) }
+.hm-cap { position:absolute; inset:auto 0 0; padding:18px 20px; background:linear-gradient(transparent, rgb(25 24 51 / .92)); display:flex; flex-direction:column }
+.hm-cap small { color:var(--aero-blue); font-weight:700 }
+.hm-cap b { font-size:clamp(1rem,1.4vw,1.35rem) }
+.hm-tile--big .hm-cap b { font-family:Boohong,sans-serif; font-weight:400; font-size:clamp(1.5rem,2.6vw,2.4rem); color:var(--dandelion) }
+.hm-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(14px,2vw,28px) }
+.hm-card { border-top:3px solid var(--dandelion); padding-top:18px }
+.hm-card h3 { margin:.5em 0 .3em; font-size:clamp(1.15rem,1.6vw,1.45rem); color:#fff }
+.hm-card p { margin:0 0 12px; color:#d5e9e7 }
+.hm-card a { color:var(--dandelion); font-weight:800 }
+.hm-tag { display:inline-block; background:var(--aero-blue); color:var(--midnight); font-weight:800; font-size:.78rem; border-radius:999px; padding:3px 12px }
+.hm-people { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:clamp(14px,2vw,28px) }
+.hm-people li { background:rgb(171 216 213 / .06); border-radius:24px; padding:24px; display:flex; flex-direction:column; gap:4px }
+.hm-people img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:18px; margin-bottom:10px }
+.hm-people b { color:#fff; font-size:1.1rem }.hm-people span { color:var(--aero-blue) }
+.hm-cta { text-align:center }
+.hm-cta p { max-width:52ch; margin:16px auto 0; color:#d5e9e7; font-size:1.12rem }
+.hm-actions { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:26px 0 18px }
+.hm-btn { display:inline-flex; align-items:center; min-height:52px; padding:12px 26px; border-radius:999px; background:var(--dandelion); color:var(--midnight); font-weight:900; text-decoration:none; font-size:1.05rem }
+.hm-btn--ghost { background:transparent; color:var(--dandelion); border:2px solid var(--dandelion) }
+.hm-btn:hover { filter:brightness(1.08) }
+.hm-channels { display:flex; gap:18px; justify-content:center; flex-wrap:wrap }.hm-channels a { color:var(--aero-blue); font-weight:700 }
+@media (min-width:1700px) { .home-more { --hm-max:1600px } }
+@media (max-width:1000px) { .hm-mosaic { grid-template-columns:repeat(2,minmax(0,1fr)) } .hm-trio, .hm-cards { grid-template-columns:1fr 1fr } .hm-trio > :last-child, .hm-cards > :last-child { grid-column:1 / -1 } }
+/* Phones: one column, the work as a swipeable row, big tap targets. */
+@media (max-width:640px) {
+  .hm-trio, .hm-cards { grid-template-columns:1fr } .hm-trio > :last-child, .hm-cards > :last-child { grid-column:auto }
+  .hm-mosaic { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:12px; margin:0 calc(-1 * clamp(16px,4vw,64px)); padding:0 clamp(16px,4vw,64px) 6px; grid-auto-rows:auto }
+  .hm-tile, .hm-tile--big { flex:0 0 82%; height:300px; scroll-snap-align:start }
+  .hm-people { grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .hm-people li { padding:16px; border-radius:18px }
+  .hm-btn { width:100%; justify-content:center }
+}
+@media (prefers-reduced-motion:reduce) { .hm-service, .hm-tile img { transition:none } .hm-service:hover { transform:none } .hm-tile a:hover img { transform:none } }
+/* Hero of our modern version: a top bar, then title + actions + latest news beside the pond on wide screens. */
+.topbar { position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px clamp(16px,4vw,48px); background:rgb(5 53 58 / .85); backdrop-filter:blur(8px); border-bottom:1px solid rgb(171 216 213 / .14) }
+.tb-logo { font-family:Boohong,sans-serif; color:var(--dandelion); font-size:1.5rem; text-decoration:none; min-height:44px; display:inline-flex; align-items:center }
+.tb-links { display:flex; gap:clamp(14px,2.2vw,30px) } .tb-links a { color:var(--cream); text-decoration:none; font-weight:700; min-height:44px; display:inline-flex; align-items:center }
+.tb-links a:hover { color:var(--dandelion) }
+.tb-cta { background:var(--dandelion); color:var(--midnight); font-weight:900; text-decoration:none; border-radius:999px; padding:8px 18px; min-height:44px; display:inline-flex; align-items:center }
+.hero-actions { display:none; gap:12px; flex-wrap:wrap; margin-top:26px }
+.hero-news { display:none; margin-top:28px; padding:16px 18px; border-radius:20px; background:rgb(171 216 213 / .08); border:1px solid rgb(171 216 213 / .18); color:var(--cream); text-decoration:none; flex-direction:column; gap:6px; max-width:420px }
+.hero-news b { color:#fff; font-size:1.1rem } .hero-news:hover { border-color:var(--dandelion) }
+@media (min-width:1180px) and (min-height:620px) {
+  body.variant-b { display:grid; grid-template-columns:minmax(380px,.78fr) minmax(0,1.22fr); grid-template-rows:minmax(100svh,auto) auto auto; align-items:center }
+  body.variant-b > .topbar, body.variant-b > .home-more, body.variant-b > footer, body.variant-b > .skip-link { grid-column:1 / -1 }
+  body.variant-b > .fly-cursor { grid-column:1 / -1 }
+  .masthead { text-align:left; padding:0 0 0 clamp(32px,5vw,96px); align-self:center }
+  .masthead h1 { font-size:clamp(3.6rem,5.6vw,6.6rem) }
+  .masthead p { margin-left:0; font-size:clamp(1.1rem,1.4vw,1.45rem) }
+  .hero-actions, .hero-news { display:flex }
+  .stage { padding:clamp(24px,4vh,48px) clamp(16px,3vw,48px) }
+  .pond { --w:min(58vw, 1180px, calc((100svh - 150px) * 1.62)) }
+}
+@media (max-width:760px) { .tb-links { display:none } }
+/* TV screens: keep the announcement inside the frame. */
+.tv .screen-news strong, .tv .screen-news span { display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden }
+.tv .screen-news strong { -webkit-line-clamp:2 } .tv .screen-news span { -webkit-line-clamp:3; font-size:.86em }
+@media (max-width:700px) { .tv .screen-news span { display:none } }
+.hero-news .hm-tag { align-self:flex-start }
+/* One door per destination (25 Oct.): no top bar, no duplicate buttons; the pond is the menu. */
+.hm-mail { margin:26px 0 14px }
+.hm-card h3 a { color:#fff; text-decoration:none } .hm-card h3 a:hover { color:var(--dandelion) }
+[data-skin=modern] .work-card:target { outline:3px solid var(--dandelion); outline-offset:4px }
+[data-skin=modern] .work-card { scroll-margin-top:24px }
+/* The pond's decorations (water caustics, rocks) may reach past the right edge in the two-column hero. */
+body.variant-b > .stage { overflow-x:clip }
+
+/* ---- « B plus pro » (25 Oct.): one continuous background, calmer typography, gentle motion ---- */
+/* One gradient for the whole page: no visible seam between the pond and the sections below. */
+body.variant-b { background:radial-gradient(70% 55% at 68% 38vh, rgb(15 92 99 / .42), transparent 72%), linear-gradient(180deg, #063940 0, #05353a 70vh, #052c31 150vh, #0d2030 75%, var(--midnight) 100%); background-color:var(--midnight) }
+.home-more { background:none }
+/* The brand name keeps Boohong; section titles switch to a quieter, readable hierarchy. */
+.hm-band h2 { font-family:'Nunito Sans', sans-serif; font-weight:800; color:var(--cream); font-size:clamp(1.6rem, 3vw, 2.6rem); line-height:1.15; letter-spacing:-.01em; margin-top:.35em }
+.hm-kicker { font-size:.74rem; letter-spacing:.16em; color:var(--aero-blue); opacity:.85 }
+.hm-tile--big .hm-cap b { font-family:'Nunito Sans', sans-serif; font-weight:800; color:#fff; font-size:clamp(1.3rem, 2vw, 1.9rem) }
+.hm-cap small { text-transform:uppercase; letter-spacing:.12em; font-size:.68rem }
+.hm-cta h2 { font-size:clamp(1.9rem, 4vw, 3.2rem) }
+/* News: a clean three-column list instead of yellow rules and pills. */
+.hm-card { border-top:1px solid rgb(171 216 213 / .22); padding-top:20px }
+.hm-tag { background:none; color:var(--aero-blue); padding:0; border-radius:0; text-transform:uppercase; letter-spacing:.12em; font-size:.7rem; font-weight:800 }
+.hm-card h3 { font-weight:800 }
+/* Team: smaller frogs, calmer cards. */
+.hm-people li { background:rgb(171 216 213 / .05); border:1px solid rgb(171 216 213 / .1) }
+.hm-people .hm-frog { width:52px; height:49px }
+/* Motion: short, discreet, once. */
+.reveal-ready [data-reveal] { opacity:0; translate:0 24px; transition:opacity .8s var(--ease-out), translate .9s var(--ease-out) }
+.reveal-ready [data-reveal] :is(.hm-tile, .hm-card, .hm-people li, .hm-service) { opacity:0; translate:0 18px; transition:opacity .7s var(--ease-out) calc(.15s + var(--i, 0) * 90ms), translate .8s var(--ease-out) calc(.15s + var(--i, 0) * 90ms), transform .25s ease, border-color .25s ease, box-shadow .25s ease }
+.reveal-ready .is-visible, .reveal-ready .is-visible :is(.hm-tile, .hm-card, .hm-people li, .hm-service) { opacity:1; translate:0 0 }
+.hm-service, .hm-tile a, .hm-people li { transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease }
+.hm-tile a:hover { box-shadow:0 14px 34px rgb(0 0 0 / .35) }
+.hm-people li:hover { transform:translateY(-2px); border-color:rgb(255 219 118 / .35) }
+.hm-btn { transition:filter .2s ease, transform .2s ease } .hm-btn:hover { transform:translateY(-1px) }
+/* Phones: more air, fewer competing shapes. */
+@media (max-width:640px) {
+  .home-more > .hm-band:first-child { padding-top:28px }
+  .hm-band { padding-left:20px; padding-right:20px; padding-top:48px }
+  .hm-band h2 { font-size:1.55rem }
+  .hm-cta h2 { font-size:1.75rem }
+  .hm-cards { gap:0 } .hm-card { padding:18px 0 }
+  .hm-people { grid-template-columns:1fr; gap:10px }
+  .hm-people li { display:grid; grid-template-columns:44px 1fr; column-gap:14px; row-gap:0; align-items:center; padding:12px 14px; border-radius:16px }
+  .hm-people li .hm-frog, .hm-people li img { grid-row:span 2; width:44px; height:42px; margin:0 }
+  .hm-people b { font-size:1rem } .hm-people span { font-size:.88rem }
+  .masthead h1 { font-size:2.2rem } .masthead p { font-size:.95rem }
+  .pond { --w:min(88vw,420px) }
+  .water { box-shadow:inset 0 0 0 2px rgb(171 216 213 / .12), inset 0 -18px 40px rgb(25 24 51 / .45), 0 16px 40px rgb(0 0 0 / .3) }
+}
+@media (prefers-reduced-motion:reduce) { .hm-people li:hover, .hm-btn:hover { transform:none } }
+/* The sample-content strip stays out of the two-column hero grid. */
+body.variant-b > .demo-note { position:absolute; top:0; left:0; right:0 }

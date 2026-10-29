@@ -1,0 +1,62 @@
+/* Ruben's pixel version (A), interior pages: a retro pixel style matching the home page (no TV frame).
+   Body text stays in Nunito Sans for readability; Boohong, hard pixel shadows, Ruben's pixel drawings and the
+   original palette carry the retro feel. Loaded only for look === 'pixel' on interior pages. */
+[data-skin=pixel] body.interior-page {
+  background-color:#04313a;
+  background-image:radial-gradient(rgb(171 216 213 / .07) 1px, transparent 1.2px);
+  background-size:8px 8px;
+}
+/* Header: brand with Ruben's pixel frog, navigation as chunky pixel buttons. */
+[data-skin=pixel] .page-header { border-bottom:4px solid #191833; box-shadow:0 4px 0 #0a4a52; background:#05353a }
+[data-skin=pixel] .wordmark { display:inline-flex; align-items:center; gap:12px }
+[data-skin=pixel] .wordmark::before { content:""; width:38px; height:34px; flex:none; background:var(--px-frog) center/contain no-repeat; image-rendering:pixelated }
+[data-skin=pixel] .page-header nav a, [data-skin=pixel] .back-link, [data-skin=pixel] .related-pages a {
+  display:inline-flex; align-items:center; min-height:40px; padding:6px 14px; background:#003359; color:var(--dandelion);
+  border:3px solid #191833; box-shadow:4px 4px 0 #191833; text-decoration:none; border-radius:0; transition:transform .2s var(--ease-pop), box-shadow .2s var(--ease-pop)
+}
+[data-skin=pixel] .page-header nav { gap:12px }
+[data-skin=pixel] :is(.page-header nav a, .back-link, .related-pages a):hover { background:#0a4a52 }
+[data-skin=pixel] :is(.page-header nav a, .back-link, .related-pages a):active { transform:translate(4px,4px); box-shadow:0 0 0 #191833 }
+[data-skin=pixel] .related-pages { gap:12px; flex-wrap:wrap; border-top:0 }
+[data-skin=pixel] .related-pages a[aria-current=page] { background:var(--dandelion); color:#191833; border-bottom:3px solid #191833 }
+/* The page itself: plain pixel layout on the dotted background (no TV frame, by the owner's choice). */
+[data-skin=pixel] .interior-page .content-page { width:min(1120px, calc(100% - 48px)) }
+/* Titles: Boohong with a hard pixel shadow; section titles with Ruben's pixel lily. */
+[data-skin=pixel] .content-page h1 { text-shadow:4px 4px 0 #191833, 8px 8px 0 rgb(0 0 0 / .25); letter-spacing:.02em }
+[data-skin=pixel] .page-group { display:inline-block; padding:4px 10px; background:#191833; color:var(--aero-blue, #abd8d5); letter-spacing:.14em }
+[data-skin=pixel] .content-page h2 { font-family:Boohong, sans-serif; color:var(--dandelion); text-shadow:3px 3px 0 #191833 }
+[data-skin=pixel] .page-lede { color:#d5e9e7 }
+/* Cards are little pixel windows: a title bar, a hard shadow, and an arcade press on hover. */
+[data-skin=pixel] :is(.work-card,.event-card,.press-item,.team-member,.job-card,.case-list article) {
+  border:4px solid #191833 !important; box-shadow:6px 6px 0 #191833 !important; border-radius:0 !important; background:#0b4a50;
+  transition:transform .22s var(--ease-pop), box-shadow .22s var(--ease-pop)
+}
+[data-skin=pixel] :is(.work-card,.event-card,.press-item,.team-member,.job-card,.case-list article):hover { transform:translate(-2px,-2px); box-shadow:8px 8px 0 #191833 !important }
+[data-skin=pixel] :is(.work-card,.press-item,.team-member,.case-list article)::before {
+  content:""; display:block; height:16px; flex:none; background-color:#abd8d5;
+  background-image:linear-gradient(#191833 0 0), linear-gradient(#191833 0 0), linear-gradient(#191833 0 0);
+  background-size:6px 6px; background-repeat:no-repeat; background-position:8px 5px, 18px 5px, 28px 5px; border-bottom:4px solid #191833
+}
+[data-skin=pixel] .work-media, [data-skin=pixel] .case-image { position:relative }
+[data-skin=pixel] .work-kind { border:3px solid #191833; border-radius:0; background:var(--dandelion); color:#191833 }
+[data-skin=pixel] .event-date { border:3px solid #191833; border-radius:0; box-shadow:4px 4px 0 #191833 }
+[data-skin=pixel] .team-photo { border-radius:0; image-rendering:pixelated }
+/* Forms: pixel fields and a pixel send button. */
+[data-skin=pixel] :is(.form-field input, .form-field textarea) { border:3px solid #191833 !important; border-radius:0 !important; box-shadow:4px 4px 0 #191833 !important }
+[data-skin=pixel] :is(.send-button, .about-btn) { border:3px solid #191833; border-radius:0; box-shadow:4px 4px 0 #191833 }
+/* Footer: a row of Ruben's pixel stones above it. */
+[data-skin=pixel] body.interior-page > footer { position:relative; border-top:4px solid #191833 }
+[data-skin=pixel] body.interior-page > footer::before {
+  content:""; position:absolute; left:0; right:0; top:-34px; height:30px; pointer-events:none;
+  background:var(--px-stone) 0 100% / 44px auto repeat-x; image-rendering:pixelated; opacity:.9
+}
+@media (max-width:640px) {
+  [data-skin=pixel] .interior-page .content-page { width:calc(100% - 24px) }
+  [data-skin=pixel] .page-header nav { gap:8px } [data-skin=pixel] .page-header nav a { padding:4px 10px; min-height:36px; font-size:.9rem }
+}
+@media (prefers-reduced-motion:reduce) { [data-skin=pixel] * { transition:none !important } [data-skin=pixel] :is(.work-card,.event-card,.press-item,.team-member,.job-card,.case-list article):hover { transform:none } }
+/* One door per destination, as in B: the wordmark leads home, the header to About / Contact / Join Us,
+   the bottom tabs to the other pages of the same section. */
+[data-skin=pixel] .back-link, [data-skin=pixel] .about-cta { display:none }
+[data-skin=pixel] .page-header nav a[href="index.html"] { display:none }
+[data-skin=pixel] .content-page--operations .related-pages { display:none }

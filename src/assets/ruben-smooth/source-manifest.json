@@ -1,0 +1,134 @@
+{
+  "source": "Assets2FPB.pdf",
+  "page": 2,
+  "sha256": "8d4c1d733f775b706ac4863884838ebcef921030c753ea7031041cc749994d92",
+  "method": "Original filled Bezier paths, translated and rounded to 0.001 PDF unit; no tracing or smoothing filter.",
+  "assets": [
+    {
+      "name": "frog",
+      "fill_path_range": [
+        405,
+        524
+      ],
+      "paths": 120,
+      "source_bounds": [
+        217.9063,
+        157.34179999999992,
+        282.8563,
+        218.33409999999992
+      ],
+      "viewBox": [
+        0,
+        0,
+        64.95,
+        60.992
+      ],
+      "sha256": "bb8273e501bd6091d5761bdbbb013f04fe9307655cb1eef78ea9c374de68d1e8"
+    },
+    {
+      "name": "wood",
+      "fill_path_range": [
+        238,
+        347
+      ],
+      "paths": 110,
+      "source_bounds": [
+        159.03889999999998,
+        143.65889999999996,
+        672.2112,
+        233.92449999999997
+      ],
+      "viewBox": [
+        0,
+        0,
+        513.172,
+        90.266
+      ],
+      "sha256": "e85b7cc083af848d6716c474c00c891dd31bd450fc0c56d42c86b08da736830c"
+    },
+    {
+      "name": "stone",
+      "fill_path_range": [
+        158,
+        165
+      ],
+      "paths": 8,
+      "source_bounds": [
+        291.85089999999997,
+        483.87579999999997,
+        386.53380000000004,
+        530.0842
+      ],
+      "viewBox": [
+        0,
+        0,
+        94.683,
+        46.208
+      ],
+      "sha256": "64a06ecfd606700d4160e1acb6ec6e8e960e4f781c608f8380e64a3aac46c18b"
+    },
+    {
+      "name": "lily-1",
+      "fill_path_range": [
+        354,
+        361
+      ],
+      "paths": 8,
+      "source_bounds": [
+        208.2501,
+        297.2956,
+        296.3621,
+        385.40759999999995
+      ],
+      "viewBox": [
+        0,
+        0,
+        88.112,
+        88.112
+      ],
+      "sha256": "5ff28e4e6d0866857775636b86d54e12a9db1c0cacdb58496bc4e7ba39682bbf"
+    },
+    {
+      "name": "lily-2",
+      "fill_path_range": [
+        348,
+        353
+      ],
+      "paths": 6,
+      "source_bounds": [
+        353.7367,
+        361.7025,
+        443.5947,
+        450.3734999999999
+      ],
+      "viewBox": [
+        0,
+        0,
+        89.858,
+        88.671
+      ],
+      "sha256": "8de90161b3151e02235c72402019061dc33622ca6be17a94c37e2ae0cb484f6c"
+    },
+    {
+      "name": "lily-3",
+      "fill_path_range": [
+        362,
+        368
+      ],
+      "paths": 7,
+      "source_bounds": [
+        509.1671,
+        278.74019999999996,
+        615.7061,
+        385.5881999999999
+      ],
+      "viewBox": [
+        0,
+        0,
+        106.539,
+        106.848
+      ],
+      "sha256": "ffabe5f536b558a0a3bc345eeb7797acc439bb76f8424b40c9c3ea503b450022"
+    }
+  ]
+}

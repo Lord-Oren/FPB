@@ -1,0 +1,62 @@
+/* Meeting changes. B retains neo-b.css; overrides here only support shared features. */
+.client-wordmark::before {display:none!important}.client-wordmark img{width:76px;height:84px;object-fit:contain}
+.footer-socials{display:flex;flex-wrap:wrap;justify-content:center;gap:1.2rem}.footer-socials a{display:flex;align-items:center;gap:.4rem;color:white}.social-icon{font-weight:900;font-size:1.5rem}
+footer{padding-block:2rem}.legal-section p{white-space:pre-line;max-width:75ch}.legal-section{margin-block:2rem}
+.grand-central{text-align:center;font-size:clamp(1.4rem,3vw,2.5rem);color:var(--dandelion,#fff762);margin:.4rem auto}
+.home-page .wood{rotate:0deg}.home-page .lily-screens{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
+.home-page .lily-screen{width:100%;min-width:0}.home-page .screen-content{font-size:clamp(.65rem,1.1vw,.95rem)}
+.home-page .stones{display:flex;flex-wrap:wrap;justify-content:center}.home-page .stone{flex:0 1 20%}
+.variant-b .pads{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.variant-b .pad{min-width:0}
+.motion-paused *, .motion-paused::before{animation-play-state:paused!important}
+@media(max-width:600px){
+ .home-page .lily-screens{grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem .5rem}
+ .home-page .screen-content{font-size:clamp(.7rem,2.6vw,.9rem)}
+ .interior-page::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;background:repeating-radial-gradient(ellipse at 50% 70%,transparent 0 40px,#ffffff08 42px 44px,transparent 46px 90px);animation:page-ripple 8s ease-in-out infinite alternate}
+ .variant-b .pads{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .page-header nav{flex-wrap:wrap;gap:.7rem}.footer-socials{gap:.7rem}
+}
+@keyframes page-ripple{to{transform:scale(1.08);opacity:.5}}
+@media(prefers-reduced-motion:reduce){.interior-page::before{animation:none}}
+
+.home-page .grand-central{position:absolute;top:14%;left:0;width:100%;z-index:7;margin:0}
+.home-page .log{rotate:0deg}
+.variant-b .pad.p1{left:3%;top:34%;--size:23cqw}.variant-b .pad.p2{left:27%;top:53%;--size:23cqw}.variant-b .pad.p3{left:51%;top:32%;--size:23cqw}.variant-b .pad.p4{left:74%;top:53%;--size:23cqw}
+.variant-b .stones li:nth-child(4){right:-5%;top:40%}
+footer{flex-wrap:wrap;justify-content:center}
+@media(max-width:600px){
+ .variant-b .pad.p1{left:5%;top:22%;--size:43cqw}.variant-b .pad.p2{left:52%;top:39%;--size:43cqw}.variant-b .pad.p3{left:5%;top:58%;--size:43cqw}.variant-b .pad.p4{left:52%;top:75%;--size:43cqw}
+ .variant-b .stones li:nth-child(4){right:-4%;top:12%}
+ .home-page .grand-central{top:13%;font-size:1.3rem}
+ .home-page .lily-screen{max-width:none}
+}
+
+.home-page .log{transform:translateX(-50%)}
+
+.brand-logo{display:block;width:90px;height:100px;object-fit:contain;margin:0 auto 1rem}
+@media(min-width:1180px){.brand-logo{margin-left:0}}
+.home-page .pond-tagline{top:calc(26% + max(var(--log-h) + 8px, 88px))}
+@media(max-width:700px){
+ .home-page:has(.home-more)>main{height:max(900px,100svh);min-height:900px}
+ .home-page .brand{top:4%}.home-page .grand-central{top:10%}
+ .home-page .log,.home-page .frogs{top:19%}
+ .home-page .pond-page[data-artwork-mode="original"] .pond-tagline{top:calc(19% + 95px)}
+ .home-page .pond-lower{bottom:40px;gap:50px}
+ .home-page .lily-screens{grid-template-columns:repeat(2,minmax(0,1fr));gap:40px 8px}
+ .home-page .lily-screen{padding:20px 8px;top:0}
+ .home-page .screen{padding:0;aspect-ratio:180/132}
+ .home-page .tv-art{width:100%;left:0}
+ .home-page .screen-content{position:absolute;left:12%;top:36%;width:61%;height:43%;padding:0;font-size:clamp(.55rem,2vw,.72rem);overflow:hidden}
+ .home-page .screen-content>span{display:none}.home-page .screen-content a{min-height:0;text-align:center;justify-content:center}
+ .variant-b .pad.p4{top:69%}.variant-b .pad.p3{top:54%}
+}
+
+.home-page .screen-content{overflow:hidden;font-size:clamp(.55rem,.8vw,.72rem)}
+.home-page .screen-content>span{display:none}
+.home-page .screen-content a{min-height:0;text-align:center;justify-content:center}
+@media(max-width:700px){.home-page .screen-content{font-size:clamp(.55rem,2vw,.72rem)}}
+/* The pause control stays available on phones and with reduced motion enabled. */
+footer .motion-toggle{display:inline-block!important;position:static;min-height:44px;margin:.4rem}
+
+.section-body{white-space:pre-line}.subsections ul{list-style:none;padding:0;display:grid;gap:12px}.subsections a{display:block;border:2px solid currentColor;padding:16px;overflow-wrap:anywhere}.menu-flies{max-height:55svh;overflow-y:auto}.home-page .frog-label{white-space:normal;text-align:center}.variant-b .frog-tag{max-width:24cqw;white-space:normal;text-align:center}
+
+.social-icon{display:inline-block;width:24px;height:24px;flex-shrink:0;vertical-align:middle}.social-links a,.hm-channels a{display:inline-flex;align-items:center;gap:.5rem}

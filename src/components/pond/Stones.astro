@@ -1,0 +1,4 @@
+---
+import {zoneNodes,nodeHref} from '../../data/public-pages.js';
+---
+<nav class="stones" aria-label="About Frog Pond Boys">{zoneNodes('stones').map(node=><a class="stone" href={nodeHref(node)} target={node.newTab?'_blank':undefined} rel={node.newTab?'noopener noreferrer':undefined}><svg class="stone-art" viewBox="0 0 94.683 46.208" aria-hidden="true"><use href="#art-stone"/></svg><span>{node.title}</span></a>)}</nav>

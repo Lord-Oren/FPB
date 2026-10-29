@@ -1,0 +1,6 @@
+---
+import { site } from '../../data/public-site-content.js';
+const sections=[['legalConduct','Code of Conduct'],['legalCookies','Cookie Settings'],['legalPrivacy','Privacy Policies'],['legalTerms','Terms of Services'],['legalValues','Values']];
+---
+<p class="demo-note">Demo — these examples are awaiting the studio’s review and are not approved legal terms.</p>
+{sections.map(([key,title])=><section class="legal-section"><h2>{title}</h2><p>{site.home.editorial[key]}</p></section>)}

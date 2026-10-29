@@ -1,0 +1,31 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import PageNavigation from '../components/PageNavigation.astro';
+import Footer from '../components/Footer.astro';
+import CaseImage from '../components/case-studies/CaseImage.astro';
+import { caseStudies } from '../data/public-case-studies.js';
+export function getStaticPaths() {
+  return caseStudies.map(item => ({ params: { slug: item.slug }, props: { item } }));
+}
+const { item } = Astro.props;
+const nextCase = caseStudies[caseStudies.findIndex(value => value.id === item.id) + 1];
+---
+<SiteLayout title={`${item.title} — Frog Pond Boys`} cases={true}>
+  <PageNavigation />
+  <main id="main" class="content-page case-detail">
+    <p class="page-group">Advertising / <a href="case-studies.html">Case Studies</a></p>
+    <h1>{item.title}</h1>
+    <p class="case-text">{item.summary}</p>
+    {item.client && <p class="case-text"><strong>Client:</strong> {item.client}</p>}
+    <CaseImage image={item.cover} eager={true} />
+    <section aria-labelledby="case-context"><h2 id="case-context">Context</h2><p class="case-text">{item.context}</p></section>
+    <section aria-labelledby="case-work"><h2 id="case-work">Our work</h2><p class="case-text">{item.work}</p></section>
+    {item.gallery.length > 0 && <section aria-labelledby="case-gallery"><h2 id="case-gallery">Gallery</h2>
+      <div class="case-gallery">{item.gallery.map(image => <CaseImage image={image} />)}</div>
+    </section>}
+    {item.results && <section aria-labelledby="case-results"><h2 id="case-results">Results</h2><p class="case-text">{item.results}</p></section>}
+    <nav class="related-pages" aria-label="Case study navigation"><a href="case-studies.html">All case studies</a>{nextCase && <a href={nextCase.href}>Next case: {nextCase.title} →</a>}</nav>
+    <a class="back-link" href="index.html">← Back to the pond</a>
+  </main>
+  <Footer />
+</SiteLayout>
