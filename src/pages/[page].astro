@@ -1,0 +1,40 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import PageNavigation from '../components/PageNavigation.astro';
+import Footer from '../components/Footer.astro';
+import ContactPage from '../components/pages/contact.astro';
+import JoinPage from '../components/pages/join.astro';
+import CaseStudiesPage from '../components/pages/case-studies.astro';
+import LegalPage from '../components/pages/legal.astro';
+import CroakPage from '../components/pages/croak.astro';
+import AboutPage from '../components/pages/about.astro';
+import Works from '../components/content/Works.astro';
+import Events from '../components/content/Events.astro';
+import Press from '../components/content/Press.astro';
+import { rubrics } from '../data/site-content.js';
+import { site } from '../data/public-site-content.js';
+import { pages,childNodes,nodeHref } from '../data/public-pages.js';
+export function getStaticPaths() {
+  return pages.map(page => ({ params: { page: page.slug }, props: { page } }));
+}
+const { page } = Astro.props;
+const Single = { legal: LegalPage, croak: CroakPage, contact: ContactPage, join: JoinPage, about: AboutPage, 'case-studies': CaseStudiesPage }[page.kind];
+const List = page.kind === 'works' ? Works : page.kind === 'events' ? Events : page.kind === 'press' ? Press : null;
+const subsections=childNodes(page.section);
+const operations = ['contact', 'join', 'about'].includes(page.slug);
+const siblings = pages.filter(item => item.node.parentId === page.node.parentId && item.node.zone === page.node.zone && !item.hidden).sort((a,b)=>a.title.localeCompare(b.title,'en'));
+---
+<SiteLayout title={`${page.title} — Frog Pond Boys`} operations={operations} cases={page.slug === 'case-studies'} form={['contact', 'join'].includes(page.slug)}>
+  <PageNavigation />
+  <main id="main" class:list={['content-page', { 'content-page--operations': operations }]}>
+    {page.node.parentId && <p class="page-group">{page.group}</p>}
+    <div class="page-head"><h1>{page.title}</h1>{site.intros[page.section] && <p class="page-lede">{site.intros[page.section]}</p>}</div>
+    <div class="page-content">{Single ? <Single /> : List ? <List rubric={page.section} /> : <p class="section-body">{page.node.text || 'New content is on its way.'}</p>}</div>
+    {subsections.length>0 && <section class="subsections"><h2>Explore {page.title}</h2><ul>{subsections.map(node=><li><a href={nodeHref(node)} target={node.newTab?'_blank':undefined} rel={node.newTab?'noopener noreferrer':undefined}>{node.title} →</a></li>)}</ul></section>}
+    <nav class="related-pages" aria-label="Related pages">
+      {siblings.map(item => <a href={`${item.slug}.html`} target={item.node.newTab?'_blank':undefined} rel={item.node.newTab?'noopener noreferrer':undefined} aria-current={item.slug === page.slug ? 'page' : undefined}>{item.title}</a>)}
+    </nav>
+    <a class="back-link" href="index.html">← Back to the pond</a>
+  </main>
+  <Footer />
+</SiteLayout>

@@ -1,0 +1,14 @@
+---
+// Section page for press mentions (Press, Media Relations, Influencer Relations): one card per article, linking out.
+import { site } from '../../data/public-site-content.js';
+import Empty from './Empty.astro';
+const { rubric } = Astro.props;
+const items = site.press.filter(item => item.rubric === rubric);
+---
+{items.length === 0 ? <Empty /> : <ul class="press-list">
+  {items.map(item => <li class="press-item">
+    <p class="press-outlet">{item.outlet}<span> · <time datetime={item.date}>{new Date(item.date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</time></span></p>
+    <h2 class="press-title"><a href={item.url} rel="noopener">{item.title} <span aria-hidden="true">↗</span></a></h2>
+    {item.quote && <p class="press-quote">“{item.quote}”</p>}
+  </li>)}
+</ul>}

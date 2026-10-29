@@ -1,0 +1,21 @@
+/* Skins from the v1 interior mockup; data and routes remain shared. */
+.interior-page .content-page { max-width:1120px; }
+.interior-page .page-content { max-width:none; }
+.interior-page h2 { font-family:Boohong,sans-serif; font-weight:400; color:var(--dandelion); font-size:clamp(1.5rem,3.4vw,2.1rem); }
+.interior-page :is(.case-list article,.content-pending,.empty-content) { background:#0b4a50; padding:20px; }
+.interior-page .case-list article { height:100%; }
+.interior-page .content-pending { text-align:center; padding:48px 20px; }
+[data-skin=modern] :is(.case-list article,.content-pending,.empty-content) { border-radius:18px; box-shadow:0 10px 30px #0006; }
+[data-skin=modern] .case-list article { transition:transform .2s; }
+[data-skin=modern] .case-list article:hover { transform:translateY(-4px); }
+[data-skin=modern] :is(.send-button,.back-link) { border-radius:999px; }
+[data-skin=modern] :is(.form-field input,.form-field textarea,.form-privacy) { border-radius:12px; }
+[data-skin=modern] .content-page h2 { position:relative; padding-left:18px; }
+[data-skin=modern] .content-page h2::before { content:""; position:absolute; left:0; top:.2em; bottom:.25em; width:6px; border-radius:6px; background:var(--aero-blue); }
+[data-skin=pixel] :is(.case-list article,.content-pending,.empty-content,.form-privacy) { border-radius:0; box-shadow:4px 0 0 var(--midnight),-4px 0 0 var(--midnight),0 4px 0 var(--midnight),0 -4px 0 var(--midnight),8px 8px 0 #0004; }
+[data-skin=pixel] :is(.send-button,.back-link) { border-radius:0; }
+[data-skin=pixel] :is(.form-field input,.form-field textarea) { border-radius:0; border:2px solid var(--midnight); box-shadow:4px 4px 0 var(--midnight); }
+[data-skin=pixel] .content-page h2 { display:flex; align-items:center; gap:12px; }
+[data-skin=pixel] .content-page h2::before { content:""; width:28px; height:28px; flex:none; background:var(--h2-lily) center/contain no-repeat; image-rendering:pixelated; }
+[data-skin=pixel] .case-list article:hover { outline:4px solid var(--dandelion); }
+@media(prefers-reduced-motion:reduce) { .interior-page * { transition:none!important; } }

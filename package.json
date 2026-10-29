@@ -1,0 +1,32 @@
+{
+  "name": "frog-pond-boys",
+  "version": "0.15.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check:export": "node scripts/check-export.mjs",
+    "export:client": "node scripts/export-client.mjs",
+    "test": "node --test scripts/*.test.mjs",
+    "check:original-artwork": "node scripts/check-original-artwork.mjs",
+    "test:case-studies-build": "node scripts/test-case-studies-build.mjs",
+    "dev:a": "node scripts/dev-variant.mjs a",
+    "dev:b": "node scripts/dev-variant.mjs b",
+    "dev:editor": "node editor/server.mjs",
+    "start": "node editor/hosted.mjs",
+    "test:hosted": "node --test scripts/hosted*.test.mjs",
+    "test:public-build": "node scripts/test-public-build.mjs"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "packageManager": "npm@11.16.0",
+  "dependencies": {
+    "astro": "7.3.4",
+    "jose": "6.2.13",
+    "pg": "8.23.1",
+    "sharp": "0.35.5"
+  }
+}

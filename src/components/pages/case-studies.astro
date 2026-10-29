@@ -1,0 +1,19 @@
+---
+// Case Studies list, fed by case-studies-public.json (published by Pond Desk). Empty list → friendly empty state.
+import { caseStudies } from '../../data/public-case-studies.js';
+import CaseImage from '../case-studies/CaseImage.astro';
+import Works from '../content/Works.astro';
+import { site } from '../../data/public-site-content.js';
+import Empty from '../content/Empty.astro';
+---
+{caseStudies.length === 0 ? <Empty /> : <ul class="case-list">
+  {caseStudies.map(item => <li>
+    <article>
+      <CaseImage image={item.cover} />
+      <h2><a href={item.href}>{item.title}</a></h2>
+      <p class="case-text">{item.summary}</p>
+    </article>
+  </li>)}
+</ul>}
+
+{site.works.some(item=>item.rubric==='presentations') && <section><h2>Presentation decks</h2><Works rubric="presentations" /></section>}

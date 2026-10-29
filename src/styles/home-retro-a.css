@@ -1,0 +1,93 @@
+/* Ruben's pixel version (A), home page: the pond keeps the first screen, a pixel pond sits under the TV pads,
+   and the same sections as B follow below, dressed in Ruben's pixel world (hard shadows, stepped motion). */
+
+/* The page now scrolls: the pond keeps exactly one screen. */
+.home-page:has(.home-more) { height:auto; min-height:0; display:block }
+.home-page:has(.home-more) > main { height:100vh; height:100svh; min-height:600px }
+@media (max-width:700px) { .home-page:has(.home-more) > main { min-height:max(560px, calc(min(88vw,560px) * 1.18)) } }
+
+/* Pixel pond under the lily pads (assets/pixel-pond-a.svg):
+   an uneven shape whose water lightens in dithered steps into a grassy bank that fades into the page. No frame. */
+/* The water rises toward the tagline as far as the screen height allows (150 px on tall screens), never behind the text:
+   the gap above the pads grows with the pond page height (cqh), measured from 568 to 1080 px high. */
+.pixel-water { position:absolute; z-index:-1; left:50%; top:calc(-1 * clamp(20px, 42cqh - 232px, 150px)); bottom:-40px; width:min(170%, 1760px); translate:-50% 0; pointer-events:none;
+  background:var(--px-pond) center / 100% 100% no-repeat; image-rendering:pixelated }
+/* A few light glints drift slowly across the water. */
+.pixel-water::after { content:""; position:absolute; inset:28% 24%; opacity:.8;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='64' shape-rendering='crispEdges'%3E%3Crect x='72' y='8' width='8' height='4' fill='%23abd8d5' fill-opacity='.3'/%3E%3Crect x='24' y='48' width='8' height='4' fill='%23abd8d5' fill-opacity='.22'/%3E%3C/svg%3E");
+  -webkit-mask-image:radial-gradient(closest-side, #000 55%, transparent); mask-image:radial-gradient(closest-side, #000 55%, transparent);
+  animation:glint-a 9s ease-in-out infinite }
+@keyframes glint-a { 0%, 100% { translate:0 0; opacity:.8 } 50% { translate:16px 0; opacity:.35 } }
+@media (max-width:700px) { .pixel-water { top:calc(-1 * clamp(16px, 33cqh - 125px, 70px)); width:200%; bottom:-24px } }
+@media (prefers-reduced-motion:reduce) { .pixel-water::after { animation:none } }
+
+/* Sections below the pond. */
+.home-page .home-more { position:relative; background-color:#04313a; background-image:radial-gradient(rgb(171 216 213 / .07) 1px, transparent 1.2px); background-size:8px 8px }
+/* The pond page flows into the sections through a dithered band (no hard line). */
+.home-page .home-more::before { content:""; position:absolute; left:0; right:0; top:-24px; height:24px; pointer-events:none; image-rendering:pixelated;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='3' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='1' height='1' fill='%2304313a'/%3E%3Crect x='0' y='1' width='1' height='1' fill='%2304313a'/%3E%3Crect x='2' y='1' width='1' height='1' fill='%2304313a'/%3E%3Crect x='0' y='2' width='1' height='1' fill='%2304313a'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%2304313a'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%2304313a'/%3E%3C/svg%3E") 0 0 / 32px 24px repeat-x }
+.home-page .hm-band { max-width:1200px; margin:auto; padding:clamp(48px,6vw,88px) clamp(16px,4vw,48px) 0 }
+.home-page .hm-band:last-child { padding-bottom:clamp(56px,7vw,96px) }
+.home-page .hm-head { margin-bottom:24px }
+.home-page .hm-kicker { display:inline-block; margin:0; padding:4px 10px; background:#191833; color:#abd8d5; font-weight:800; font-size:.74rem; letter-spacing:.16em; text-transform:uppercase }
+.home-page .hm-band h2 { margin:.4em 0 0; font-family:Boohong, sans-serif; font-weight:400; color:var(--dandelion); font-size:clamp(1.9rem, 4vw, 3.2rem); line-height:1.05; text-shadow:4px 4px 0 #191833 }
+/* Latest work: pixel windows, the first one larger. */
+.home-page .hm-mosaic { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-auto-rows:clamp(170px,16vw,250px); gap:20px }
+.home-page .hm-tile--big { grid-column:span 2; grid-row:span 2 }
+.home-page .hm-tile a { position:relative; display:flex; flex-direction:column; height:100%; color:#fff; text-decoration:none; background:#0b4a50; border:4px solid #191833; box-shadow:6px 6px 0 #191833; transition:transform .22s var(--ease-pop), box-shadow .22s var(--ease-pop) }
+.home-page .hm-tile a::before { content:""; flex:none; height:14px; background-color:#abd8d5; background-image:linear-gradient(#191833 0 0), linear-gradient(#191833 0 0), linear-gradient(#191833 0 0); background-size:6px 6px; background-repeat:no-repeat; background-position:8px 4px, 18px 4px, 28px 4px; border-bottom:4px solid #191833 }
+.home-page .hm-tile img { flex:1; min-height:0; width:100%; object-fit:cover; display:block; image-rendering:pixelated }
+.home-page .hm-cap { display:flex; flex-direction:column; padding:10px 12px; background:#191833 }
+.home-page .hm-cap small { color:#abd8d5; text-transform:uppercase; letter-spacing:.12em; font-size:.68rem; font-weight:800 }
+.home-page .hm-cap b { color:var(--dandelion); font-size:clamp(.95rem,1.3vw,1.15rem) }
+.home-page .hm-tile--big .hm-cap b { font-family:Boohong, sans-serif; font-weight:400; font-size:clamp(1.3rem,2vw,1.8rem) }
+.home-page .hm-tile a:hover, .home-page .hm-tile a:focus-visible { transform:translate(-3px,-3px); box-shadow:9px 9px 0 #191833 }
+.home-page .hm-tile a:active { transform:translate(3px,3px); box-shadow:2px 2px 0 #191833 }
+/* What's happening: three pixel panels. */
+.home-page .hm-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px }
+.home-page .hm-card { background:#0b4a50; border:4px solid #191833; box-shadow:6px 6px 0 #191833; padding:18px 18px 20px }
+.home-page .hm-tag { display:inline-block; padding:3px 8px; background:var(--dandelion); color:#191833; font-weight:800; font-size:.7rem; letter-spacing:.1em; text-transform:uppercase }
+.home-page .hm-card h3 { margin:.6em 0 .3em; color:#fff; font-size:1.15rem }
+.home-page .hm-card p { margin:0; color:#d5e9e7 }
+.home-page .hm-card a { color:var(--dandelion); font-weight:800 }
+/* Team: Ruben's pixel frog for each role. */
+.home-page .hm-people { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px }
+.home-page .hm-people li { display:grid; grid-template-columns:56px 1fr; column-gap:14px; align-items:center; padding:14px 16px; background:#0b4a50; border:4px solid #191833; box-shadow:6px 6px 0 #191833 }
+.home-page .hm-people .hm-frog, .home-page .hm-people img { grid-row:span 2; width:56px; height:52px; image-rendering:pixelated }
+.home-page .hm-people b { color:#fff } .home-page .hm-people span { color:#abd8d5; font-size:.92rem }
+/* Contact: a pixel call to action. */
+.home-page .hm-cta { text-align:center }
+.home-page .hm-cta p { max-width:52ch; margin:16px auto 0; color:#d5e9e7; font-size:1.08rem }
+.home-page .hm-mail { margin:26px 0 14px }
+.home-page .hm-btn { display:inline-flex; align-items:center; min-height:52px; padding:10px 24px; background:var(--dandelion); color:#191833; font-weight:900; text-decoration:none; border:4px solid #191833; box-shadow:6px 6px 0 #191833; transition:transform .2s var(--ease-pop), box-shadow .2s var(--ease-pop) }
+.home-page .hm-btn:hover { transform:translate(-2px,-2px); box-shadow:8px 8px 0 #191833 } .home-page .hm-btn:active { transform:translate(4px,4px); box-shadow:2px 2px 0 #191833 }
+.home-page .hm-channels { display:flex; gap:18px; justify-content:center; flex-wrap:wrap } .home-page .hm-channels a { color:#abd8d5; font-weight:800 }
+/* Reveal: the section glides in, then its cards pop up one after the other with a small friendly bounce. */
+.reveal-ready body.home-page [data-reveal] { opacity:0; translate:0 24px; transition:opacity .7s var(--ease-out), translate .8s var(--ease-out) }
+.reveal-ready body.home-page [data-reveal] :is(.hm-tile, .hm-card, .hm-people li) { opacity:0; translate:0 22px; scale:.96; transition:opacity .5s var(--ease-out) calc(.15s + var(--i, 0) * 90ms), translate .7s var(--ease-pop) calc(.15s + var(--i, 0) * 90ms), scale .7s var(--ease-pop) calc(.15s + var(--i, 0) * 90ms) }
+.reveal-ready body.home-page .is-visible, .reveal-ready body.home-page .is-visible :is(.hm-tile, .hm-card, .hm-people li) { opacity:1; translate:0 0; scale:1 }
+@media (max-width:1000px) { .home-page .hm-mosaic { grid-template-columns:repeat(2,minmax(0,1fr)) } .home-page .hm-cards { grid-template-columns:1fr 1fr } }
+@media (max-width:640px) {
+  .home-page .hm-band { padding:44px 20px 0 }
+  .home-page .hm-band h2 { font-size:1.7rem; text-shadow:3px 3px 0 #191833 }
+  .home-page .hm-mosaic { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scroll-padding-inline:20px; gap:14px; margin:0 -20px; padding:0 20px 12px }
+  .home-page .hm-tile, .home-page .hm-tile--big { flex:0 0 80%; height:290px; scroll-snap-align:start }
+  .home-page .hm-cards { grid-template-columns:1fr; gap:16px }
+  .home-page .hm-people { grid-template-columns:1fr; gap:12px }
+  .home-page .hm-btn { width:100%; justify-content:center }
+}
+@media (prefers-reduced-motion:reduce) { .home-page :is(.hm-tile a, .hm-btn) { transition:none } .home-page :is(.hm-tile a, .hm-btn):hover { transform:none } }
+
+/* Water motion, light (owner's choice, 25 Oct. 2026): the wave dashes undulate slowly and a pixel ring widens
+   now and then under each lily pad, each pad on its own beat. Opacity and transform only; stops with reduced motion. */
+.pixel-water::before { content:""; position:absolute; inset:22% 14%; opacity:.55; image-rendering:pixelated; pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='64' shape-rendering='crispEdges'%3E%3Crect x='8' y='12' width='24' height='4' fill='%232b7396'/%3E%3Crect x='56' y='36' width='16' height='4' fill='%232b7396'/%3E%3Crect x='40' y='54' width='12' height='4' fill='%232b7396'/%3E%3C/svg%3E") 0 0 / 96px 64px;
+  -webkit-mask-image:radial-gradient(closest-side, #000 60%, transparent); mask-image:radial-gradient(closest-side, #000 60%, transparent);
+  animation:wave-a 7s ease-in-out infinite }
+@keyframes wave-a { 0%, 100% { translate:0 0; opacity:.55 } 50% { translate:-24px 4px; opacity:.2 } }
+.home-page .lily-screen::after { content:""; position:absolute; z-index:-2; left:50%; bottom:0; width:118%; aspect-ratio:3 / 1; translate:-50% 0; opacity:0; pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 16' shape-rendering='crispEdges'%3E%3Cpath fill='%23abd8d5' d='M15 1h1v1h-1zM16 1h1v1h-1zM17 1h1v1h-1zM18 1h1v1h-1zM19 1h1v1h-1zM20 1h1v1h-1zM21 1h1v1h-1zM22 1h1v1h-1zM23 1h1v1h-1zM24 1h1v1h-1zM25 1h1v1h-1zM26 1h1v1h-1zM27 1h1v1h-1zM28 1h1v1h-1zM29 1h1v1h-1zM30 1h1v1h-1zM31 1h1v1h-1zM32 1h1v1h-1zM10 2h1v1h-1zM11 2h1v1h-1zM12 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM15 2h1v1h-1zM16 2h1v1h-1zM17 2h1v1h-1zM18 2h1v1h-1zM29 2h1v1h-1zM30 2h1v1h-1zM31 2h1v1h-1zM32 2h1v1h-1zM33 2h1v1h-1zM34 2h1v1h-1zM35 2h1v1h-1zM36 2h1v1h-1zM37 2h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM36 3h1v1h-1zM37 3h1v1h-1zM38 3h1v1h-1zM39 3h1v1h-1zM40 3h1v1h-1zM41 3h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM39 4h1v1h-1zM40 4h1v1h-1zM41 4h1v1h-1zM42 4h1v1h-1zM43 4h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM41 5h1v1h-1zM42 5h1v1h-1zM43 5h1v1h-1zM44 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM42 6h1v1h-1zM43 6h1v1h-1zM44 6h1v1h-1zM45 6h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM43 7h1v1h-1zM44 7h1v1h-1zM45 7h1v1h-1zM46 7h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM43 8h1v1h-1zM44 8h1v1h-1zM45 8h1v1h-1zM46 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM42 9h1v1h-1zM43 9h1v1h-1zM44 9h1v1h-1zM45 9h1v1h-1zM3 10h1v1h-1zM4 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM41 10h1v1h-1zM42 10h1v1h-1zM43 10h1v1h-1zM44 10h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM39 11h1v1h-1zM40 11h1v1h-1zM41 11h1v1h-1zM42 11h1v1h-1zM43 11h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1zM36 12h1v1h-1zM37 12h1v1h-1zM38 12h1v1h-1zM39 12h1v1h-1zM40 12h1v1h-1zM41 12h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM12 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM16 13h1v1h-1zM17 13h1v1h-1zM18 13h1v1h-1zM29 13h1v1h-1zM30 13h1v1h-1zM31 13h1v1h-1zM32 13h1v1h-1zM33 13h1v1h-1zM34 13h1v1h-1zM35 13h1v1h-1zM36 13h1v1h-1zM37 13h1v1h-1zM15 14h1v1h-1zM16 14h1v1h-1zM17 14h1v1h-1zM18 14h1v1h-1zM19 14h1v1h-1zM20 14h1v1h-1zM21 14h1v1h-1zM22 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM26 14h1v1h-1zM27 14h1v1h-1zM28 14h1v1h-1zM29 14h1v1h-1zM30 14h1v1h-1zM31 14h1v1h-1zM32 14h1v1h-1z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; image-rendering:pixelated; animation:ring-a 4.5s ease-out infinite }
+.home-page .lily-screen:nth-child(2)::after { animation-delay:-1.5s }
+.home-page .lily-screen:nth-child(3)::after { animation-delay:-3s }
+@keyframes ring-a { 0% { scale:.35; opacity:.75 } 100% { scale:1.5; opacity:0 } }
+@media (prefers-reduced-motion:reduce) { .pixel-water::before, .home-page .lily-screen::after { animation:none; opacity:0 } }

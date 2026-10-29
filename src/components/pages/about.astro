@@ -1,0 +1,21 @@
+---
+// About page, fed by site-content.json (story, ethos, photos, team). Team members without a photo show a frog.
+import { site } from '../../data/public-site-content.js';
+import RubenArtwork from '../pond/RubenArtwork.astro';
+const { story, ethos, photos, team } = site.about;
+const skins = ['var(--aero-blue)', 'var(--dandelion)', '#7cc4ff', '#f4a7b9'];
+const paragraphs = value => value.split(/\n{2,}/).filter(Boolean);
+---
+<div class="about-layout">
+  <section class="about-section" aria-labelledby="our-story"><h2 id="our-story" class="section-title">Our story</h2><div class="editorial-space">{paragraphs(story).map(p => <p>{p}</p>)}</div></section>
+  <section class="about-section" aria-labelledby="our-ethos"><h2 id="our-ethos" class="section-title">Our ethos</h2><div class="editorial-space">{paragraphs(ethos).map(p => <p>{p}</p>)}</div></section>
+</div>
+{photos.length > 0 && <ul class="about-photos">{photos.map(image => <li><img src={image.src} alt={image.alt} loading="lazy" decoding="async" /></li>)}</ul>}
+{team.length > 0 && <RubenArtwork />}
+{team.length > 0 && <section aria-labelledby="the-team"><h2 id="the-team" class="section-title">The team</h2>
+  <ul class="team-grid">{team.map((person, index) => <li class="team-member" style={`--frog-skin:${skins[index % skins.length]}`}>
+    {person.photo ? <img class="team-photo" src={person.photo.src} alt={person.photo.alt} loading="lazy" /> : <svg class="team-photo team-frog" viewBox="0 0 64.95 60.992" aria-hidden="true" focusable="false"><use href="#art-frog" /></svg>}
+    <b>{person.name}</b><span>{person.role}</span>
+  </li>)}</ul>
+</section>}
+<section class="about-cta" aria-labelledby="work-with-us"><h2 id="work-with-us" class="section-title">Work with us</h2><p>Got a project, or want to join the team?</p><p class="about-cta-links"><a class="about-btn" href="contact.html">Start a project</a><a class="about-btn about-btn--ghost" href="join.html">Join the pond</a></p></section>

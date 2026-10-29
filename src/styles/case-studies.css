@@ -1,0 +1,10 @@
+.case-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 2rem; }
+.case-list li { min-width: 0; }
+.case-list h2, .case-detail h1, .case-detail h2, .case-text, .case-image figcaption { overflow-wrap: anywhere; }
+.case-text { white-space: pre-line; }
+.case-image { margin: 1.5rem 0; }
+.case-image img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.case-image figcaption { margin-top: .6rem; font-size: .9em; }
+.case-credit { display: block; }
+.case-gallery { display: grid; gap: 1.5rem; }
+.case-detail section { margin-block: 2rem; }

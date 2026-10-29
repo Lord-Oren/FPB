@@ -1,0 +1,10 @@
+---
+const { image, eager = false } = Astro.props;
+---
+<figure class="case-image">
+  <img src={image.src} alt={image.alt} loading={eager ? 'eager' : 'lazy'} decoding="async" />
+  {(image.caption || image.credit) && <figcaption>
+    {image.caption && <span>{image.caption}</span>}
+    {image.credit && <span class="case-credit">{image.credit}</span>}
+  </figcaption>}
+</figure>

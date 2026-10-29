@@ -1,0 +1,14 @@
+---
+// Text on the three TV screens of the home page, shared by A (pixel) and B (modern).
+// `anchors`: Announcements and Recents point further down the same page instead of repeating section links.
+// Gram: until the studio's Instagram address is entered in Pond Desk, it opens the photography page instead of a placeholder.
+import { site } from '../../data/public-site-content.js';
+import { announcement, gram, recents } from '../../data/home-screens.js';
+const { screen, anchors = false } = Astro.props;
+---
+{screen === 'announcement' && anchors && <div class="screen-content screen-news"><a href="#news"><strong>{announcement.title}</strong></a><span>{announcement.text}</span></div>}
+{screen === 'announcement' && !anchors && <div class="screen-content screen-news">{announcement.link ? <a href={announcement.link}><strong>{announcement.title}</strong></a> : <strong>{announcement.title}</strong>}<span>{announcement.text}</span></div>}
+{screen === 'recents' && anchors && <div class="screen-content"><a href="#latest">Latest work <span aria-hidden="true">↓</span></a>{recents[0] && <span>{recents[0].label}</span>}</div>}
+{screen === 'recents' && !anchors && <div class="screen-content">{recents.map(item => <a href={item.href}>{item.label} <span aria-hidden="true">↗</span></a>)}</div>}
+{screen === 'gram' && <div class="screen-content"><a href="gram.html" target="_blank" rel="noopener noreferrer"><strong>{gram.label}</strong> →</a><span>Behind the scenes</span></div>}
+{screen === 'croak' && <div class="screen-content"><a href="croak.html"><strong>Song of the Week</strong> →</a><span>{site.home.editorial.croakTitle}</span></div>}

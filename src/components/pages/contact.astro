@@ -1,0 +1,16 @@
+---
+import SocialIcon from "../SocialIcon.astro";
+import InquiryForm from '../forms/InquiryForm.astro';
+import { site } from '../../data/public-site-content.js';
+const { intro, email, socials } = site.contact;
+---
+<p class="page-intro">{intro}</p>
+<div class="contact-layout">
+  <section aria-labelledby="write-us"><h2 id="write-us" class="section-title">Write to us</h2><InquiryForm kind="contact" /></section>
+  <aside class="contact-channels" aria-labelledby="elsewhere"><h2 id="elsewhere" class="section-title">Elsewhere</h2>
+    {email && <><p class="channel-label">Email</p><a class="direct-email" href={`mailto:${email}`}>{email}</a></>}
+    {socials.length > 0 && <><h3 class="channel-label">Socials</h3><ul class="social-links">{socials.map(link => <li><a href={link.url} rel="noopener"><SocialIcon name={link.label}/> {link.label} <span aria-hidden="true">↗</span></a></li>)}</ul></>}
+  </aside>
+</div>
+
+<section id="demo-socials"><h2>Social channels — Demo</h2><p>Instagram, LinkedIn, Vimeo and YouTube links will be added here after the studio provides its official accounts.</p></section>

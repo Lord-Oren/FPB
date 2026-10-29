@@ -1,0 +1,145 @@
+
+
+:root {
+  --blue-marine:#003359; --aero-blue:#abd8d5; --deep-sea:#05353a; --midnight:#191833; --dandelion:#ffdb76;
+  --cream:#f8f2df; --tongue:#d98286; --tongue-shadow:#8f4856; --tongue-light:#ecadb0;
+  --water-deep:#022a47; --rim:#0b2c33;
+}
+* { box-sizing:border-box }
+html,body { margin:0 }
+body { min-height:100svh; background:radial-gradient(120% 90% at 50% 40%, var(--deep-sea) 0%, #062a30 55%, var(--midnight) 100%); color:var(--cream); font-family:'Nunito Sans',sans-serif; font-weight:300; line-height:1.5; display:grid; grid-template-rows:auto minmax(0,1fr) auto; overflow-x:hidden }
+body { grid-template-columns:minmax(0,1fr) }
+a { color:var(--dandelion); text-decoration:none }
+button { font:inherit; cursor:pointer }
+[hidden] { display:none !important }
+:focus-visible { outline:3px solid var(--dandelion); outline-offset:5px; border-radius:6px }
+.skip-link { position:fixed; z-index:100; top:12px; left:12px; padding:10px 18px; background:var(--midnight); transform:translateY(-160%) }
+.skip-link:focus { transform:none }
+
+
+.masthead { text-align:center; padding:clamp(14px,3.2vh,34px) 16px 0 }
+.masthead h1 { margin:0; font-family:Boohong,sans-serif; font-weight:400; color:var(--dandelion); font-size:clamp(2.1rem,min(7.4vw,8.4vh),5.2rem); line-height:1; letter-spacing:.01em; text-shadow:0 3px 0 rgb(25 24 51 / .55) }
+.masthead p { margin:clamp(6px,1.2vh,12px) auto 0; max-width:34ch; font-size:clamp(.92rem,min(2.1vw,2.3vh),1.22rem); color:var(--aero-blue); line-height:1.35 }
+.masthead p strong { display:block; color:var(--dandelion); font-weight:700 }
+
+
+.stage { display:grid; place-items:center; padding:clamp(48px,8vh,78px) 16px clamp(28px,5vh,54px); min-height:0 }
+.pond { --w:min(94vw, 1080px, calc((100svh - 345px) * 1.62)); position:relative; width:var(--w); aspect-ratio:1.62; container-type:inline-size; min-width:300px }
+.water { position:absolute; inset:7% 4% 9%; border-radius:47% 53% 44% 56% / 46% 40% 60% 54%; background:radial-gradient(70% 80% at 45% 40%, #0a4a6e 0%, var(--blue-marine) 48%, var(--water-deep) 100%); box-shadow:inset 0 0 0 3px rgb(171 216 213 / .08), inset 0 -18px 40px rgb(25 24 51 / .45), 0 20px 60px rgb(0 0 0 / .35); overflow:hidden }
+.caustics { position:absolute; inset:-10%; width:120%; height:120%; opacity:.22; animation:drift 26s linear infinite alternate }
+.caustics path { fill:none; stroke:var(--aero-blue); stroke-width:1.4; stroke-linecap:round }
+@keyframes drift { from { transform:translate(-2%,-1%) rotate(-1deg) } to { transform:translate(2%,1.5%) rotate(1deg) } }
+.rim { position:absolute; inset:0; pointer-events:none }
+.rim svg { position:absolute; width:8.4cqw; height:auto; filter:drop-shadow(0 3px 2px rgb(0 0 0 / .3)) }
+
+/* 3 — Bûche et grenouilles : proportion d'origine (grenouille ≈ 0,69 de la hauteur de bûche). */
+.log { position:absolute; left:19%; width:62%; top:-1.5%; aspect-ratio:513.172/90.266; z-index:5 }
+.log:has(.open) { z-index:30 }
+.log > svg { position:absolute; inset:0; width:100%; height:100% }
+.frog-wrap { --mouth:84%; position:absolute; top:13%; width:12.2%; height:76%; transform:translateX(-50%) }
+.frog-wrap { --frog-skin:var(--aero-blue) }
+
+[data-frog-color="dandelion"] { --frog-skin:var(--dandelion) } [data-frog-color="aero-blue"] { --frog-skin:var(--aero-blue) }
+[data-frog-color="blue-marine"] { --frog-skin:var(--blue-marine) } [data-frog-color="midnight"] { --frog-skin:var(--midnight) } [data-frog-color="deep-sea"] { --frog-skin:var(--deep-sea) }
+.frog-art { transition:filter .3s }
+.frog-wrap.f1 { left:20% } .frog-wrap.f2 { left:50% } .frog-wrap.f3 { left:79% }
+.frog-art { position:absolute; inset:0; width:100%; height:100%; transform-origin:50% 85%; animation:sway 9s ease-in-out infinite }
+.f2 .frog-art { animation-duration:11s; animation-delay:-4s } .f3 .frog-art { animation-duration:10s; animation-delay:-2s }
+@keyframes sway { 0%,100% { transform:rotate(-1.4deg) } 50% { transform:rotate(1.4deg) translateY(-1px) } }
+.frog-tag { position:absolute; left:50%; bottom:calc(100% + 1.9cqw); transform:translateX(-50%); white-space:nowrap; font-weight:900; font-size:clamp(.66rem,1.25cqw,.86rem); letter-spacing:.14em; text-transform:uppercase; color:var(--dandelion); pointer-events:none }
+.frog-tag:after { content:''; display:block; width:1px; height:1.2cqw; margin:4px auto 0; background:rgb(255 219 118 / .55) }
+.frog-button { position:absolute; inset:-14% -22%; border:0; background:transparent; border-radius:40%; z-index:2 }
+.mouth { position:absolute; left:50%; top:var(--mouth); width:26%; height:7%; transform:translate(-50%,-50%); border-radius:50%; background:var(--midnight); opacity:0; transition:opacity .15s }
+.open .mouth { opacity:1 }
+
+
+.tongue { position:absolute; z-index:20; left:50%; top:var(--mouth); width:max(150px,16cqw); transform:translateX(-50%); padding-top:16px; transform-origin:50% 0; animation:unroll .28s ease-out both }
+.tongue:before { content:''; position:absolute; left:50%; top:0; bottom:8px; width:10px; transform:translateX(-50%); border-radius:0 0 6px 6px; background:linear-gradient(90deg,var(--tongue-shadow) 0 25%,var(--tongue) 25% 55%,var(--tongue-light) 55% 70%,var(--tongue) 70% 85%,var(--tongue-shadow) 85%) }
+/* The unroll reveals the tongue downwards; once open, the clip leaves room on the sides for the flies' wings
+   (they reach ~12px past the tongue, more on hover), otherwise the labels look cut. */
+@keyframes unroll { from { opacity:0; transform:translateX(-50%) scaleY(.05) } to { opacity:1; transform:translateX(-50%) scaleY(1) } }
+.menu-flies { position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; margin:0; padding:4px 0 6px; list-style:none }
+.fly { position:relative; display:flex; align-items:center; justify-content:center; min-height:34px; min-width:118px; padding:5px 16px; background:var(--blue-marine); color:var(--dandelion); border:2px solid var(--deep-sea); border-radius:50%; font-size:clamp(.72rem,1.1cqw,.82rem); font-weight:700; line-height:1.2; white-space:nowrap; box-shadow:2px 3px 0 rgb(0 0 0 / .22); transition:transform .18s }
+.fly:before,.fly:after { content:''; position:absolute; width:22px; height:13px; background:var(--aero-blue); border:2px solid var(--deep-sea); border-radius:50%; pointer-events:none }
+.fly:before { left:-12px; top:0; transform:rotate(-25deg) } .fly:after { right:-12px; bottom:0; transform:rotate(25deg) }
+.fly:hover,.fly:focus-visible { transform:translateX(3px) rotate(-2deg) }
+.menu-flies li:nth-child(even) .fly { margin-left:22px } .menu-flies li:nth-child(odd) .fly { margin-right:22px }
+
+
+.pads { position:absolute; inset:0; z-index:4; pointer-events:none }
+.pad { --size:23cqw; position:absolute; width:var(--size); aspect-ratio:1; display:grid; place-items:center; text-align:center; pointer-events:auto; animation:float 8s ease-in-out infinite }
+.pad.p1 { left:9%; top:35% } .pad.p2 { --size:24cqw; left:38.5%; top:47%; animation-duration:9.5s; animation-delay:-3s } .pad.p3 { --size:25.5cqw; left:66%; top:29%; animation-duration:10.5s; animation-delay:-6s }
+@keyframes float { 0%,100% { transform:translate(0,0) rotate(-1.5deg) } 50% { transform:translate(.6cqw,-.8cqw) rotate(1.5deg) } }
+.pad:hover,.pad:focus-within { animation-play-state:paused }
+/* Menu ouvert : la mare s'efface pour que la langue reste lisible (constat CLD-A2 sur A). */
+.pads,.stones { transition:opacity .2s, filter .2s }
+.pond:has(.frog-wrap.open) .pads { opacity:.28; filter:saturate(.5); pointer-events:none }
+.pond:has(.frog-wrap.open) .pads * { pointer-events:none }
+.pad-art { position:absolute; inset:0; width:100%; height:100%; filter:drop-shadow(0 6px 6px rgb(1 20 34 / .45)) }
+.pad.p2 .pad-art { transform:rotate(18deg) } .pad.p3 .pad-art { transform:rotate(-8deg) }
+.pad:before { content:''; position:absolute; inset:-6%; border-radius:50%; border:1px solid rgb(171 216 213 / .16); transform:scaleY(.9) translateY(6%) }
+.pad-body { position:relative; display:grid; justify-items:center; gap:.5cqw; width:68%; padding:1cqw 0 }
+.pad h2 { margin:0; font-size:clamp(.62rem,1.18cqw,.86rem); font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--dandelion); text-shadow:0 1px 2px var(--midnight) }
+.pad .note { display:block; color:var(--cream); font-weight:700; font-size:clamp(.72rem,1.32cqw,.98rem); text-shadow:0 1px 2px #0b3a1c }
+.pad .soon { display:inline-block; margin-top:.2cqw; padding:1px 10px; border-radius:20px; background:rgb(25 24 51 / .55); color:var(--aero-blue); font-size:clamp(.62rem,1.05cqw,.78rem) }
+.pad .fly { min-width:0; min-height:30px; font-size:clamp(.68rem,1.15cqw,.84rem) }
+.pad .fly + .fly { margin-top:.4cqw }
+.ripple { position:absolute; left:50%; top:50%; width:10px; height:10px; border-radius:50%; border:2px solid rgb(171 216 213 / .7); transform:translate(-50%,-50%) scale(0); animation:ripple .9s ease-out forwards; pointer-events:none }
+@keyframes ripple { to { transform:translate(-50%,-50%) scale(26); opacity:0 } }
+
+
+
+.pad-body { width:84% }
+.tv { position:relative; width:100%; aspect-ratio:180/132; filter:drop-shadow(0 4px 4px rgb(1 20 34 / .4)) }
+.tv-art { position:absolute; inset:0; width:100%; height:100% }
+.tv .screen-content { position:absolute; left:12%; top:36%; width:61%; height:43%; display:flex; flex-direction:column; justify-content:center; gap:.2cqw; text-align:center; font-size:clamp(.68rem,1.25cqw,.9rem); line-height:1.2 }
+.tv strong { color:var(--dandelion); font-weight:700 } .tv .screen-content > span { color:var(--cream) }
+.tv a { display:flex; justify-content:space-between; align-items:center; min-height:24px; padding:0 4%; font-weight:700; color:var(--dandelion) }
+.tv a:hover { text-decoration:underline }
+
+
+.stones { position:absolute; z-index:6; left:50%; bottom:-3.2%; transform:translateX(-50%); display:flex; gap:1.6cqw; margin:0; padding:0; list-style:none }
+.stone { position:relative; display:grid; place-items:center; width:15.5cqw; min-width:96px; aspect-ratio:94.683/46.208; color:var(--dandelion); font-weight:900; font-size:clamp(.7rem,1.3cqw,.95rem); letter-spacing:.1em; text-transform:uppercase; transition:transform .2s }
+.stone svg { position:absolute; inset:0; width:100%; height:100%; filter:drop-shadow(0 4px 3px rgb(0 0 0 / .35)) }
+.stone span { position:relative; text-shadow:0 1px 2px var(--midnight),1px 0 1px var(--midnight),-1px 0 1px var(--midnight) }
+.stone:hover { transform:translateY(-4px) rotate(-1deg) }
+
+footer { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px clamp(16px,4vw,48px); background:var(--blue-marine); font-size:.8rem }
+footer strong { color:var(--dandelion); font-weight:900 }
+.motion-toggle { min-height:32px; padding:4px 14px; border:1px solid #577978; border-radius:20px; background:var(--deep-sea); color:var(--dandelion); font-size:.72rem }
+.motion-paused *, .motion-paused *:before, .motion-paused *:after { animation-play-state:paused !important }
+.motion-paused .tongue { animation:none }
+
+
+@media (max-width:700px) {
+  .stage { padding-top:clamp(30px,5vh,48px) }
+  .pond { --w:min(92vw,460px); aspect-ratio:.66; min-width:0 }
+  .water { inset:5% 2% 7%; border-radius:44% 56% 48% 52% / 26% 24% 76% 74% }
+  .rim { display:none }
+  .water { box-shadow:inset 0 0 0 3px rgb(171 216 213 / .14), inset 0 -18px 40px rgb(25 24 51 / .45), 0 0 0 7px rgb(122 122 130 / .35), 0 16px 40px rgb(0 0 0 / .35) }
+  footer { flex-wrap:wrap; justify-content:center; text-align:center; font-size:.74rem } footer strong { flex-basis:100% }
+  .log { left:4%; width:92%; top:-1% }
+  .frog-wrap { width:12.6%; } .frog-tag { font-size:.62rem; letter-spacing:.08em; bottom:calc(100% + 3cqw) }
+  .pad { --size:44cqw } .pad.p1 { left:5%; top:19% } .pad.p2 { --size:45cqw; left:50%; top:40% } .pad.p3 { --size:46cqw; left:6%; top:60% }
+  .pad h2 { font-size:.62rem } .tv .screen-content { font-size:.62rem } .tv a { min-height:24px }
+  .stones { bottom:-2%; gap:2.4cqw } .stone { width:29cqw; min-width:0; font-size:.68rem }
+  .tongue { width:150px }
+}
+
+@media (max-height:560px) and (min-width:701px) { .pond { --w:min(92vw,820px) } .masthead p { display:none } }
+@media (prefers-reduced-motion:reduce) {
+  *,*:before,*:after { animation:none !important; transition:none !important }
+  .motion-toggle { display:none }
+}
+
+/* Keep menu content keyboard-visible while the scene dims. */
+.pond:has(.frog-wrap.open) .pads:focus-within { opacity:1; filter:none }
+
+/* Water motion, light (owner's choice, 25 Oct. 2026): the light lines on the water show a little more and drift
+   a little faster, and a soft ring widens now and then under each pad, each on its own beat. Stops with reduced motion. */
+.caustics { opacity:.38; animation-duration:16s }
+.pad::after { content:""; position:absolute; z-index:-1; left:50%; top:74%; width:96%; aspect-ratio:2.6 / 1; translate:-50% -50%; opacity:0; pointer-events:none;
+  border:1.5px solid rgb(171 216 213 / .55); border-radius:50%; animation:ring-b 5s ease-out infinite }
+.pad.p2::after { animation-delay:-1.7s } .pad.p3::after { animation-delay:-3.4s }
+@keyframes ring-b { 0% { scale:.3; opacity:.8 } 100% { scale:1.6; opacity:0 } }
+@media (prefers-reduced-motion:reduce) { .caustics { animation:none } .pad::after { animation:none; opacity:0 } }

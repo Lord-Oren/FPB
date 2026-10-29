@@ -1,0 +1,39 @@
+---
+import { artworkMode } from '../../data/presentation.js';
+import frog from '../../assets/ruben-smooth/frog.svg?raw';
+import wood from '../../assets/ruben-smooth/wood.svg?raw';
+import stone from '../../assets/ruben-smooth/stone.svg?raw';
+import lily1 from '../../assets/ruben-smooth/lily-1.svg?raw';
+import lily2 from '../../assets/ruben-smooth/lily-2.svg?raw';
+import lily3 from '../../assets/ruben-smooth/lily-3.svg?raw';
+import television from '../../assets/television.svg?raw';
+import pixelTelevision from '../../assets/television-pixel.svg?raw';
+import pixelFrog from '../../assets/ruben/frog.svg?raw';
+import pixelWood from '../../assets/ruben/wood.svg?raw';
+import pixelStone from '../../assets/ruben/stone.svg?raw';
+import pixelLily1 from '../../assets/ruben/lily-1.svg?raw';
+import pixelLily2 from '../../assets/ruben/lily-2.svg?raw';
+import pixelLily3 from '../../assets/ruben/lily-3.svg?raw';
+
+function skinColours(svg) {
+  const base = (0.2126 * 132 + 0.7152 * 184 + 0.0722 * 67) / 255;
+  return svg.replace(/fill="rgb\(([^)]+)\)"/g, (original, value) => {
+    const [r, g, b] = value.split(' ').map(channel => parseFloat(channel) / 100);
+    if (g <= r * 1.05 || g <= b * 1.1) return original;
+    const light = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    const dark = light <= base;
+    const weight = Math.min(100, Math.max(0, (dark ? light / base : (1 - light) / (1 - base)) * 100)).toFixed(2);
+    return `${original} style="fill:color-mix(in srgb,var(--frog-skin) ${weight}%,${dark ? 'black' : 'white'})"`;
+  });
+}
+function symbol(name, svg) {
+  const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
+  const body = svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+  return `<symbol id="art-${name}" viewBox="${viewBox}" shape-rendering="${artworkMode === 'original' ? 'crispEdges' : 'geometricPrecision'}">${body}</symbol>`;
+}
+const symbols = [
+  ['frog', artworkMode === 'original' ? pixelFrog : skinColours(frog)], ['wood', artworkMode === 'original' ? pixelWood : wood], ['stone', artworkMode === 'original' ? pixelStone : stone],
+  ['lily-1', artworkMode === 'original' ? pixelLily1 : lily1], ['lily-2', artworkMode === 'original' ? pixelLily2 : lily2], ['lily-3', artworkMode === 'original' ? pixelLily3 : lily3], ['television', artworkMode === 'original' ? pixelTelevision : television],
+].map(([name, svg]) => symbol(name, svg)).join('');
+---
+<svg class="artwork-library" xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" focusable="false"><defs set:html={symbols}/></svg>

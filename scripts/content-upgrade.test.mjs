@@ -1,0 +1,14 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
+import {upgradeContent,cleanPlaceholderLinks} from '../editor/backend/content-upgrade.mjs';
+import {migrate,snapshots} from '../editor/backend/model.mjs';
+const seed=JSON.parse(await readFile(new URL('../src/data/site-content.json',import.meta.url)));
+const cases=JSON.parse(await readFile(new URL('../src/data/case-studies-public.json',import.meta.url)));
+function old(){const site=structuredClone(seed);site.media=site.media.filter(m=>!m.id.endsWith('-pixel'));site.home.gram.url='https://example.com/instagram';site.contact.socials=[{label:'Demo',url:'https://example.com/linkedin'}];const s=migrate(site,cases,undefined,'2026-10-25T00:00:00Z');s.initialPublic={site,cases};return s;}
+test('demo upgrade preserves custom drafts, private data and publication history',()=>{
+ const s=old();s.pages.home.fields.announcementTitle='My unpublished title';s.conversations=[{private:'keep'}];s.attachments=[{private:'keep CV'}];s.settings.signature='Custom';s.publishes=[{id:'old',snapshot:structuredClone(s.initialPublic)}];
+ const u=upgradeContent(s,seed);assert(u.changed);assert.equal(u.state.pages.home.fields.announcementTitle,'My unpublished title');assert.equal(u.snapshot.site.home.announcement.title,seed.home.announcement.title);assert.deepEqual(u.state.conversations,s.conversations);assert.deepEqual(u.state.attachments,s.attachments);assert.deepEqual(u.state.publishes,s.publishes);assert.deepEqual(u.state.settings,s.settings);assert.deepEqual(u.snapshot.cases,s.initialPublic.cases);
+ assert.equal(u.state.media.filter(m=>m.id.endsWith('-pixel')).length,22);assert.equal(u.snapshot.site.home.gram.url,'');assert.deepEqual(u.snapshot.site.contact.socials,[]);assert.equal(upgradeContent(u.state,seed),null);
+ const pub=snapshots(u.state);assert.equal(pub.site.media.filter(m=>m.id.endsWith('-pixel')).length,22);
+});
+test('pixel twin is never attached to a replaced custom image',()=>{const s=old();const id=seed.media.find(m=>m.id.endsWith('-pixel')).id.slice(0,-6);s.media.find(m=>m.id===id).base64=seed.media.find(m=>m.id!==id&&!m.id.endsWith('-pixel')&&m.mime===s.media.find(m=>m.id===id).mime).base64;s.initialPublic.site.media.find(m=>m.id===id).base64=seed.media.find(m=>m.id!==id&&!m.id.endsWith('-pixel')&&m.mime===s.media.find(m=>m.id===id).mime).base64;const u=upgradeContent(s,seed);assert(!u.state.media.some(m=>m.id===id+'-pixel'));assert(!u.snapshot.site.media.some(m=>m.id===id+'-pixel'));});
+test('placeholder cleaning retains real links, prose and email; historical restore can be cleaned',()=>{const input={url:'https://sub.example.org/demo',link:'https://real.test/example.com',text:'example.com',email:'hello@example.com'};const c=cleanPlaceholderLinks(input);assert.equal(c.url,'');assert.equal(c.link,input.link);assert.equal(c.text,input.text);assert.equal(c.email,input.email);assert.notDeepEqual(input,c);});

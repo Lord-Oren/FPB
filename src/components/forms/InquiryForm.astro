@@ -1,0 +1,20 @@
+---
+import ContactFields from './ContactFields.html';
+import JoinFields from './JoinFields.html';
+import { submissionSettings, contactChannels, cvMaxBytes } from '../../data/communication.js';
+const { kind } = Astro.props;
+const hosted = import.meta.env.POND_HOSTED_BUILD === '1';
+const local = import.meta.env.DEV || hosted;
+const { ready, action, method } = local ? {ready:true,action:`/api/v2/forms/${kind}`,method:'post'} : submissionSettings(kind);
+const { privacyUrl } = contactChannels();
+const isJoin = kind === 'join';
+const Fields = isJoin ? JoinFields : ContactFields;
+---
+<form class="inquiry-form" method={method} action={action} enctype={isJoin ? 'multipart/form-data' : undefined} data-inquiry-form data-local={String(local)} data-hosted={String(hosted)} data-ready={String(ready)} data-cv-max-bytes={cvMaxBytes} aria-describedby={`${kind}-availability`}>
+  <p class="required-note">Fields marked * are required.</p>
+  <Fields />
+  {local && <input type="text" name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" hidden />}
+  {privacyUrl && <p class="form-privacy"><a href={privacyUrl}>Privacy policy</a></p>}
+  <div class="form-actions"><button class="send-button" type="submit" disabled={!ready}>{isJoin ? 'Send application' : 'Send message'} <span aria-hidden="true">↗</span></button></div>
+  <p id={`${kind}-availability`} class="form-availability" role="status" data-form-status>{hosted ? 'Private test: use fictional details and sample CVs only. Stored in test Pond Desk; no email is sent.' : local ? 'Local test: submissions are stored in Pond Desk on this computer. No email is sent.' : ready ? '' : 'Preview only. Sending is not available yet; nothing will be sent.'}</p>
+</form>

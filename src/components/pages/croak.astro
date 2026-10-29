@@ -1,0 +1,5 @@
+---
+import { site } from '../../data/public-site-content.js';
+const e=site.home.editorial;
+---
+<section class="croak-feature"><p>Song of the Week</p><h2>{e.croakTitle}</h2><p>{e.croakText}</p>{e.croakUrl ? <a href={e.croakUrl} rel="noopener">Listen on the artist’s platform ↗</a> : <p class="demo-note">Demo — no track selected yet. No audio plays automatically.</p>}</section>

@@ -1,0 +1,22 @@
+/* Preserve the supplied drawings' colours and proportions in this presentation. */
+.pond-page[data-artwork-mode="original"] :is(.frog-art,.log,.pad-leaf,.stone-art) { filter:none }
+.pond-page[data-artwork-mode="original"] .pad-leaf { transform:none }
+.pond-page[data-artwork-mode="original"] .lily { opacity:1 }
+/* Scale of Assets2FPB p. 2: frog height ≈ 0.69 of the drawn log, frogs near 21 %, 50 % and 77 % of its length.
+   Sizes follow the log width (min(88cqw,560px), drawn height ≈ .192 of it) instead of a width breakpoint,
+   so frog, mouth and tagline keep the same proportions in every window, including 200 % zoom.
+   The button keeps a target of at least 44 px through the wrap and its negative inset.
+   --mouth-y is measured inside .frog (≈ 0.956 of the drawing height), not from the wrap. */
+.pond-page[data-artwork-mode="original"] { --log-w:min(88cqw,560px); --log-h:calc(var(--log-w) * .192); --frog-h:calc(var(--log-w) * .1214) }
+.pond-page[data-artwork-mode="original"] .frogs { width:calc(var(--log-w) * .84) }
+.pond-page[data-artwork-mode="original"] .frog-wrap { --mouth-y:calc(var(--frog-h) * .956) }
+.pond-page[data-artwork-mode="original"] .frog { top:calc(var(--frog-h) * .18); width:calc(var(--frog-h) * 75 / 68); height:var(--frog-h) }
+.pond-page[data-artwork-mode="original"] .pond-tagline { top:calc(26% + max(var(--log-h) - 6px, 88px)) }
+/* The button sits inside .frog: grow its inset so small drawings keep a 44 px target. */
+.pond-page[data-artwork-mode="original"] .frog-button { inset:min(0px, calc(var(--frog-h) / 2 - 22px)) min(-5px, calc(var(--frog-h) * 75 / 136 - 22px)) min(-4px, calc(var(--frog-h) / 2 - 22px)) }
+/* Short windows: reserve enough scrollable height for the tagline to clear the lily titles.
+   Narrow layouts use larger lily rows, so their reserve follows the log width. */
+.home-page:has(.pond-page[data-artwork-mode="original"]) { min-height:600px }
+@media(max-width:700px) { .home-page:has(.pond-page[data-artwork-mode="original"]) { min-height:max(560px, calc(min(88vw,560px) * 1.18)) } }
+/* Ruben's pixel frog is drawn head up; turn it to face the pond so the tongue leaves from its mouth. */
+.pond-page[data-artwork-mode="original"] .frog-art { transform:rotate(180deg); transform-origin:50% 50% }

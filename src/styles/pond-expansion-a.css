@@ -1,0 +1,18 @@
+/* Client correction: one large pond behind the entire home composition, including the wooden raft. */
+.home-page .pond-page > .pixel-water{z-index:0;top:-22%;bottom:-22%;left:50%;width:125%;translate:-50% 0;background-size:100% 100%}
+.home-page .grand-central{font-family:Boohong,sans-serif;font-weight:400;line-height:1.1;font-size:clamp(1.6rem,3.5vw,3rem);text-transform:uppercase}
+@media(max-width:700px){.home-page .pond-page > .pixel-water{top:-16%;bottom:-18%;width:148%}.home-page .grand-central{font-size:clamp(1.4rem,5.5vw,2.3rem)}}
+
+/* Let the water and shore settle into the next scene instead of ending on a hard seam. */
+.home-page .pond-page::after{content:'';position:absolute;z-index:5;pointer-events:none;left:0;right:0;bottom:-1px;height:clamp(80px,14vh,150px);background:linear-gradient(to bottom,transparent 0%,#04313a26 28%,#04313a80 58%,#04313ae6 85%,#04313a 100%)}
+.home-page .home-more::before{display:none}
+/* Equal title sizes and a fuller, vertically balanced desktop pond. */
+.home-page .brand h1,.home-page .grand-central{font-size:clamp(1.8rem,min(8.3cqw,6.8cqh),5.4rem);line-height:1}
+@media(min-width:701px){
+ .home-page:has(.home-more)>main{min-height:820px}
+ .home-page .pond-lower{top:46%;bottom:auto;gap:clamp(32px,5cqh,56px)}
+ .home-page .lily-screens{width:min(88%,1120px);gap:clamp(20px,3cqw,48px)}
+ .home-page .lily-screen{max-width:260px;padding:32px 20px 28px}
+ .home-page .lily-title{font-size:clamp(.75rem,1.1cqw,1rem)}
+}
+@media(max-width:700px){.home-page .brand h1,.home-page .grand-central{font-size:clamp(1.8rem,min(8.3cqw,6.8cqh),3.5rem)}}

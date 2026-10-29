@@ -1,0 +1,5 @@
+---
+import {zoneNodes} from '../../data/public-pages.js';
+import ZoneScreen from './ZoneScreen.astro';
+---
+<div class="lily-screens" aria-label="Latest from Frog Pond Boys">{zoneNodes('screens').map((node,i)=><article class="lily-screen"><svg class="pad-leaf" viewBox="0 0 88.112 88.112" aria-hidden="true"><use href={`#art-lily-${i%3+1}`}/></svg><h2 class="lily-title">{node.title}</h2><div class="screen"><svg class="tv-art" viewBox="0 0 180 132" aria-hidden="true"><use href="#art-television"/></svg><ZoneScreen node={node}/></div></article>)}</div>
