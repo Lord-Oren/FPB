@@ -1,6 +1,23 @@
 // Durable single-writer state with lazy reconnect after database suspension.
 // Never log connection URLs or payloads. A revision fence rejects stale writers.
 import pg from 'pg';
+// Public endpoints use certificate verification. Render's private network uses
+// self-signed certificates: opt in only on Render and pin the exact internal host.
+export function hostedDatabaseTls(env = {}) {
+ const mode = env.DATABASE_TLS_MODE || 'verify-full';
+ if (mode === 'verify-full') return {rejectUnauthorized:true,...(env.DATABASE_CA?{ca:env.DATABASE_CA}:{})};
+ if (mode !== 'render-internal') throw Error('Unsupported DATABASE_TLS_MODE.');
+ const url = new URL(env.DATABASE_URL);
+ const expected = env.DATABASE_RENDER_INTERNAL_HOST;
+ if (env.RENDER !== 'true' || !/^dpg-[a-z0-9]+-[a-z]$/.test(expected || '') ||
+     url.hostname !== expected || (url.port && url.port !== '5432') || env.DATABASE_CA ||
+     !['postgres:', 'postgresql:'].includes(url.protocol)) {
+  throw Error('Render internal TLS requires the exact private database host on Render.');
+ }
+ // TLS is mandatory; this mode does not authenticate the self-signed server.
+ // Isolation relies on Render's private network, not a public TLS certificate.
+ return {rejectUnauthorized:false,minVersion:'TLSv1.2'};
+}
 export function postgresConfig(connectionString,ssl){
  const url=new URL(connectionString);
  if(!['postgres:','postgresql:'].includes(url.protocol))throw Error('PostgreSQL URL required.');

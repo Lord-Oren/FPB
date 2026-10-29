@@ -6,15 +6,15 @@ Keep the live `main` branch and existing domain unchanged until a separate cutov
 
 ## Accounts and US region
 
-The owners should control the GitHub repository, Render, Neon, and Cloudflare accounts. Invite the maintainer with the permissions needed for setup. Enter credentials directly into the providers' secret settings; do not put them in issues, commits, or chat.
+The owners should control the GitHub repository, Render and Cloudflare accounts. Invite the maintainer with the permissions needed for setup. Enter credentials directly into the providers' secret settings; do not put them in issues, commits, or chat.
 
 1. Connect Render's GitHub integration to `Lord-Oren/FPB`. A connected Git provider is needed for automatic deploys. The prepared `render.yaml` selects the free plan and `virginia`; it does not create a service until applied. Do not apply it against the old `main` source. Use a separate temporary service connected to the migration branch for acceptance testing.
-2. Create a PostgreSQL database in the US (for example Neon AWS US East, Northern Virginia), owned by the client. Set its TLS connection string as Render's `DATABASE_URL`. Use a direct connection: the app holds a session-level PostgreSQL writer lock. The runtime creates its tables. Use a dedicated database/user; never point tests at it.
-3. Create a Cloudflare Access self-hosted application for the eventual private Desk hostname. Restrict it to named owner/maintainer emails, with email one-time passcodes or an identity provider. Record the application audience and team issuer URL. Set `ACCESS_AUDIENCE`, `ACCESS_ISSUER`, and `POND_TESTER_EMAILS` on Render. Every private request is verified again by the origin.
+2. Reuse the client-owned `frog-pond-boys-db` Render PostgreSQL database in Virginia. Keep the web service in the same workspace and region and external database access disabled. Set its internal connection URL as `DATABASE_URL`, `DATABASE_TLS_MODE=render-internal`, and its exact internal hostname as `DATABASE_RENDER_INTERNAL_HOST`. This requires TLS with Render's self-signed certificate on its private network; certificate authenticity is not verified in this explicit mode. The application rejects this mode outside Render or for an unpinned/public hostname. External endpoints retain verified TLS by default (`verify-full`, optional `DATABASE_CA`). Use a direct connection because the app holds a session-level writer lock. The runtime creates its tables. Never point tests at the client database.
+3. Create a Cloudflare Access self-hosted application for the eventual private Desk hostname. Restrict it to explicitly authorized owner/maintainer emails and email one-time passcodes only. Record the application audience and team issuer URL. Set `ACCESS_AUDIENCE`, `ACCESS_ISSUER`, and `POND_TESTER_EMAILS` on Render. Every private request is verified again by the origin.
 4. The Worker configuration is intentionally route-free. Set its `RENDER_ORIGIN_HOST` to the new Render hostname. Match all four `POND_*_HOST` values and `POND_PUBLIC_SITE` between Render and the Worker. Use temporary hostnames under an already controlled test zone for acceptance; do not move `frogpondboys.com` yet.
 5. Leave `POND_PUBLIC_SITE=false` during private acceptance. Protect all test hostnames with Access. Before the approved public launch, set it to `true` in both services: A and www become public, preview B returns 404, and Desk remains private. Public forms are disabled in this mode.
 
-Cloudflare routing ultimately requires control of the relevant DNS zone. Inventory and preserve existing mail and DNS records before any future nameserver change. Do not add custom-domain routes, change nameservers, or disable the existing site during this preparation.
+Cloudflare routing ultimately requires an active DNS zone. On this account, the API also rejects creation of the Desk application while the zone is pending. Prepare and review the full DNS inventory before activation; do not bypass this by weakening origin authentication. Inventory and preserve existing mail and DNS records before any future nameserver change. Do not add custom-domain routes, change nameservers, or disable the existing site during this preparation.
 
 ## Acceptance checks
 
@@ -44,3 +44,9 @@ For a transfer, make an encrypted database backup outside Git, verify a restore 
 The templates select free services and do not authorize a paid purchase. Confirm current plan allowances in each owner's account before provisioning. Render Free can sleep when idle; waking and the first build remain slow. A paid always-on instance may be considered after measuring real use. No artificial keep-alive schedule is configured.
 
 The current database stores one JSON state record including media/history, with a 16 MiB application limit. This is suitable for a bounded trial, not an unlimited inbox or media library. Plan separate object storage and a more granular persistence model before increasing volume.
+
+## Free database deadline
+
+The client trial database expires on **November 28, 2026**. Upgrade it to a paid database before that date or export and verify a restore elsewhere beforehand. The free database is a temporary trial, not permanent free storage. No paid upgrade or backup automation is included in this preparation. Keep encrypted backups outside Git and test recovery before relying on this service for production content.
+
+Provider reference: [Render PostgreSQL connections](https://render.com/docs/postgresql-creating-connecting).

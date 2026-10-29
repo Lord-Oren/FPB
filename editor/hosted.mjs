@@ -6,7 +6,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {errors as joseErrors} from 'jose';
 import {accessVerifier} from './backend/access.mjs';
-import {openPostgres} from './backend/postgres.mjs';
+import {openPostgres,hostedDatabaseTls} from './backend/postgres.mjs';
 import {createV2} from './backend/api.mjs';
 import {buildRelease} from './backend/publisher.mjs';
 import {deploymentConfig} from '../hosting/config.mjs';
@@ -74,7 +74,7 @@ if(process.argv[1]===fileURLToPath(import.meta.url)){
  try{
   const env=process.env;const testers=(env.POND_TESTER_EMAILS??'').split(',').map(x=>x.trim()).filter(Boolean);
   if(!env.DATABASE_URL||!env.ACCESS_ISSUER||!env.ACCESS_AUDIENCE||!testers.length)throw Error('Missing configuration');
-  const ca=env.DATABASE_CA; // Omit for Neon: use Node's trusted public CAs.
+  const ssl=hostedDatabaseTls(env);
   const verify=accessVerifier({issuer:env.ACCESS_ISSUER,audience:env.ACCESS_AUDIENCE,emails:testers});
   const port=Number(env.PORT);if(!Number.isInteger(port)||port<1||port>65535)throw Error('Invalid port');
   // The provider rolls containers before stopping the old writer. Accept TCP with a
@@ -82,7 +82,7 @@ if(process.argv[1]===fileURLToPath(import.meta.url)){
   const server=createServer((req,res)=>{const live=req.method==='GET'&&req.url==='/livez';res.writeHead(live?200:503,{...safeHeaders,'Retry-After':'5','Content-Type':'text/plain'});res.end(live?'alive':'Test site starting. Please retry shortly.');});
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'0.0.0.0',resolve);});
   let store;const deadline=Date.now()+120000;
-  while(!store){try{store=await openPostgres({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true,...(ca?{ca}:{})},onFailure:()=>process.exit(1)});}catch(error){if(error.code!=='POND_WRITER_BUSY'||Date.now()>deadline)throw error;await new Promise(resolve=>setTimeout(resolve,1000));}}
+  while(!store){try{store=await openPostgres({connectionString:env.DATABASE_URL,ssl,onFailure:()=>process.exit(1)});}catch(error){if(error.code!=='POND_WRITER_BUSY'||Date.now()>deadline)throw error;await new Promise(resolve=>setTimeout(resolve,1000));}}
   const app=await createHosted({store,testers,verify,server});
   console.log('Private Frog Pond Boys test server ready. Mail simulated.');
   for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>app.close().then(()=>process.exit(0)));

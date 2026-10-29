@@ -1,4 +1,6 @@
-# Preparation template only. Apply after review; no domain is configured here.
+# Preparation template only. Reuse the existing client database; do not create a duplicate.
+# DATABASE_URL and DATABASE_RENDER_INTERNAL_HOST must come from that database.
+# Apply after review; no domain is configured here.
 services:
   - type: web
     name: frog-pond-boys
@@ -12,6 +14,10 @@ services:
     healthCheckPath: /livez
     envVars:
       - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_TLS_MODE
+        value: render-internal
+      - key: DATABASE_RENDER_INTERNAL_HOST
         sync: false
       - key: ACCESS_ISSUER
         sync: false
