@@ -1,7 +1,11 @@
 // Free edge routing only. Access runs before this Worker; the origin also
 // verifies the JWT cryptographically. No tokens or form contents are logged.
 import {deploymentConfig} from './config.mjs';
-function waking(){return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Frog Pond Boys - starting</title><style>body{margin:0;background:#05353a;color:#f3f7f6;font:18px/1.6 system-ui;display:grid;min-height:100vh;place-items:center}main{max-width:34rem;padding:2rem}a{color:#ffdb76}h1{line-height:1.2}</style><main><h1>The pond is waking up.</h1><p>This site uses free hosting. Starting may take about a minute.</p><p>Your saved content is kept. Please wait a moment, then reload this page.</p><p><a href="">Reload this page</a></p></main></html>`,{status:503,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Retry-After':'10','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY'}});}
+function waking(busy=false){
+ const title=busy?'busy':'starting';
+ const body=busy?'<h1>The pond is busy.</h1><p>Our hosting provider is limiting traffic for a moment.</p><p>Please wait about thirty seconds, then reload this page.</p>':'<h1>The pond is waking up.</h1><p>This site uses free hosting. Starting may take about a minute.</p><p>Your saved content is kept. Please wait a moment, then reload this page.</p>';
+ return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Frog Pond Boys - ${title}</title><style>body{margin:0;background:#05353a;color:#f3f7f6;font:18px/1.6 system-ui;display:grid;min-height:100vh;place-items:center}main{max-width:34rem;padding:2rem}a{color:#ffdb76}h1{line-height:1.2}</style><main>${body}<p><a href="">Reload this page</a></p></main></html>`,{status:503,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Retry-After':busy?'30':'10','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY'}});
+}
 export async function proxy(request,env,forward=fetch){
  const source=new URL(request.url);
  const {hosts,www,publicSite}=deploymentConfig(env);
@@ -19,7 +23,9 @@ export async function proxy(request,env,forward=fetch){
  // Preserve relative redirects and streaming bodies, never cache private data.
  const navigation=request.method==='GET'&&!source.pathname.startsWith('/api/')&&(request.headers.get('Accept')??'').includes('text/html');
  let result;try{result=await forward(new Request(upstream,{redirect:'manual'}));}catch(error){if(navigation)return waking();throw error;}
- if(navigation&&[502,503,504].includes(result.status)){await result.body?.cancel();return waking();}
+ // Render's Cloudflare edge may rate-limit (429) or challenge (cf-mitigated) Worker subrequests.
+ const blockedByOrigin=result.status===429||result.headers.has('cf-mitigated');
+ if(navigation&&([502,503,504].includes(result.status)||blockedByOrigin)){await result.body?.cancel();return waking(blockedByOrigin);}
  const response=new Response(result.body,result);response.headers.set('Cache-Control','no-store');return response;
 }
 // Only the existing public, data-free liveness route is used. No credentials,

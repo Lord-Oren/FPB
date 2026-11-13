@@ -19,6 +19,12 @@ test('wake page only replaces temporary errors for HTML navigation',async()=>{
  const offline=await proxy(req(),env,async()=>{throw Error('network')});assert.equal(offline.status,503);
 });
 
+test('busy page replaces origin rate limits and challenges for HTML navigation only',async()=>{
+ const req=(path='/',accept='text/html')=>new Request('https://frogpondboys.com'+path,{headers:{'Cf-Access-Jwt-Assertion':'signed-fixture',Accept:accept}});
+ const limited=await proxy(req(),env,async()=>new Response('Too Many Requests',{status:429}));assert.equal(limited.status,503);assert.equal(limited.headers.get('Retry-After'),'30');assert.equal(limited.headers.get('Cache-Control'),'no-store');assert.match(await limited.text(),/The pond is busy/);
+ const challenged=await proxy(req(),env,async()=>new Response('Just a moment...',{status:403,headers:{'cf-mitigated':'challenge'}}));assert.equal(challenged.status,503);assert.match(await challenged.text(),/The pond is busy/);
+ const asset=await proxy(req('/logo.png','image/png'),env,async()=>new Response('Too Many Requests',{status:429}));assert.equal(asset.status,429);assert.equal(await asset.text(),'Too Many Requests');
+});
 test('scheduled warm-up is bounded, credential-free, uses liveness only and refuses redirects',async()=>{
  let captured,calls=0;const settings={...env,KEEP_AWAKE_UNTIL:'2026-11-02T00:00:00Z'};
  const forward=async request=>{calls++;captured=request;return new Response('alive')};
