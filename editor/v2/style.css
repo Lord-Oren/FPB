@@ -188,3 +188,15 @@ input::placeholder,textarea::placeholder { color:var(--muted); opacity:1 }
 .tree-zone{margin:12px 8px 18px;padding:8px;border:1px solid var(--line,#514a44);border-radius:10px;background:#292623}
 .tree-zone-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.tree-zone-head h3{margin:0;font-size:.85rem;color:#f2e5d0}
 .tree-node{display:flex;gap:4px;align-items:center;margin-left:calc(var(--tree-depth)*10px);border-left:2px solid #665f52;padding-left:6px;margin-top:4px}.tree-open{flex:1;text-align:left;background:transparent;border:0;color:inherit;padding:9px 4px;min-width:0;overflow-wrap:anywhere;cursor:pointer}.tree-open small{display:block;color:#c7b79f;font-size:.7rem}.tree-add{flex:none;width:34px;min-height:34px;border:1px solid #99856a;border-radius:6px;background:#3d3529;color:#ffe09b;font-size:1.25rem;cursor:pointer}.tree-add:hover,.tree-open:hover{background:#494035}.tree-add:focus-visible,.tree-open:focus-visible{outline:2px solid #ffe09b;outline-offset:2px}.zone-card{margin-bottom:16px}.check-label{display:flex;align-items:center;gap:10px;min-height:44px}.check-label input{width:20px;height:20px}.section-body{white-space:pre-line}
+
+/* F3 (AUD-C07/C09/C10): waiting screen, busy controls, one lead hint, toast away from the titles. Existing tokens only. */
+.waiting { flex:1; display:grid; place-items:center; padding:24px 16px; background:var(--bg0) }
+.waiting .panel { max-width:480px; text-align:center }
+.waiting .frog { font-size:3rem; margin:0 }
+.waiting h2 { font-family:Boohong, sans-serif; font-weight:400; color:var(--dandelion); font-size:2rem; margin:.2em 0 }
+.waiting .bar-inline { margin-top:16px }
+.btn[aria-busy="true"],.send[aria-busy="true"] { cursor:progress }
+.form-lead { background:var(--bg2); border:4px solid var(--ink); box-shadow:7px 7px 0 var(--ink); padding:12px 18px; margin-bottom:24px; text-align:center }
+.form-lead p { margin:.2em 0; color:var(--muted) } .form-lead p:first-child { color:var(--cream); font-weight:700 }
+.toast { top:auto; bottom:24px; left:auto; right:24px; transform:none; max-width:min(420px, calc(100vw - 32px)); pointer-events:none; border:4px solid var(--ink) }
+@media (max-width:860px) { .toast { left:16px; right:16px; bottom:96px; max-width:none; text-align:center } }
