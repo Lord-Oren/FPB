@@ -6,7 +6,6 @@
 }
 body.variant-b, [data-skin=modern] body.interior-page { background:linear-gradient(var(--b-grid) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,var(--b-grid) 1px,transparent 1px) 0 0/40px 40px,var(--b-surface); color:var(--b-text) }
 body.variant-b { display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto; align-items:start; overflow-x:clip }
-body.variant-b > .demo-note { position:relative; grid-column:1/-1; margin:0 }
 body.variant-b > :is(.home-more,footer) { grid-column:1/-1 }
 :focus-visible { outline:4px solid var(--aero-blue); outline-offset:5px; border-radius:0 }
 .masthead { text-align:center; padding:24px 16px 20px; align-self:center; min-width:0 }

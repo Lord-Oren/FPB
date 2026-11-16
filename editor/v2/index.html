@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- Pond Desk v2 (owners' console). Front-end: app.js + style.css in this folder; API implementation: editor/backend/api.mjs.
-     Without a reachable /api/v2 the app runs in a flagged demonstration mode only from a file or a local address; online it waits for the server. -->
+     Without a reachable /api/v2 it shows a waiting screen and retries; there is no offline example mode. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -10,7 +10,7 @@
 <script src="app.js" defer></script>
 </head>
 <body>
-<p class="demo-band" id="demo-band" hidden role="status">Demo mode: the Pond Desk server is not connected yet. You can try everything; nothing is saved.</p>
+<p class="notice-band" id="notice-band" hidden role="status"></p>
 <div class="app" id="app" data-pane="list">
   <nav class="rail" aria-label="Pond Desk">
     <span class="rail-logo" aria-hidden="true">FPB</span>

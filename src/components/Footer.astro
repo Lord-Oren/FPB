@@ -1,7 +1,12 @@
 ---
+// Blue bar at the bottom of every page: the studio's logos, then only the links that have an address.
+// The tagline is not repeated here (it stays in the middle of the home page, under the frogs).
 import SocialIcon from "./SocialIcon.astro";
 import {site} from '../data/public-site-content.js';
 import {zoneNodes,nodeHref} from '../data/public-pages.js';
-const links=zoneNodes('footer').map(n=>({...n,url:nodeHref(n)||site.contact.socials.find(s=>s.label.toLowerCase()===n.id.replace(/^footer-/, ''))?.url||''}));
+import mainLogo from '../assets/logos/main.webp?inline';
+import secondaryLogo from '../assets/logos/secondary.webp?inline';
+import wordmark from '../assets/logos/wordmark.webp?inline';
+const links=zoneNodes('footer').map(n=>({...n,url:nodeHref(n)||site.contact.socials.find(s=>s.label.toLowerCase()===n.id.replace(/^footer-/, ''))?.url||''})).filter(n=>n.url);
 ---
-<footer><strong>FROG POND BOYS</strong><span>{site.home.editorial.tagline}</span><nav class="footer-socials" aria-label="Footer links">{links.map(n=><a href={n.url||'contact.html#demo-socials'} target={n.newTab?'_blank':undefined} rel="noopener noreferrer"><SocialIcon name={n.id}/> {n.title}{!n.url&&' · Demo'}</a>)}</nav><button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>© 2026 Frog Pond Boys</span></footer>
+<footer><a class="footer-logos" href="index.html" aria-label="Frog Pond Boys, home"><img src={wordmark} alt="" width="115" height="40" /><img src={mainLogo} alt="" width="36" height="40" /><img src={secondaryLogo} alt="" width="40" height="40" /></a>{links.length > 0 && <nav class="footer-socials" aria-label="Footer links">{links.map(n=><a href={n.url} target={n.newTab?'_blank':undefined} rel="noopener noreferrer"><SocialIcon name={n.id}/> {n.title}</a>)}</nav>}<button class="motion-toggle" type="button" aria-pressed="false">Pause motion</button><span>© 2026 Frog Pond Boys</span></footer>

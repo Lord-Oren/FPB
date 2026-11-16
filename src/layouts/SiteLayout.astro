@@ -28,7 +28,6 @@ import frogMenus from '../scripts/frog-menus.js?raw';
 import flyCursor from '../scripts/fly-cursor.js?raw';
 import pondMotion from '../scripts/pond-motion.js?raw';
 import FlyCursor from '../components/FlyCursor.html';
-import { isDemo } from '../data/public-site-content.js';
 const svgUrl = svg => 'url("data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64') + '")';
 const lilyStyle = `:root{--h2-lily:${svgUrl(pixelLily)};--px-frog:${svgUrl(pixelFrog)};--px-stone:${svgUrl(pixelStone)}}`;
 const { title = 'Frog Pond Boys — Creative Agency', pond = false, operations = false, form = false, cases = false } = Astro.props;
@@ -44,7 +43,6 @@ const { title = 'Frog Pond Boys — Creative Agency', pond = false, operations =
 </head>
 <body class:list={{ 'interior-page': !pond, 'home-page': pond && look !== 'modern', 'variant-b': pond && look === 'modern' }}>
   <a class="skip-link" href="#main">Skip to content</a>
-  {isDemo && <p class="demo-note" role="note">Sample content for review — texts and images will be replaced</p>}
   <FlyCursor />
   <slot />
   {pond && <script is:inline set:html={frogMenus}></script>}

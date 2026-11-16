@@ -2,17 +2,12 @@
 // each other. Builds both variants into temporary folders and inspects every page.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { buildVariant } from './front-build.mjs';
 
-const project = fileURLToPath(new URL('../', import.meta.url));
 async function build(variant) {
-  const out = await mkdtemp(path.join(tmpdir(), `fpb-${variant}-`));
-  const run = spawnSync(process.execPath, [path.join(project, 'node_modules/astro/bin/astro.mjs'), 'build', '--outDir', out], { cwd: project, env: { ...process.env, FPB_VARIANT: variant, ASTRO_TELEMETRY_DISABLED: '1' }, encoding: 'utf8' });
-  assert.equal(run.status, 0, run.stderr || run.stdout);
+  const out = await buildVariant(variant);
   const pages = (await readdir(out)).filter(name => name.endsWith('.html'));
   return { out, pages: await Promise.all(pages.map(async name => ({ name, html: await readFile(path.join(out, name), 'utf8') }))) };
 }

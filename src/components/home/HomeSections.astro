@@ -20,12 +20,15 @@ const next = splitEvents(site.events).upcoming[0];
 const press = site.press[0];
 const team = site.about.team.slice(0, 4);
 const gramUrl = site.home.gram.url;
+// Ribbit and Croak are shown here, at the bottom of the home page, instead of on a page of their own (meeting of 13 November 2026).
+const ribbit = site.works.filter(item => item.rubric === 'gram').sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+const e = site.home.editorial;
 const socials = site.contact.socials.filter(link => link.url !== gramUrl);
 const day = value => new Date(value + ':00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 ---
 <div class="home-more">
   <section data-reveal class="hm-band hm-work" id="latest" aria-labelledby="hm-work">
-    <div class="hm-head"><p class="hm-kicker">{site.home.editorial.homeLatestKicker}</p><h2 id="hm-work">{site.home.editorial.homeLatestTitle}</h2></div>
+    <div class="hm-head">{e.homeLatestKicker?.trim() && <p class="hm-kicker">{e.homeLatestKicker}</p>}<h2 id="hm-work">{site.home.editorial.homeLatestTitle}</h2></div>
     {latest.length === 0 && <p>New work is on its way.</p>}
     <ul class="hm-mosaic">{latest.map((item, index) => <li class:list={['hm-tile', { 'hm-tile--big': index === 0 }]}>
       <a href={item.href}><img src={item.image.src} alt={item.image.alt} loading="lazy" decoding="async" /><span class="hm-cap"><small>{item.kind}</small><b>{item.title}</b></span></a>
@@ -33,7 +36,7 @@ const day = value => new Date(value + ':00Z').toLocaleDateString('en-US', { week
   </section>
 
   <section data-reveal class="hm-band hm-news" id="news" aria-labelledby="hm-news">
-    <div class="hm-head"><p class="hm-kicker">{site.home.editorial.homeNewsKicker}</p><h2 id="hm-news">{site.home.editorial.homeNewsTitle}</h2></div>
+    <div class="hm-head">{e.homeNewsKicker?.trim() && <p class="hm-kicker">{e.homeNewsKicker}</p>}<h2 id="hm-news">{site.home.editorial.homeNewsTitle}</h2></div>
     <div class="hm-cards">
       <article class="hm-card"><span class="hm-tag">Announcement</span><h3>{site.home.announcement.title}</h3><p>{site.home.announcement.text}</p></article>
       {next && <article class="hm-card"><span class="hm-tag">Next event · {day(next.start)}</span><h3>{next.title}</h3><p>{next.venue}{next.city && <>, {next.city}</>}{next.description && <> — {next.description}</>}</p></article>}
@@ -42,15 +45,22 @@ const day = value => new Date(value + ':00Z').toLocaleDateString('en-US', { week
   </section>
 
   {look !== 'pixel' && team.length > 0 && <section data-reveal class="hm-band hm-team" aria-labelledby="hm-team">
-    <div class="hm-head"><p class="hm-kicker">{site.home.editorial.homeTeamKicker}</p><h2 id="hm-team">{site.home.editorial.homeTeamTitle}</h2></div>
+    <div class="hm-head">{e.homeTeamKicker?.trim() && <p class="hm-kicker">{e.homeTeamKicker}</p>}<h2 id="hm-team">{site.home.editorial.homeTeamTitle}</h2></div>
     <ul class="hm-people">{team.map((person, index) => <li style={`--frog-skin:${['var(--aero-blue)', 'var(--dandelion)', '#7cc4ff', 'var(--blue-marine)'][index]}`}>
       {person.photo ? <img src={person.photo.src} alt={person.photo.alt} loading="lazy" /> : <svg class="hm-frog" viewBox="0 0 64.95 60.992" aria-hidden="true" focusable="false"><use href="#art-frog" /></svg>}
       <b>{person.name}</b><span>{person.role}</span>
     </li>)}</ul>
   </section>}
 
-  {gramNode && visibleNode(tree,gramNode) && <section data-reveal class="hm-band"><div class="hm-head"><h2>{gramNode.title}</h2></div><p>{site.home.editorial.homeGramDescription}</p><a class="hm-btn" href="gram.html" target={gramNode.newTab?'_blank':undefined} rel="noopener noreferrer">Explore {gramNode.title} →</a></section>}
-  {croakNode && visibleNode(tree,croakNode) && <section data-reveal class="hm-band"><div class="hm-head"><h2>{croakNode.title}</h2></div><p>{site.home.editorial.croakTitle}</p><a class="hm-btn" href="croak.html">{site.home.editorial.homeCroakLink} →</a></section>}
+  {gramNode && visibleNode(tree,gramNode) && <section data-reveal class="hm-band hm-ribbit" id="ribbit" aria-labelledby="hm-ribbit"><div class="hm-head"><h2 id="hm-ribbit">{gramNode.title}</h2></div>
+    {e.homeGramDescription && <p>{e.homeGramDescription}</p>}
+    {ribbit.length > 0 ? <ul class="hm-mosaic hm-ribbit-grid">{ribbit.map(item => <li class="hm-tile"><a href={`gram.html#${item.id}`} target={gramNode.newTab?'_blank':undefined} rel={gramNode.newTab?'noopener noreferrer':undefined}><img src={item.image.src} alt={item.image.alt} loading="lazy" decoding="async" /><span class="hm-cap"><b>{item.title}</b></span></a></li>)}</ul> : <p>New photos are on their way.</p>}
+    <p class="hm-actions">{ribbit.length > 0 && <a class="hm-btn" href="gram.html" target={gramNode.newTab?'_blank':undefined} rel="noopener noreferrer">See all {gramNode.title} →</a>}{gramUrl && <a class="hm-btn" href={gramUrl} target="_blank" rel="noopener noreferrer">Follow us on Instagram ↗</a>}</p>
+  </section>}
+  {croakNode && visibleNode(tree,croakNode) && <section data-reveal class="hm-band hm-croak" id="croak" aria-labelledby="hm-croak"><div class="hm-head"><h2 id="hm-croak">{croakNode.title}</h2></div>
+    {e.croakTitle ? <><p class="hm-song"><b>{e.croakTitle}</b></p>{e.croakText && <p>{e.croakText}</p>}</> : <p>A new song is on its way.</p>}
+    {e.croakUrl && <a class="hm-btn" href={e.croakUrl} target="_blank" rel="noopener noreferrer">{e.homeCroakLink || 'Tune in'} ↗</a>}
+  </section>}
   {(site.contact.email || socials.length > 0) && <section data-reveal class="hm-band hm-cta" aria-labelledby="hm-cta">
     <h2 id="hm-cta">{site.home.editorial.homeContactTitle}</h2>
     <p>{site.contact.intro}</p>

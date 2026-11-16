@@ -1,7 +1,9 @@
 ---
-import {site} from '../../data/public-site-content.js';
+// Inside a TV screen: no subtitle any more, only a pointer to the same place as the block title above it.
+// The title is the accessible link; this duplicate target is hidden from assistive technologies.
 import {nodeHref} from '../../data/public-pages.js';
+import {screenHref,screenNewTab} from './screen-href.js';
 const {node}=Astro.props;
-const label=node.id==='announcements'?site.home.announcement.title:node.id==='gram'?site.home.gram.label:node.id==='recents'?'Latest work':node.id==='croak'?'Song of the Week':node.title;
+const newTab=screenNewTab(node);
 ---
-<div class="screen-content"><a href={nodeHref(node)||'contact.html#demo-socials'} target={node.newTab?'_blank':undefined} rel={node.newTab?'noopener noreferrer':undefined}><strong>{label}</strong><span aria-hidden="true">{node.newTab?'↗':'→'}</span></a></div>
+<div class="screen-content"><a class="screen-link" href={screenHref(node,nodeHref)} tabindex="-1" aria-hidden="true" target={newTab?'_blank':undefined} rel={newTab?'noopener noreferrer':undefined}><span class="screen-arrow">{newTab?'↗':screenHref(node,nodeHref).startsWith('#')?'↓':'→'}</span></a></div>

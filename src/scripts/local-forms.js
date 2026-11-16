@@ -13,7 +13,7 @@
           const response = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: form.dataset.hosted === 'true' ? 'same-origin' : 'omit' });
           const result = await response.json();
           if (!response.ok) throw new Error(result.message || result.error || 'Submission refused.');
-          status.textContent = form.dataset.hosted === 'true' ? 'Saved in test Pond Desk. No email was sent.' : 'Saved in local Pond Desk. No email was sent.';
+          status.textContent = form.dataset.hosted === 'true' ? 'Saved in Pond Desk. No confirmation email is sent yet.' : 'Saved in Pond Desk on this computer. No email was sent.';
           form.reset();
           if (feedback) feedback.textContent = '';
         } catch (error) {

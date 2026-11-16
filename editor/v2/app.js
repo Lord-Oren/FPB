@@ -1,10 +1,10 @@
 // Pond Desk v2 client. API implementation: editor/backend/api.mjs.
-// Until that API answers, a file or local address runs a flagged demonstration mode (nothing saved); online, Desk waits for the server.
+// Desk only works with its server: when the API does not answer, it says so and retries. There is no offline example mode.
 'use strict';
 
 const API = '/api/v2';
 const $ = selector => document.querySelector(selector);
-const state = { demo: false, mode: '', mail: '', token: '', space: 'site', section: null, item: null, conversation: null, dirty: false };
+const state = { mode: '', mail: '', token: '', space: 'site', section: null, item: null, conversation: null, dirty: false };
 
 // ---------- Small DOM helper: text is always set as text, never parsed as HTML ----------
 function h(tag, attrs = {}, ...children) {
@@ -14,6 +14,8 @@ function h(tag, attrs = {}, ...children) {
     if (key === 'class') el.className = value;
     else if (key.startsWith('on')) el.addEventListener(key.slice(2), value);
     else if (key === 'text') el.textContent = value;
+    // Strict CSP (default-src 'self') blocks style attributes; the CSSOM is allowed.
+    else if (key === 'style') for (const part of String(value).split(';')) { const at = part.indexOf(':'); if (at > 0) el.style.setProperty(part.slice(0, at).trim(), part.slice(at + 1).trim()); }
     else el.setAttribute(key, value === true ? '' : value);
   }
   for (const child of children.flat()) if (child !== null && child !== undefined && child !== false) el.append(child instanceof Node ? child : document.createTextNode(String(child)));
@@ -23,32 +25,43 @@ function toast(text, { stay = false } = {}) {
   const box = $('#toast'); box.textContent = text; box.hidden = false; toast.staying = stay;
   clearTimeout(toast.timer); if (!stay) toast.timer = setTimeout(() => { box.hidden = true; }, 3200);
 }
-// AUD-C09: one shared lock for every control that writes. The control stays disabled and aria-busy until the server answers,
-// so a second click cannot send the same change twice. A waiting text stays visible during long actions (publishing).
+// AUD-C09: one lock for every action that writes (save, publish, upload, restore, reply).
+// While one runs, every other writing control of the screen is disabled and a second action is refused,
+// so Publish and Save on the same form, or an upload during a publish, can never send two requests.
+// lock:start
 const PUBLISHING = 'Publishing… this can take about a minute';
+const WAIT_TEXT = 'Please wait: the previous action is still running.';
+const WRITING_CONTROLS = '.bar button, .bar-inline button, .top .btn, .top .menu > button, .compose button, .drop input, .file-actions button, .person button, label.check input';
+const lock = { active: false };
 async function busy(control, work, waitText = '') {
-  if (control?.getAttribute('aria-busy') === 'true') return undefined;
-  control?.setAttribute('aria-busy', 'true'); if (control) control.disabled = true;
+  if (lock.active) { toast(WAIT_TEXT); return undefined; }
+  lock.active = true;
+  const scope = $('#main');
+  const frozen = [...new Set([control, ...(scope ? scope.querySelectorAll(WRITING_CONTROLS) : [])])].filter(el => el && !el.disabled);
+  for (const el of frozen) el.disabled = true;
+  control?.setAttribute('aria-busy', 'true'); scope?.setAttribute('aria-busy', 'true');
   if (waitText) toast(waitText, { stay: true });
   try { return await work(); }
   catch (error) { toast(error.message || 'The server could not do that. Please try again.'); return undefined; }
   finally {
-    control?.removeAttribute('aria-busy'); if (control) control.disabled = false;
+    lock.active = false;
+    for (const el of frozen) el.disabled = false;
+    control?.removeAttribute('aria-busy'); scope?.removeAttribute('aria-busy');
     if (waitText && toast.staying) { toast.staying = false; $('#toast').hidden = true; }
   }
 }
+// lock:end
 const writer = (work, waitText) => event => busy(event.currentTarget, () => work(event), waitText);
 const when = iso => { const d = new Date(iso); const today = new Date(); return d.toDateString() === today.toDateString() ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
 const initials = name => { const words = name.trim().split(/\s+/).filter(Boolean); return ((words[0]?.[0] || '') + (words.length > 1 ? words.at(-1)[0] : '')).toUpperCase(); };
 
 // ---------- What the site contains, in the order the owners see it on the site ----------
 const SECTIONS = [
-  { group: 'Home', items: [{ slug: 'home', title: 'Home, menus, Croak and Legal', hint: 'Headings, TV screens, menu labels and legal examples', kind: 'page' }] },
+  { group: 'Home', items: [{ slug: 'home', title: 'Home titles, text and Croak', hint: 'Headings, TV screens and menu labels', kind: 'page' }, { slug: 'legal', title: 'Legal', hint: 'Short text and the PDF', kind: 'page' }] },
   { group: 'Advertising', items: [
     { slug: 'case-studies', title: 'Case Studies', hint: 'Your case studies', kind: 'case' },
     { slug: 'client-work', title: 'Client Work', hint: 'Work for your clients', kind: 'work' },
-    { slug: 'mock-ads', title: 'Mock Ads', hint: 'Ads you imagined', kind: 'work' },
-    { slug: 'presentations', title: 'Presentations', hint: 'Decks and presentations', kind: 'work' }] },
+    { slug: 'mock-ads', title: 'Mock Ads', hint: 'Ads you imagined', kind: 'work' }] },
   { group: 'Creative', items: [
     { slug: 'photography', title: 'Photography', hint: 'Photos', kind: 'work' },
     { slug: 'films-videos', title: 'Films & Videos', hint: 'YouTube or Vimeo videos', kind: 'work' },
@@ -66,7 +79,7 @@ const SECTIONS = [
     { slug: 'contact', title: 'Contact', hint: 'Email and social links', kind: 'page' },
     { slug: 'join', title: 'Join Us', hint: 'Intro and open positions', kind: 'page' }] },
 ];
-const retired = new Set(['presentations','music','media-relations','influencer-relations','events-launches']);
+const retired = new Set(['music','media-relations','influencer-relations','events-launches']);
 const archiveItems = SECTIONS.flatMap(group=>group.items).filter(item=>retired.has(item.slug));
 for(const group of SECTIONS) group.items=group.items.filter(item=>!retired.has(item.slug));
 SECTIONS.find(g=>g.group==='PR').items.push(...['prc','recognition','statements'].map(slug=>({slug,title:slug==='prc'?'PRC':slug[0].toUpperCase()+slug.slice(1),hint:'Studio updates',kind:'work'})));
@@ -80,8 +93,10 @@ const NOUN = { case: 'case study', work: 'project', event: 'event', press: 'arti
 const FIELDS = {
   case: [
     { name: 'title', label: 'Title', max: 90, required: true },
-    { name: 'summary', label: 'In two sentences', max: 240, required: true, area: true, hint: 'Shown under the photo, in the list of case studies.' },
-    { name: 'cover', label: 'Main photo', type: 'image', required: true },
+    { name: 'summary', label: 'One sentence', max: 240, required: true, area: true, hint: 'Shown under the thumbnail.' },
+    { name: 'cover', label: 'Thumbnail', type: 'image', required: true, hint: 'The picture visitors see in the grid, like a video thumbnail. A first page of the PDF works well.' },
+    { name: 'brandLogo', label: 'Brand logo', type: 'image', optional: true, hint: 'Shown in the corner of the thumbnail.' },
+    { name: 'documentId', label: 'Full case study (PDF)', type: 'file', kind: 'pdf', optional: true, hint: 'Visitors open it by clicking the thumbnail. One PDF, up to 10 MB and 100 pages. Word files are not accepted: save them as PDF first.' },
     { name: 'client', label: 'Which client?', max: 90, optional: true },
     { name: 'context', label: 'The background', max: 4000, required: true, area: true },
     { name: 'work', label: 'What you did', max: 4000, required: true, area: true },
@@ -94,6 +109,7 @@ const FIELDS = {
     { name: 'image', label: 'Photo', type: 'image', required: true },
     { name: 'client', label: 'Which client?', max: 90, optional: true },
     { name: 'gallery', label: 'More photos', type: 'gallery', optional: true, hint: 'Up to 12 photos.' },
+    { name: 'videoId', label: 'Video file', type: 'file', kind: 'video', optional: true, hint: 'MP4 (H.264) or WebM, up to 10 MB and 60 seconds. For a longer video, use a YouTube or Vimeo link below.' },
     { name: 'video', label: 'Video link', type: 'url', optional: true, hint: 'A YouTube or Vimeo link.' },
     { name: 'audio', label: 'Listening link', type: 'url', optional: true, hint: 'A Spotify, SoundCloud or Bandcamp link.' },
     { name: 'link', label: 'Project link', type: 'url', optional: true }],
@@ -114,7 +130,7 @@ const FIELDS = {
     { name: 'quote', label: 'A line to quote', max: 200, optional: true }],
 };
 const PAGES = {
-  home: { title: 'Home titles, text, Croak and Legal', small: 'Headings and text shown on your website', lead: ['Use Publish to the site, at the bottom, to save and publish this page.', 'Leave a Croak or Legal text empty only if you want to remove it. Demo examples must be reviewed before public launch.'], fields: [
+  home: { title: 'Home titles, text and Croak', small: 'Headings and text shown on your website', lead: ['Use Publish to the site, at the bottom, to save and publish this page.', 'An empty optional text is simply not shown on the site.'], fields: [
     ...[
       ['homeLatestTitle','Latest work heading — Fresh from the pond',true],
       ['homeLatestKicker','Label above latest work',false],
@@ -123,47 +139,58 @@ const PAGES = {
       ['homeTeamTitle',"Team heading — Who's in the pond (version B)",true],
       ['homeTeamKicker','Label above the team (version B)',false],
       ['homeContactTitle','Contact heading',true],
-      ['homeGramDescription','Gram introduction',false],
+      ['homeGramDescription','Ribbit introduction',false],
       ['homeCroakLink','Croak link text',false]
     ].map(([key,label,required])=>({name:'editorial_'+key,label,max:120,required,optional:!required})),
     ...[
-      ['grandCentral','Home subtitle',240],['tagline','Tagline',240],['croakTitle','Croak — song title (Demo until supplied)',240],['croakText','Croak — description',240],['croakUrl','Croak — listening link',300],
-      ['legalPrivacy','Legal — Privacy Policies',4000],['legalCookies','Legal — Cookie Settings',4000],['legalTerms','Legal — Terms of Services',4000],['legalConduct','Legal — Code of Conduct',4000],['legalValues','Legal — Values',4000]
-    ].map(([key,label,max])=>({name:'editorial_'+key,label,max,optional:true,area:max===4000})),
+      ['grandCentral','Home subtitle',240],['tagline','Tagline, under the frogs on the home page',240],['croakTitle','Croak — song title',240],['croakText','Croak — description',240],['croakUrl','Croak — listening link (opened by “Tune in”)',300]
+    ].map(([key,label,max])=>({name:'editorial_'+key,label,max,optional:true,type:key==='croakUrl'?'url':undefined})),
     ...Object.entries({advertising:'Advertising',creative:'Creative',pr:'PR','case-studies':'Case Studies','client-work':'Client Work','mock-ads':'Mock Ads',collabs:'Collabs','events-shows':'Events & Shows','films-videos':'Films & Videos',magazine:'Magazine',photography:'Photography',press:'Press',prc:'PRC',recognition:'Recognition',statements:'Statements',about:'About',contact:'Contact',join:'Join Us',legal:'Legal',gram:'Gram',croak:'Croak',announcements:'Announcements',recents:'Recents'}).map(([key,label])=>({name:'navigation_'+key,label:'Navigation label — '+label,max:40,required:true})),
 
-    { name: 'announcementTitle', label: 'Announcement title', max: 60, required: true, hint: 'Shown on the “Announcements” screen of the home page and in “What\'s happening” on the modern version.' },
+    { name: 'announcementTitle', label: 'Announcement title', max: 60, required: true, hint: 'Shown in “What\'s happening”, further down the home page.' },
     { name: 'announcementText', label: 'Announcement text', max: 140, required: true, area: true },
-    { name: 'announcementLink', label: 'Page to open on click (pixel version)', type: 'page', optional: true, hint: 'On the modern version, the screen leads to the news further down the home page.' },
-    { name: 'gramLabel', label: 'Gram screen text', max: 40, required: true },
-    { name: 'gramUrl', label: 'Instagram link', type: 'url', optional: true }] },
-  about: { title: 'About', small: 'About page', fields: [
-    { name: 'story', label: 'Your story', max: 4000, required: true, area: true },
-    { name: 'ethos', label: 'What you believe in', max: 4000, required: true, area: true },
+    { name: 'gramLabel', label: 'Ribbit screen text (version B)', max: 40, required: true },
+    { name: 'gramUrl', label: 'Instagram link, shown under Ribbit', type: 'url', optional: true }] },
+  about: { title: 'About', small: 'About page', lead: ['Each part has its own title. Our Story and Our Ethos are required; any other part whose text is empty is not shown on the site.'], fields: [
+    { name: 'storyTitle', label: 'Title — Our Story', max: 120, optional: true },
+    { name: 'story', label: 'Our Story', max: 4000, required: true, area: true },
+    { name: 'ethosTitle', label: 'Title — Our Ethos', max: 120, optional: true },
+    { name: 'ethos', label: 'Our Ethos', max: 4000, required: true, area: true },
+    { name: 'manifestoTitle', label: 'Title — Our Manifesto', max: 120, optional: true },
+    { name: 'manifesto', label: 'Our Manifesto', max: 4000, optional: true, area: true },
+    { name: 'differentiatorTitle', label: 'Title — What makes you different', max: 120, optional: true },
+    { name: 'differentiator', label: 'What makes you different', max: 4000, optional: true, area: true },
     { name: 'photos', label: 'Photos', type: 'gallery', optional: true, hint: 'Up to 6 photos.', limit: 6 },
-    { name: 'team', label: 'The team', type: 'rows', columns: [['name', 'Name', 90], ['role', 'Role', 90]], add: 'Add a person', limit: 24 }] },
+    { name: 'teamTitle', label: 'Title — the team', max: 120, optional: true },
+    { name: 'teamText', label: 'A few words about the team', max: 4000, optional: true, area: true },
+    { name: 'team', label: 'The team', type: 'rows', columns: [['name', 'Name', 90], ['role', 'Role', 90]], add: 'Add a person', limit: 24 },
+    { name: 'extendedTeamTitle', label: 'Title — the extended team', max: 120, optional: true },
+    { name: 'extendedTeamText', label: 'A few words about the extended team', max: 4000, optional: true, area: true },
+    { name: 'extendedTeam', label: 'The extended team', type: 'rows', columns: [['name', 'Name', 90], ['role', 'Role', 90]], add: 'Add a person', limit: 24 }] },
   contact: { title: 'Contact', small: 'Contact page', fields: [
+    { name: 'title', label: 'Title of the form — Write to us', max: 120, optional: true },
     { name: 'intro', label: 'Welcome line', max: 600, required: true, area: true },
     { name: 'email', label: 'Email address shown', type: 'email', optional: true },
-    { name: 'socials', label: 'Social links', type: 'rows', columns: [['label', 'Name (e.g. Instagram)', 40], ['url', 'Link', 300]], add: 'Add a link', limit: 6 }] },
+    { name: 'socialTitle', label: 'Title — Social channels', max: 120, optional: true },
+    { name: 'socialText', label: 'A few words above your social links', max: 600, optional: true, area: true },
+    { name: 'socials', label: 'Social links', type: 'rows', columns: [['label', 'Name (e.g. Instagram)', 40], ['url', 'Link', 300]], add: 'Add a link', limit: 6, hint: 'Instagram, LinkedIn, Vimeo and YouTube links also appear in the blue bar at the bottom of every page. A network without a link is not shown.' }] },
+  legal: { title: 'Legal', small: 'Legal page', lead: ['One PDF holds your Privacy Policy and Terms of Service. Until you add it, the page only shows the short text.'], fields: [
+    { name: 'intro', label: 'Short text', max: 600, optional: true, area: true },
+    { name: 'documentId', label: 'Privacy Policy and Terms of Service (PDF)', type: 'file', kind: 'pdf', optional: true, hint: 'One PDF, up to 10 MB and 100 pages.' }] },
   join: { title: 'Join Us', small: 'Join Us page', fields: [
     { name: 'intro', label: 'Welcome line', max: 1200, required: true, area: true },
     { name: 'positions', label: 'Open positions', type: 'rows', columns: [['title', 'Position', 90], ['type', 'Type (e.g. full time)', 40]], add: 'Add a position', limit: 10, hint: 'With no open position, the site invites open applications.' }] },
 };
 
 PAGES.home.fields=PAGES.home.fields.filter(field=>!field.name.startsWith('navigation_'));
-// ---------- API client, with an honest demonstration fallback ----------
+// ---------- API client ----------
 async function call(method, path, body) {
-  if (state.demo) return Demo.handle(method, path, body);
   const response = await fetch(API + path, { method, headers: { 'X-Editor-Token': state.token, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin' });
   let data = null; try { data = await response.json(); } catch { data = null; }
-  if (!response.ok) { const error = new Error(data?.message || 'The server could not do that. Please try again.'); error.status = response.status; error.diagnostics = data?.diagnostics || []; throw error; }
+  if (!response.ok) { const error = new Error(data?.message || 'The server could not do that. Please try again.'); error.status = response.status; error.code = data?.code || ''; error.diagnostics = data?.diagnostics || []; throw error; }
   return data;
 }
-// AUD-C07: demonstration mode only for a file opened by double-click or local development. Online, a missing server
-// means it is waking up (free hosting sleeps): say so, retry every 10 seconds, never show fake data.
-const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\]|.+\.localhost)$/i;
-const demoAllowed = () => location.protocol === 'file:' || LOCAL_HOST.test(location.hostname);
+// AUD-C07: when the server does not answer (restart, deployment), say so and retry every 10 seconds. Never show invented content.
 const RETRY_SECONDS = 10;
 function waitingScreen(status) {
   clearTimeout(waitingScreen.timer);
@@ -172,11 +199,11 @@ function waitingScreen(status) {
   const box = $('#waiting') || h('section', { class: 'waiting', id: 'waiting', role: 'status', 'aria-live': 'polite' });
   box.replaceChildren(h('div', { class: 'panel' }, h('p', { class: 'frog', 'aria-hidden': 'true' }, '🐸'),
     h('h2', { text: signIn ? 'Please sign in again' : 'The server is starting…' }),
-    h('p', { text: signIn ? 'Your sign-in has expired. Reload the page to get a new code.' : `It can take up to a minute after a quiet period. Trying again every ${RETRY_SECONDS} seconds.` }),
+    h('p', { text: signIn ? 'Your sign-in has expired. Reload the page to get a new code.' : location.protocol === 'file:' ? 'Pond Desk needs its server. On this computer, start it with “npm run dev:editor”, then open the address it shows.' : `This can take a minute after an update. Trying again every ${RETRY_SECONDS} seconds.` }),
     h('div', { class: 'bar-inline' }, retry)));
   if (!box.isConnected) document.body.prepend(box);
   $('#app').hidden = true; box.hidden = false;
-  if (!signIn) waitingScreen.timer = setTimeout(start, RETRY_SECONDS * 1000);
+  if (!signIn && location.protocol !== 'file:') waitingScreen.timer = setTimeout(start, RETRY_SECONDS * 1000);
 }
 async function start() {
   let session = null, status = 0;
@@ -186,20 +213,19 @@ async function start() {
   }
   if (session) {
     clearTimeout(waitingScreen.timer); $('#waiting')?.remove(); $('#app').hidden = false;
-    state.demo = false; state.token = session.token || ''; state.me = session.user?.email || ''; state.mode = session.mode || ''; state.publicUrls = session.publicUrls || {}; state.mail = session.mail || '';
+    state.token = session.token || ''; state.me = session.user?.email || ''; state.mode = session.mode || ''; state.publicUrls = session.publicUrls || {}; state.mail = session.mail || '';
     // Which public versions exist: given by the server when it knows (publicVariants), else both only on this computer.
     state.publicB = Array.isArray(session.publicVariants) ? session.publicVariants.includes('b') : state.mode === 'local';
-    const band = $('#demo-band');
+    const band = $('#notice-band');
     if (state.mail === 'simulated') { band.textContent = state.mode === 'local' ? 'Test version on this computer: everything is really saved, but no email goes out.' : 'Emails are not sent yet.'; band.classList.add('local'); band.hidden = false; }
     else band.hidden = true;
-  } else if (demoAllowed()) { state.demo = true; state.publicB = true; state.me = 'demo@frogpondboys.com'; $('#demo-band').hidden = false; }
-  else return waitingScreen(status);
+  } else return waitingScreen(status);
   $('#me').textContent = initials(state.me.split('@')[0].replace(/[._-]/g, ' ') || 'FP');
   showSpace('site'); void refreshCounts();
 }
 async function refreshCounts() {
   try {
-    const counts = state.demo ? Object.fromEntries(await Promise.all(['cv', 'msg'].map(async box => [box, (await call('GET', `/conversations?box=${box}&state=open`)).filter(item => item.unread).length]))) : await call('GET', '/counts');
+    const counts = await call('GET', '/counts');
     for (const box of ['cv', 'msg']) {
       const pill = $(`#pill-${box}`); pill.hidden = !counts[box]; pill.textContent = counts[box];
     }
@@ -226,7 +252,7 @@ function markCurrent(list, current) { list.querySelectorAll('.row').forEach(row 
 
 // ---------- Space: the site ----------
 let siteTree=null;
-const editableKinds={works:'work',events:'event',press:'press','case-studies':'case',about:'page',contact:'page',join:'page'};
+const editableKinds={works:'work',events:'event',press:'press','case-studies':'case',about:'page',contact:'page',join:'page',legal:'page'};
 const nodeSection=node=>({slug:node.id,title:node.title,kind:editableKinds[node.kind]||'structure',node});
 const rootZones=[{id:'menus',title:'Frog menus'},{id:'screens',title:'Lily-pad screens'},{id:'stones',title:'Stone links'},{id:'footer',title:'Footer links'},{id:'archive',title:'Hidden sections'}];
 const treeChildren=id=>siteTree.fields.nodes.filter(n=>n.parentId===id);
@@ -235,10 +261,9 @@ async function publishTree(){try{await call('POST','/structure/publish',{revisio
 const publishTreeButton=event=>busy(event.currentTarget,publishTree,PUBLISHING);
 async function listSite(showWelcome=true){
  $('#list-title').textContent='Site zones';$('#search').placeholder='Search sections';
- if(state.demo){return listLegacySite();}
  try{siteTree=await call('GET','/structure');}catch(e){toast(e.message);return;}
  const body=$('#list-body');body.replaceChildren();
- body.append(h('button',{class:'row',type:'button','data-search':'home titles text croak legal',onclick:()=>{if(guardLeave())openPage('home');}},h('span',{class:'badge','aria-hidden':'true',text:'H'}),h('span',{class:'row-text'},h('b',{text:'Home titles & text, Croak and Legal'}),h('small',{text:'Edit your existing site content'})),h('span',{class:'row-meta'})));
+ body.append(h('button',{class:'row',type:'button','data-search':'home titles text croak',onclick:()=>{if(guardLeave())openPage('home');}},h('span',{class:'badge','aria-hidden':'true',text:'H'}),h('span',{class:'row-text'},h('b',{text:'Home titles & text, and Croak'}),h('small',{text:'Edit your existing site content'})),h('span',{class:'row-meta'})));
  const render=(node,depth=0)=>{
   const row=h('div',{class:'tree-node','data-search':node.title.toLowerCase(),style:`--tree-depth:${Math.min(depth,5)}`},
    h('button',{class:'tree-open',type:'button',onclick:()=>{if(guardLeave()){state.dirty=false;openNode(node.id);}}},node.title,h('small',{text:node.visible?'':'Hidden — content kept'})),
@@ -264,27 +289,11 @@ function openNode(id){
  h('p',{class:'hint',text:node.slug?'Address: '+node.slug+'.html — kept when you rename this section.':'A link has no page of its own.'}));
  const save=async()=>{try{const draft=structuredClone(siteTree.fields),edited=draft.nodes.find(n=>n.id===id);Object.assign(edited,{title:name.value.trim(),text:text.value,href:href.value.trim(),visible:visible.checked,newTab:newTab.checked});await saveTree(draft);toast('Layout draft saved ✓');openNode(id);return true;}catch(e){toast(e.message);return false;}};
  const actions=[h('button',{class:'btn main',type:'button',onclick:writer(async()=>{if(await save())await publishTree();},PUBLISHING)},'Save and publish')];
- const content=editableKinds[node.kind]?h('button',{class:'btn soft',type:'button',onclick:()=>{if(guardLeave()){state.dirty=false;openSection(node.id);}}},'Edit content'):['legal','croak'].includes(node.kind)?h('button',{class:'btn soft',type:'button',onclick:()=>{if(guardLeave())openPage('home');}},'Edit text'):null;
+ const content=editableKinds[node.kind]?h('button',{class:'btn soft',type:'button',onclick:()=>{if(guardLeave()){state.dirty=false;openSection(node.id);}}},'Edit content'):node.kind==='croak'?h('button',{class:'btn soft',type:'button',onclick:()=>{if(guardLeave())openPage('home');}},'Edit text'):null;
  main(topBar({title:node.title,small:'Section settings — '+(rootZones.find(z=>z.id===node.zone)?.title??node.zone),actions}),h('div',{class:'body'},fields,h('div',{class:'bar-inline'},h('button',{class:'btn soft',type:'button',onclick:writer(save)},'Save draft'),content),
  node.kind==='menu'&&node.zone==='menus'?h('section',{class:'panel'},h('h3',{text:'Subsections'}),...treeChildren(id).map(child=>h('button',{class:'row',type:'button',onclick:()=>{if(guardLeave())openNode(child.id);}},child.title))):null));
 }
 
-async function listLegacySite() {
-  $('#list-title').textContent = 'The site'; $('#search').placeholder = 'Search sections';
-  const counts = await call('GET', '/sections').catch(() => ({}));
-  const body = $('#list-body'); body.replaceChildren();
-  for (const group of SECTIONS) {
-    body.append(h('p', { class: 'group', text: group.group }));
-    for (const section of group.items) {
-      const row = h('button', { class: 'row', type: 'button', 'data-search': `${section.title} ${section.hint}`.toLowerCase(), onclick: () => { if (!guardLeave()) return; state.dirty = false; markCurrent(body, row); openSection(section.slug); } },
-        h('span', { class: 'badge', 'aria-hidden': 'true', text: section.title.replace(/[^A-Z]/g, '').slice(0, 2) || section.title[0] }),
-        h('span', { class: 'row-text' }, h('b', { text: section.title }), h('small', { text: section.hint })),
-        h('span', { class: 'row-meta' }, counts[section.slug] !== undefined ? String(counts[section.slug]) : ''));
-      body.append(row);
-    }
-  }
-  welcome('Pick a part of the site to edit.');
-}
 async function openSection(slug) {
   const section = sectionOf(slug); state.section = section;
   if (section.kind === 'page') return openPage(slug);
@@ -318,6 +327,7 @@ function buildField(spec, value, media) {
   const error = h('p', { class: 'error', id: `${id}-error`, hidden: true });
   let control;
   if (spec.type === 'image' || spec.type === 'gallery') control = imageControl(spec, value, media, id);
+  else if (spec.type === 'file') control = fileControl(spec, value, id);
   else if (spec.type === 'rows') control = rowsControl(spec, value, id);
   else if (spec.type === 'page') {
     control = h('select', { class: 'text', id, name: spec.name }, h('option', { value: '' }, '— none —'), ...SECTIONS.flatMap(group => group.items).filter(item => item.slug !== 'home').map(item => h('option', { value: `${item.slug}.html` }, item.title)));
@@ -328,7 +338,7 @@ function buildField(spec, value, media) {
     control.value = value || '';
   }
   if (control.matches?.('input, textarea, select')) control.setAttribute('aria-describedby', [hint && `${id}-hint`, `${id}-error`].filter(Boolean).join(' '));
-  return h('div', { class: 'field', 'data-field': spec.name, hidden: spec.hidden }, spec.type === 'image' || spec.type === 'gallery' || spec.type === 'rows' ? h('p', { class: 'label', id: `${id}-label` }, h('b', { text: spec.label }), spec.optional ? h('span', { class: 'opt', text: ' (optional)' }) : null) : label, control, hint, error);
+  return h('div', { class: 'field', 'data-field': spec.name, hidden: spec.hidden }, spec.type === 'image' || spec.type === 'gallery' || spec.type === 'rows' || spec.type === 'file' ? h('p', { class: 'label', id: `${id}-label` }, h('b', { text: spec.label }), spec.optional ? h('span', { class: 'opt', text: ' (optional)' }) : null) : label, control, hint, error);
 }
 function imageControl(spec, value, media, id) {
   const many = spec.type === 'gallery'; const limit = spec.limit || 12;
@@ -348,8 +358,9 @@ function imageControl(spec, value, media, id) {
       if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast(`“${file.name}” is not a JPG, PNG or WebP photo.`); continue; }
       if (file.size > 5 * 1024 * 1024) { toast(`“${file.name}” is too large (5 MB max).`); continue; }
       const base64 = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(file); });
-      try { toast('Preparing the photo…'); const result = await call('POST', '/media', { name: file.name, base64 }); media[result.mediaId] = result.src; const picture = { mediaId: result.mediaId, alt: '' }; if (many) list.push(picture); else list = [picture]; state.dirty = true; draw(); toast('Photo added ✓'); }
-      catch (error) { toast(`“${file.name}”: ${error.message}`); }
+      const result = await busy(null, () => call('POST', '/media', { name: file.name, base64 }), 'Preparing the photo…');
+      if (!result) continue;
+      media[result.mediaId] = result.src; const picture = { mediaId: result.mediaId, alt: '' }; if (many) list.push(picture); else list = [picture]; state.dirty = true; draw(); toast('Photo added ✓');
     }
   };
   input.addEventListener('change', () => { add(input.files); input.value = ''; });
@@ -357,6 +368,46 @@ function imageControl(spec, value, media, id) {
   drop.addEventListener('dragleave', () => drop.classList.remove('over'));
   drop.addEventListener('drop', event => { event.preventDefault(); drop.classList.remove('over'); add(event.dataTransfer.files); });
   const box = h('div', { 'data-images': spec.name }, drop, pics); box.read = () => many ? list : list[0] || null; draw();
+  return box;
+}
+// A checked PDF or video, uploaded to /api/v2/files. The server checks the real format, rebuilds PDFs as images
+// and keeps the file private until a publication uses it. The form only stores its ID.
+const FILE_MAX_BYTES = 10 * 1024 * 1024;
+const FILE_TOO_LARGE = 'This file is too large (10 MB maximum). Please send a link instead, or contact us by email.';
+const FILE_TYPES = {
+  pdf: { accept: 'application/pdf,.pdf', name: /\.pdf$/i, drop: 'Drop a PDF here', small: 'PDF, up to 10 MB and 100 pages', wrong: 'is not a PDF. Save Word files as PDF first.', badge: 'PDF', label: 'PDF ready' },
+  video: { accept: 'video/mp4,video/webm,.mp4,.webm', name: /\.(mp4|webm)$/i, drop: 'Drop a video here', small: 'MP4 or WebM, up to 10 MB and 60 seconds', wrong: 'is not an MP4 or WebM video.', badge: 'VIDEO', label: 'Video ready' },
+};
+function fileControl(spec, value, id) {
+  const type = FILE_TYPES[spec.kind]; let current = value || null; let name = '';
+  const input = h('input', { type: 'file', id, accept: type.accept, 'aria-labelledby': `${id}-label` });
+  const drop = h('div', { class: 'drop' }, h('b', { text: type.drop }), ' or click to choose', h('br'), h('small', { text: type.small }), input);
+  const info = h('div', { class: 'file-current' });
+  const draw = () => {
+    drop.hidden = Boolean(current);
+    info.replaceChildren(...(current ? [
+      spec.kind === 'video' ? h('video', { class: 'file-preview', src: `${API}/files/${current}`, controls: true, preload: 'metadata' }) : null,
+      h('div', { class: 'file' }, h('span', { class: 'pdf', 'aria-hidden': 'true' }, type.badge),
+        h('span', { class: 'grow' }, h('b', { text: name || type.label }), h('br'), h('small', { text: name ? 'Checked. Visible on the site once you publish.' : 'Checked.' })),
+        h('span', { class: 'file-actions' },
+          h('a', { class: 'btn soft', href: `${API}/files/${current}`, target: '_blank', rel: 'noopener' }, spec.kind === 'pdf' ? 'Download' : 'Open'),
+          h('button', { class: 'btn soft', type: 'button', onclick: () => { current = null; name = ''; state.dirty = true; draw(); input.focus(); } }, 'Remove'))),
+    ].filter(Boolean) : []));
+  };
+  const add = async file => {
+    if (!file) return;
+    if (!type.name.test(file.name)) { toast(`“${file.name}” ${type.wrong}`); return; }
+    if (file.size > FILE_MAX_BYTES) { toast(FILE_TOO_LARGE); return; }
+    const base64 = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(file); });
+    const result = await busy(null, () => call('POST', '/files', { name: file.name, base64 }), 'Checking the file… this can take up to a minute');
+    if (!result) return;
+    current = result.id; name = result.name; state.dirty = true; draw(); toast('File checked and added ✓ Publish to put it on the site.');
+  };
+  input.addEventListener('change', () => { add(input.files[0]); input.value = ''; });
+  drop.addEventListener('dragover', event => { event.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', event => { event.preventDefault(); drop.classList.remove('over'); add(event.dataTransfer.files[0]); });
+  const box = h('div', { 'data-file': spec.name }, drop, info); box.read = () => current; draw();
   return box;
 }
 function rowsControl(spec, value, id) {
@@ -375,7 +426,7 @@ function readForm(form, specs) {
   const fields = {};
   for (const spec of specs) {
     const wrapper = form.querySelector(`[data-field="${spec.name}"]`);
-    const custom = wrapper.querySelector('[data-images], [data-rows]');
+    const custom = wrapper.querySelector('[data-images], [data-rows], [data-file]');
     fields[spec.name] = custom ? custom.read() : wrapper.querySelector('input, textarea, select').value.trim();
   }
   return fields;
@@ -498,7 +549,7 @@ async function openConversation(id, box, quiet = false, force = false) {
     chat.append(h('div', { class: `bubble ${message.from}${message.status === 'failed' && !message.simulation ? ' failed' : ''}` },
       message.facts ? h('p', { class: 'facts', text: message.facts }) : null, message.text,
       ...(message.attachments || []).map(file => h('div', { class: 'file' }, h('span', { class: 'pdf', 'aria-hidden': 'true' }, 'PDF'), h('span', { class: 'grow' }, h('b', { text: file.name }), h('br'), h('small', { text: file.size })),
-        h('a', { class: 'btn soft', href: state.demo ? '#' : `${API}/attachments/${file.id}`, target: '_blank', rel: 'noopener', onclick: event => { if (state.demo) { event.preventDefault(); toast('Demo mode: there is no real résumé.'); } } }, 'Open'))),
+        h('a', { class: 'btn soft', href: `${API}/attachments/${file.id}`, target: '_blank', rel: 'noopener' }, 'Open'))),
       h('time', { text: `${new Date(message.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${message.from === 'us' ? (message.simulation || message.status === 'simulated' ? ' · test, not sent' : message.status === 'failed' ? ' · not sent' : ' · sent by email') : ''}` })));
   }
   const text = h('textarea', { class: 'text', rows: '1', placeholder: 'Write a reply…', 'aria-label': state.mail === 'simulated' ? `Your reply to ${talk.name} (test version, no email sent)` : `Your reply, emailed to ${talk.name}` });
@@ -544,7 +595,7 @@ async function openSetting(key, quiet = false) {
     signature: async () => { const area = h('textarea', { class: 'text', 'aria-label': 'Signature', maxlength: '300' }); area.value = settings.signature || ''; return [h('div', { class: 'panel' }, h('h3', { text: 'Reply signature' }), area, h('div', { class: 'bar-inline' }, h('button', { class: 'btn main', type: 'button', onclick: writer(async () => { Object.assign(settings, await call('PUT', '/settings', { ...settings, signature: area.value.trim() })); toast('Saved ✓'); }) }, 'Save')))]; },
     history: async () => { const list = await call('GET', '/publishes'); return [h('div', { class: 'panel' }, h('h3', { text: 'Site history' }), h('p', { text: 'Each publish keeps a version of the site. You can go back to an earlier one.' }),
       ...list.map((entry, index) => h('div', { class: 'person' }, h('span', { text: `${new Date(entry.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} — ${entry.summary}` }), index === 0 ? h('b', { text: 'Current version' }) : h('button', { class: 'btn soft', type: 'button', onclick: writer(async () => { if (!confirm('Put the site back to this version?')) return; const result = await call('POST', `/publishes/${entry.id}/restore`, {}); toast(result.message || 'Site restored to this version ✓'); openSetting('history'); }, PUBLISHING) }, 'Go back to this version'))))]; },
-    data: async () => [h('div', { class: 'panel' }, h('h3', { text: 'Your data' }), h('p', { text: 'Applications and their résumés are deleted automatically after 12 months, messages after 24 months.' }), h('a', { class: 'btn soft', href: state.demo ? '#' : `${API}/export`, onclick: event => { if (state.demo) { event.preventDefault(); toast('Demo mode: no export.'); } } }, 'Download a copy of the site content'))],
+    data: async () => [h('div', { class: 'panel' }, h('h3', { text: 'Your data' }), h('p', { text: 'Applications and their résumés are deleted automatically after 12 months, messages after 24 months.' }), h('a', { class: 'btn soft', href: `${API}/export` }, 'Download a copy of the site content'))],
   };
   const titles = { people: 'People', notify: 'Notifications', signature: 'Signature', history: 'Site history', data: 'Your data' };
   main(topBar({ title: titles[key] }), h('div', { class: 'body' }, ...(await panels[key]())));
@@ -558,69 +609,5 @@ $('#search').addEventListener('input', event => {
 });
 document.querySelectorAll('.rail [data-space]').forEach(button => button.addEventListener('click', () => showSpace(button.dataset.space)));
 window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });
-
-// ---------- Demonstration store (only when the back-end is not there yet). Fictional data only. ----------
-const Demo = (() => {
-  const now = Date.now(), ago = minutes => new Date(now - minutes * 60000).toISOString();
-  let next = 100; const newId = prefix => `${prefix}-${++next}`;
-  const items = {
-    'case-studies': [{ id: 'd-c1', title: 'Sample: a brand launch', status: 'live' }],
-    'client-work': [{ id: 'd-w1', title: 'Neighborhood café rebrand', status: 'live' }, { id: 'd-w2', title: 'Summer festival campaign', status: 'changed' }, { id: 'd-w3', title: 'Bike shop launch kit', status: 'draft' }],
-    photography: [{ id: 'd-w4', title: 'Morning light, studio series', status: 'live' }, { id: 'd-w5', title: 'Street textures', status: 'live' }],
-    'events-shows': [{ id: 'd-e1', title: 'Studio open night', status: 'live' }],
-    press: [{ id: 'd-p1', title: 'Five young studios to watch this year', status: 'live' }],
-  };
-  const fields = { 'd-w1': { title: 'Neighborhood café rebrand', date: '2026-09', summary: 'A warm identity, menus and window posters for a corner café.', image: null, gallery: [] } };
-  const pages = {
-    intros: { revision: 1, fields: { photography: 'Portraits, places and productions, shot in the studio and around town.' } },
-    home: { revision: 1, fields: { announcementTitle: 'New season, new studio', announcementText: 'We moved into a bigger pond. Come and see the space at our open night.', announcementLink: 'events-shows.html', gramLabel: 'Studio moments', gramUrl: '' } },
-    about: { revision: 1, fields: { story: 'Frog Pond Boys started as three friends making posters for the people around them.', ethos: 'We keep things simple, playful and honest.', photos: [], team: [{ name: 'The advertising frog', role: 'Campaigns and brand ideas' }] } },
-    contact: { revision: 1, fields: { intro: 'A project, a question or just a hello: write to us.', email: 'hello@example.com', socials: [] } },
-    join: { revision: 1, fields: { intro: 'We are always happy to meet curious people.', positions: [{ title: 'Junior designer', type: 'Full time' }] } },
-  };
-  const talks = [
-    { id: 'd-t1', box: 'cv', state: 'open', unread: true, name: 'Sample Applicant A', email: 'applicant.a@example.com', subject: 'Junior designer', messages: [{ from: 'them', at: ago(50), facts: 'Application · Junior designer · +1 000 000 0000', text: 'Sample cover note, as the person wrote it on the site.', attachments: [{ id: 'cv1', name: 'sample-resume.pdf', size: '412 KB' }] }] },
-    { id: 'd-t2', box: 'cv', state: 'open', unread: true, name: 'Sample Applicant B', email: 'applicant.b@example.com', subject: 'Open application', messages: [{ from: 'them', at: ago(1500), facts: 'Open application', text: 'Sample message.', attachments: [{ id: 'cv2', name: 'resume.pdf', size: '230 KB' }] }] },
-    { id: 'd-t3', box: 'cv', state: 'archived', unread: false, name: 'Sample Applicant C', email: 'applicant.c@example.com', subject: 'Video intern', messages: [{ from: 'them', at: ago(20000), text: 'Sample message.', attachments: [] }, { from: 'us', at: ago(19000), text: 'Thanks for your interest!', status: 'sent' }] },
-    { id: 'd-t4', box: 'msg', state: 'open', unread: true, name: 'Sample Sender', email: 'sender@example.com', subject: 'Contact form', messages: [{ from: 'them', at: ago(90), text: 'Hi, this is a sample message sent from the Contact page.', attachments: [] }] },
-  ];
-  const people = [{ email: 'demo@frogpondboys.com', me: true }, { email: 'partner@example.com' }];
-  let settings = { notifications: { cv: true, msg: true }, signature: 'The Frog Pond Boys team' };
-  const publishes = [{ id: 'p2', at: ago(30), summary: '2 items published' }, { id: 'p1', at: ago(1500), summary: '1 item published' }];
-  const media = {};
-  const findItem = id => Object.entries(items).flatMap(([section, list]) => list.map(item => ({ section, item }))).find(entry => entry.item.id === id);
-  const wait = value => new Promise(resolve => setTimeout(() => resolve(structuredClone(value)), 120));
-  function handle(method, path, body) {
-    const [route, query] = path.split('?'); const params = new URLSearchParams(query); const parts = route.split('/').filter(Boolean);
-    if (route === '/sections') return wait(Object.fromEntries(SECTIONS.flatMap(group => group.items).filter(section => section.kind !== 'page').map(section => [section.slug, (items[section.slug] || []).length])));
-    if (route === '/items' && method === 'GET') return wait((items[params.get('section')] || []).map(item => ({ ...item, thumb: fields[item.id]?.image ? media[fields[item.id].image.mediaId] : '' })));
-    if (route === '/items' && method === 'POST') { const id = newId('d-new'); (items[body.section] ||= []).unshift({ id, title: body.fields.title, status: 'draft' }); fields[id] = body.fields; return wait({ id, revision: 1, status: 'draft', fields: body.fields }); }
-    if (parts[0] === 'items') {
-      const found = findItem(parts[1]); if (!found) return Promise.reject(Object.assign(new Error('Item not found.'), { status: 404 }));
-      if (method === 'GET') return wait({ id: found.item.id, revision: 1, status: found.item.status, fields: fields[found.item.id] || { title: found.item.title }, media });
-      if (method === 'PUT') { fields[found.item.id] = body.fields; found.item.title = body.fields.title; if (found.item.status === 'live') found.item.status = 'changed'; return wait({ id: found.item.id, revision: 2, status: found.item.status, fields: body.fields }); }
-      if (parts[2] === 'publish') { found.item.status = 'live'; publishes.unshift({ id: newId('p'), at: new Date().toISOString(), summary: `“${found.item.title}” published` }); return wait({ message: 'Demo mode: nothing is really published.', item: { status: 'live' } }); }
-      if (parts[2] === 'unpublish') { found.item.status = 'draft'; return wait({}); }
-      if (method === 'DELETE') { items[found.section] = items[found.section].filter(item => item !== found.item); return wait({}); }
-    }
-    if (parts[0] === 'pages') { const page = pages[parts[1]]; if (parts[2] === 'publish') return wait({ message: 'Demo mode: nothing is really published.' }); if (method === 'PUT') { page.fields = body.fields; page.revision++; } return wait({ ...page, media }); }
-    if (route === '/media') { const id = newId('m'); media[id] = `data:image/*;base64,${body.base64}`; return wait({ mediaId: id, src: media[id] }); }
-    if (route === '/conversations') return wait(talks.filter(talk => talk.box === params.get('box') && (params.get('state') === 'archived' ? talk.state === 'archived' : talk.state !== 'archived')).map(talk => ({ id: talk.id, name: talk.name, email: talk.email, unread: talk.unread, lastAt: talk.messages.at(-1).at, preview: (talk.messages.at(-1).from === 'us' ? 'You: ' : '') + talk.messages.at(-1).text })));
-    if (parts[0] === 'conversations') {
-      const talk = talks.find(item => item.id === parts[1]);
-      if (method === 'GET') { talk.unread = false; return wait(talk); }
-      if (parts[2] === 'replies') { talk.messages.push({ from: 'us', at: new Date().toISOString(), text: `${body.text}\n\n${settings.signature}`, status: 'sent' }); return wait({}); }
-      if (parts[2] === 'state') { talk.state = body.state === 'callback' ? 'open' : body.state; return wait({}); }
-      if (method === 'DELETE') { talks.splice(talks.indexOf(talk), 1); return wait({}); }
-    }
-    if (route === '/settings') { if (method === 'PUT') settings = body; return wait(settings); }
-    if (route === '/people') { if (method === 'POST') people.push({ email: body.email }); return wait(people); }
-    if (parts[0] === 'people' && method === 'DELETE') { people.splice(people.findIndex(person => person.email === decodeURIComponent(parts[1])), 1); return wait({}); }
-    if (route === '/publishes') return wait(publishes);
-    if (parts[0] === 'publishes') return wait({ message: 'Demo mode: the site has not changed.' });
-    return Promise.reject(new Error('Unknown action.'));
-  }
-  return { handle };
-})();
 
 start();

@@ -1,6 +1,12 @@
 ---
+// Legal page: a short text and one PDF (Privacy Policy and Terms of Service), both from Pond Desk.
+// No legal text is written here: until the studio adds its PDF, the page only says where it will be.
 import { site } from '../../data/public-site-content.js';
-const sections=[['legalConduct','Code of Conduct'],['legalCookies','Cookie Settings'],['legalPrivacy','Privacy Policies'],['legalTerms','Terms of Services'],['legalValues','Values']];
+const { intro, documentId } = site.legal;
 ---
-<p class="demo-note">Demo — these examples are awaiting the studio’s review and are not approved legal terms.</p>
-{sections.map(([key,title])=><section class="legal-section"><h2>{title}</h2><p>{site.home.editorial[key]}</p></section>)}
+<div class="legal-page">
+  {intro ? <p class="page-intro">{intro}</p> : <p class="page-intro">Our Privacy Policy and Terms of Service.</p>}
+  {documentId
+    ? <p class="legal-document"><a class="about-btn" href={`files/${documentId}`} target="_blank" rel="noopener">Read the Privacy Policy and Terms of Service (PDF) <span aria-hidden="true">↗</span></a></p>
+    : <p class="legal-pending">The document will be published here soon. For any question, <a href="contact.html">contact us</a>.</p>}
+</div>

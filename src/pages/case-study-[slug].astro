@@ -17,6 +17,7 @@ const nextCase = caseStudies[caseStudies.findIndex(value => value.id === item.id
     <h1>{item.title}</h1>
     <p class="case-text">{item.summary}</p>
     {item.client && <p class="case-text"><strong>Client:</strong> {item.client}</p>}
+    {item.documentId && <p class="case-more"><a class="case-open" href={`files/${item.documentId}`} target="_blank" rel="noopener">Open the full case study (PDF) <span aria-hidden="true">↗</span></a></p>}
     <CaseImage image={item.cover} eager={true} />
     <section aria-labelledby="case-context"><h2 id="case-context">Context</h2><p class="case-text">{item.context}</p></section>
     <section aria-labelledby="case-work"><h2 id="case-work">Our work</h2><p class="case-text">{item.work}</p></section>

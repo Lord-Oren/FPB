@@ -1,16 +1,17 @@
 ---
+// Contact page: every text comes from Pond Desk (Contact). Social links without an address are not shown.
 import SocialIcon from "../SocialIcon.astro";
 import InquiryForm from '../forms/InquiryForm.astro';
 import { site } from '../../data/public-site-content.js';
-const { intro, email, socials } = site.contact;
+const { title, intro, email, socials, socialTitle, socialText } = site.contact;
+const channels = socials.filter(link => link.url);
 ---
 <p class="page-intro">{intro}</p>
 <div class="contact-layout">
-  <section aria-labelledby="write-us"><h2 id="write-us" class="section-title">Write to us</h2><InquiryForm kind="contact" /></section>
-  <aside class="contact-channels" aria-labelledby="elsewhere"><h2 id="elsewhere" class="section-title">Elsewhere</h2>
+  <section aria-labelledby="write-us"><h2 id="write-us" class="section-title">{title || 'Write to us'}</h2><InquiryForm kind="contact" /></section>
+  {(email || channels.length > 0 || socialText) && <aside class="contact-channels" id="socials" aria-labelledby="elsewhere"><h2 id="elsewhere" class="section-title">{socialTitle || 'Social channels'}</h2>
+    {socialText && <p class="channel-text">{socialText}</p>}
     {email && <><p class="channel-label">Email</p><a class="direct-email" href={`mailto:${email}`}>{email}</a></>}
-    {socials.length > 0 && <><h3 class="channel-label">Socials</h3><ul class="social-links">{socials.map(link => <li><a href={link.url} rel="noopener"><SocialIcon name={link.label}/> {link.label} <span aria-hidden="true">↗</span></a></li>)}</ul></>}
-  </aside>
+    {channels.length > 0 && <ul class="social-links">{channels.map(link => <li><a href={link.url} rel="noopener"><SocialIcon name={link.label}/> {link.label} <span aria-hidden="true">↗</span></a></li>)}</ul>}
+  </aside>}
 </div>
-
-<section id="demo-socials"><h2>Social channels — Demo</h2><p>Instagram, LinkedIn, Vimeo and YouTube links will be added here after the studio provides its official accounts.</p></section>

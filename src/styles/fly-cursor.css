@@ -69,7 +69,3 @@ body.fly-cursor-active :is(input,textarea,select) { cursor:auto }
   .fly-cursor { display:none !important }
   body.fly-cursor-active,body.fly-cursor-active a,body.fly-cursor-active button { cursor:auto !important }
 }
-/* Note shown while the site still carries sample content (kept here because this sheet loads on every page). */
-.demo-note { position:relative; z-index:60; margin:0; padding:5px 16px; text-align:center; background:#191833; color:#abd8d5; font:700 .72rem/1.4 'Nunito Sans', system-ui, sans-serif; letter-spacing:.02em; grid-column:1 / -1 }
-/* On both home pages the body is a grid: keep the strip out of it so the pond keeps its full height. */
-body.home-page > .demo-note, body.variant-b > .demo-note { position:absolute; top:0; left:0; right:0 }

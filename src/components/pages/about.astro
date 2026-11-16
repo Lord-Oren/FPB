@@ -1,21 +1,32 @@
 ---
-// About page, fed by site-content.json (story, ethos, photos, team). Team members without a photo show a frog.
+// About page, fed by Pond Desk (About): Our Story, Our Ethos, Our Manifesto, the differentiator, photos,
+// the team and the extended team. Every title is editable; a part with no text is not shown.
 import { site } from '../../data/public-site-content.js';
 import RubenArtwork from '../pond/RubenArtwork.astro';
-const { story, ethos, photos, team } = site.about;
+const a = site.about;
 const skins = ['var(--aero-blue)', 'var(--dandelion)', '#7cc4ff', '#f4a7b9'];
 const paragraphs = value => value.split(/\n{2,}/).filter(Boolean);
+const parts = [
+  ['our-story', a.storyTitle || 'Our Story', a.story],
+  ['our-ethos', a.ethosTitle || 'Our Ethos', a.ethos],
+  ['our-manifesto', a.manifestoTitle || 'Our Manifesto', a.manifesto],
+  ['our-differentiator', a.differentiatorTitle || 'Our Differentiator', a.differentiator],
+].filter(([, , body]) => body && body.trim());
+const teams = [
+  ['the-team', a.teamTitle || 'Our Team', a.teamText, a.team],
+  ['extended-team', a.extendedTeamTitle || 'Our Extended Team', a.extendedTeamText, a.extendedTeam],
+].filter(([, , body, people]) => (body && body.trim()) || people.length > 0);
 ---
 <div class="about-layout">
-  <section class="about-section" aria-labelledby="our-story"><h2 id="our-story" class="section-title">Our story</h2><div class="editorial-space">{paragraphs(story).map(p => <p>{p}</p>)}</div></section>
-  <section class="about-section" aria-labelledby="our-ethos"><h2 id="our-ethos" class="section-title">Our ethos</h2><div class="editorial-space">{paragraphs(ethos).map(p => <p>{p}</p>)}</div></section>
+  {parts.map(([id, title, body]) => <section class="about-section" aria-labelledby={id}><h2 id={id} class="section-title">{title}</h2><div class="editorial-space">{paragraphs(body).map(p => <p>{p}</p>)}</div></section>)}
 </div>
-{photos.length > 0 && <ul class="about-photos">{photos.map(image => <li><img src={image.src} alt={image.alt} loading="lazy" decoding="async" /></li>)}</ul>}
-{team.length > 0 && <RubenArtwork />}
-{team.length > 0 && <section aria-labelledby="the-team"><h2 id="the-team" class="section-title">The team</h2>
-  <ul class="team-grid">{team.map((person, index) => <li class="team-member" style={`--frog-skin:${skins[index % skins.length]}`}>
+{a.photos.length > 0 && <ul class="about-photos">{a.photos.map(image => <li><img src={image.src} alt={image.alt} loading="lazy" decoding="async" /></li>)}</ul>}
+{teams.some(([, , , people]) => people.length > 0) && <RubenArtwork />}
+{teams.map(([id, title, body, people]) => <section class="about-team" aria-labelledby={id}><h2 id={id} class="section-title">{title}</h2>
+  {body && body.trim() && <div class="editorial-space">{paragraphs(body).map(p => <p>{p}</p>)}</div>}
+  {people.length > 0 && <ul class="team-grid">{people.map((person, index) => <li class="team-member" style={`--frog-skin:${skins[index % skins.length]}`}>
     {person.photo ? <img class="team-photo" src={person.photo.src} alt={person.photo.alt} loading="lazy" /> : <svg class="team-photo team-frog" viewBox="0 0 64.95 60.992" aria-hidden="true" focusable="false"><use href="#art-frog" /></svg>}
-    <b>{person.name}</b><span>{person.role}</span>
-  </li>)}</ul>
-</section>}
+    <b>{person.name}</b>{person.role && <span>{person.role}</span>}
+  </li>)}</ul>}
+</section>)}
 <section class="about-cta" aria-labelledby="work-with-us"><h2 id="work-with-us" class="section-title">Work with us</h2><p>Got a project, or want to join the team?</p><p class="about-cta-links"><a class="about-btn" href="contact.html">Start a project</a><a class="about-btn about-btn--ghost" href="join.html">Join the pond</a></p></section>

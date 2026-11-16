@@ -1,4 +1,8 @@
+// Join and Contact forms: checks before sending. Accepted files and the size message follow the V1 contract (B6).
 (() => {
+  const FILE_NAME = /\.(pdf|png|jpe?g|webp|mp4|webm)$/i;
+  const FILE_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'video/mp4', 'video/webm'];
+  const TOO_LARGE = 'This file is too large (10 MB maximum). Please send a link instead, or contact us by email.';
   document.querySelectorAll('[data-inquiry-form]').forEach(form => {
     const ready = form.dataset.ready === 'true';
     const cv = form.querySelector('[data-cv]');
@@ -13,9 +17,9 @@
       const file = cv.files[0];
       let error = '';
       if (file) {
-        if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== 'application/pdf')) error = 'Please choose a PDF file.';
-        else if (!file.size) error = 'This file is empty. Please choose another PDF.';
-        else if (file.size > Number(form.dataset.cvMaxBytes)) error = 'Please choose a PDF smaller than 5 MB.';
+        if (!FILE_NAME.test(file.name) || (file.type && !FILE_TYPES.includes(file.type))) error = 'Please choose a PDF, an image (JPG, PNG, WebP) or a short video (MP4, WebM). Save Word files as PDF first.';
+        else if (!file.size) error = 'This file is empty. Please choose another one.';
+        else if (file.size > Number(form.dataset.cvMaxBytes)) error = TOO_LARGE;
       }
       cv.setCustomValidity(error);
       cv.setAttribute('aria-invalid', String(Boolean(error)));
@@ -28,7 +32,7 @@
     form.addEventListener('submit', event => {
       if (!ready) {
         event.preventDefault();
-        status.textContent = 'Preview only. Nothing has been sent.';
+        status.textContent = 'Online sending is not open yet. Nothing has been sent: please email us instead.';
         return;
       }
       requiredText.forEach(validateText);

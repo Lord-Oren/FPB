@@ -8,3 +8,19 @@
 .case-credit { display: block; }
 .case-gallery { display: grid; gap: 1.5rem; }
 .case-detail section { margin-block: 2rem; }
+/* Thumbnail grid (meeting of 13 November 2026) */
+.case-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: 2rem 1.5rem; }
+.case-grid li { min-width: 0; }
+.case-card { display: flex; flex-direction: column; gap: .5rem; }
+.case-thumb { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px; background: #0003; outline-offset: 4px; }
+.case-thumb > img:first-child { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s ease; }
+.case-thumb:hover > img:first-child, .case-thumb:focus-visible > img:first-child { transform: scale(1.03); }
+.case-logo { position: absolute; left: .6rem; bottom: .6rem; width: 2.8rem; height: 2.8rem; object-fit: contain; border-radius: 50%; background: #fff; padding: .25rem; box-shadow: 0 1px 4px #0006; }
+.case-badge { position: absolute; right: .6rem; bottom: .6rem; padding: .1rem .45rem; background: #191833; color: #ffdb76; font-weight: 900; font-size: .75rem; letter-spacing: .05em; border-radius: 3px; }
+.case-title, .interior-page .case-grid .case-title { margin: .2rem 0 0; font-size: clamp(1.05rem, 1.6vw, 1.3rem); line-height: 1.25; overflow-wrap: anywhere; }
+.case-title a { color: inherit; text-decoration: none; } .case-title a:hover, .case-title a:focus-visible { text-decoration: underline; }
+.case-card .case-text { margin: 0; }
+.case-more { margin: .2rem 0 0; font-size: .9rem; }
+.case-open { font-weight: 800; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .case-thumb > img:first-child { transition: none; } }
