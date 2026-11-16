@@ -3,7 +3,7 @@
 import {deploymentConfig} from './config.mjs';
 function waking(busy=false){
  const title=busy?'busy':'starting';
- const body=busy?'<h1>The pond is busy.</h1><p>Our hosting provider is limiting traffic for a moment.</p><p>Please wait about thirty seconds, then reload this page.</p>':'<h1>The pond is waking up.</h1><p>This site uses free hosting. Starting may take about a minute.</p><p>Your saved content is kept. Please wait a moment, then reload this page.</p>';
+ const body=busy?'<h1>The pond is busy.</h1><p>Our hosting provider is limiting traffic for a moment.</p><p>Please wait about thirty seconds, then reload this page.</p>':'<h1>The pond is waking up.</h1><p>The service is restarting. Please try again shortly.</p><p>Your saved content is kept. Please wait a moment, then reload this page.</p>';
  return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Frog Pond Boys - ${title}</title><style>body{margin:0;background:#05353a;color:#f3f7f6;font:18px/1.6 system-ui;display:grid;min-height:100vh;place-items:center}main{max-width:34rem;padding:2rem}a{color:#ffdb76}h1{line-height:1.2}</style><main>${body}<p><a href="">Reload this page</a></p></main></html>`,{status:503,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Retry-After':busy?'30':'10','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY'}});
 }
 export async function proxy(request,env,forward=fetch){

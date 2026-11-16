@@ -1,4 +1,4 @@
-# Hosting status — October 29, 2026
+# Hosting status - November 16, 2026
 
 ## Live addresses
 
@@ -10,9 +10,9 @@ Cloudflare manages DNS, HTTPS and the Worker routes for these three hosts. The d
 
 ## Application and database
 
-Render runs `frog-pond-boys` on Free Docker hosting in Virginia, with one instance. The existing `frog-pond-boys-db` PostgreSQL 17 database is also in Virginia, with external access disabled. Internal TLS is configured as described in DEPLOYMENT.md.
+Render runs `frog-pond-boys` on Starter (0.5 CPU, 512 MB) Docker hosting in Virginia, with one instance. The existing `frog-pond-boys-db` PostgreSQL 17 database was upgraded in place to Basic-256mb in Virginia. External database access is disabled. Internal TLS is configured as described in DEPLOYMENT.md.
 
-The free database expires on **November 28, 2026**. Upgrade or complete a verified migration before expiration. The free web service can sleep when idle; the Worker displays a waiting page during cold starts. No keep-alive schedule is configured.
+The provider reports **no database expiration date**. A private backup was created and fully decoded before the upgrade. Starter does not sleep when idle; the Worker still provides an unavailable page for transient upstream failures. No keep-alive schedule is needed. After the restart, the public home page, About and readiness returned200; www returned308 to the main address, and Desk returned302 to Cloudflare Access. Temporary502/503 responses occurred during the transition. No new authenticated owner session was tested in this check.
 
 ## Private access
 
@@ -30,7 +30,7 @@ GitHub Pages retains only a redirect to the official website. `_config.yml` excl
 
 The new database started from the repository snapshot. No private messages, previous trial drafts, history or sessions were copied from the old trial, which remains intact. This cutover does not represent a private-data migration.
 
-195 local tests passed, including PostgreSQL persistence and access controls. CI passed before migration. External checks through the new Cloudflare addresses returned 200 for A, About, Contact and Join; www returned 308 to the main domain; Desk returned 302 to Access; public editor API and environment-file paths returned 404. Anonymous direct-origin and forged-token Desk requests returned 403.
+At the October 29 migration, 195 local tests passed, including PostgreSQL persistence and access controls. CI passed before that migration. External checks through the new Cloudflare addresses returned 200 for A, About, Contact and Join; www returned 308 to the main domain; Desk returned 302 to Access; public editor API and environment-file paths returned 404. Anonymous direct-origin and forged-token Desk requests returned 403.
 
 ## Recovery
 
