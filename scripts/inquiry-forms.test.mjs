@@ -44,9 +44,10 @@ test('preview attempts preserve input and explicitly report that nothing was sen
   assert.equal(submit(), true); assert.equal(message.value, 'Example message');
   assert.match(status.textContent, /Nothing has been sent/);
 });
-test('resumes must be PDFs; errors are correctable and filenames are rendered as text', () => {
+test('unsupported files are refused, Word DOCX is accepted; errors are correctable and filenames are rendered as text', () => {
   const { cv, feedback } = setup();
-  for (const file of [pdf(1024, 'resume.docx'), pdf(1024, 'resume.pdf', 'text/html')]) {
+  cv.files = [pdf(1024, 'resume.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')]; cv.emit('change'); assert.equal(cv.error, '');
+  for (const file of [pdf(1024, 'resume.doc', 'application/msword'), pdf(1024, 'resume.docm', ''), pdf(1024, 'resume.pdf', 'text/html')]) {
     cv.files = [file]; cv.emit('change'); assert.match(cv.error, /PDF/); assert.equal(feedback.dataset.error, 'true');
   }
   cv.files = [pdf(1024, '<img onerror=x>.PDF', '')]; cv.emit('change');
