@@ -24,12 +24,13 @@ const socials = site.contact.socials.filter(link => link.url !== gramUrl);
 const day = value => new Date(value + ':00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 ---
 <div class="home-more">
-  {latest.length > 0 && <section data-reveal class="hm-band hm-work" id="latest" aria-labelledby="hm-work">
+  <section data-reveal class="hm-band hm-work" id="latest" aria-labelledby="hm-work">
     <div class="hm-head"><p class="hm-kicker">{site.home.editorial.homeLatestKicker}</p><h2 id="hm-work">{site.home.editorial.homeLatestTitle}</h2></div>
+    {latest.length === 0 && <p>New work is on its way.</p>}
     <ul class="hm-mosaic">{latest.map((item, index) => <li class:list={['hm-tile', { 'hm-tile--big': index === 0 }]}>
       <a href={item.href}><img src={item.image.src} alt={item.image.alt} loading="lazy" decoding="async" /><span class="hm-cap"><small>{item.kind}</small><b>{item.title}</b></span></a>
     </li>)}</ul>
-  </section>}
+  </section>
 
   <section data-reveal class="hm-band hm-news" id="news" aria-labelledby="hm-news">
     <div class="hm-head"><p class="hm-kicker">{site.home.editorial.homeNewsKicker}</p><h2 id="hm-news">{site.home.editorial.homeNewsTitle}</h2></div>
