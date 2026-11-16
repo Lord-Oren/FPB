@@ -1,6 +1,6 @@
 ---
-import ContactFields from './ContactFields.html';
-import JoinFields from './JoinFields.html';
+import ContactFields from './ContactFields.astro';
+import JoinFields from './JoinFields.astro';
 import { submissionSettings, contactChannels } from '../../data/communication.js';
 import { site } from '../../data/public-site-content.js';
 const { kind } = Astro.props;
@@ -13,12 +13,15 @@ const Fields = isJoin ? JoinFields : ContactFields;
 // V1 contract (B6): one attachment, 10 MB at most. The server checks again.
 const attachmentMaxBytes = 10 * 1024 * 1024;
 const email = site.contact.email;
+const w = site.wording;
+// Messages written by the scripts after the page loads are carried here, so they follow Site wording too.
+const messages = { 'data-msg-missing': w['form.missing'], 'data-msg-closed': w['form.closed'], 'data-msg-file-type': w['join.fileType'], 'data-msg-file-empty': w['join.fileEmpty'], 'data-msg-file-large': w['join.fileTooLarge'] };
 ---
-<form class="inquiry-form" method={method} action={action} enctype={isJoin ? 'multipart/form-data' : undefined} data-inquiry-form data-local={String(local)} data-hosted={String(hosted)} data-ready={String(ready)} data-cv-max-bytes={attachmentMaxBytes} aria-describedby={`${kind}-availability`}>
-  <p class="required-note">Fields marked * are required.</p>
+<form class="inquiry-form" method={method} action={action} enctype={isJoin ? 'multipart/form-data' : undefined} data-inquiry-form data-local={String(local)} data-hosted={String(hosted)} data-ready={String(ready)} data-cv-max-bytes={attachmentMaxBytes} aria-describedby={`${kind}-availability`} {...messages}>
+  <p class="required-note">{w['form.required']}</p>
   <Fields />
   {local && <input type="text" name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" hidden />}
-  {privacyUrl && <p class="form-privacy"><a href={privacyUrl}>Privacy policy</a></p>}
-  <div class="form-actions"><button class="send-button" type="submit" disabled={!ready}>{isJoin ? 'Send application' : 'Send message'} <span aria-hidden="true">↗</span></button></div>
-  <p id={`${kind}-availability`} class="form-availability" role="status" data-form-status>{hosted ? 'Messages sent here arrive in Pond Desk. No confirmation email is sent yet.' : local ? 'On this computer, messages are saved in Pond Desk. No email is sent.' : ready ? '' : email ? <>Online sending opens soon. Meanwhile, write to us at <a href={`mailto:${email}`}>{email}</a>.</> : 'Online sending opens soon.'}</p>
+  {privacyUrl && <p class="form-privacy"><a href={privacyUrl}>{w['form.privacy']}</a></p>}
+  <div class="form-actions"><button class="send-button" type="submit" disabled={!ready}>{isJoin ? w['join.send'] : w['form.send']} <span aria-hidden="true">↗</span></button></div>
+  <p id={`${kind}-availability`} class="form-availability" role="status" data-form-status>{hosted ? 'Messages sent here arrive in Pond Desk. No confirmation email is sent yet.' : local ? 'On this computer, messages are saved in Pond Desk. No email is sent.' : ready ? '' : email ? <>{w['form.closedWithEmail']} <a href={`mailto:${email}`}>{email}</a>.</> : w['form.closed']}</p>
 </form>

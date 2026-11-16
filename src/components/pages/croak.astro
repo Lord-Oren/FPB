@@ -2,5 +2,6 @@
 // Croak: the song of the week, from Pond Desk (Home titles & text, and Croak). No audio plays by itself.
 import { site } from '../../data/public-site-content.js';
 const e = site.home.editorial;
+const w = site.wording;
 ---
-<section class="croak-feature"><p>Song of the Week</p>{e.croakTitle ? <><h2>{e.croakTitle}</h2>{e.croakText && <p>{e.croakText}</p>}</> : <h2>A new song is on its way.</h2>}{e.croakUrl && <a href={e.croakUrl} rel="noopener">{e.homeCroakLink || 'Tune in'} <span aria-hidden="true">↗</span></a>}</section>
+<section class="croak-feature"><p>{w['croak.label']}</p>{e.croakTitle ? <><h2>{e.croakTitle}</h2>{e.croakText && <p>{e.croakText}</p>}</> : <h2>{w['home.croakEmpty']}</h2>}{e.croakUrl && <a href={e.croakUrl} rel="noopener">{e.homeCroakLink || w['home.tuneIn']} <span aria-hidden="true">↗</span></a>}</section>

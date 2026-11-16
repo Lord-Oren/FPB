@@ -4,8 +4,8 @@ import { site } from '../../data/public-site-content.js';
 const { intro, positions } = site.join;
 ---
 <p class="page-intro">{intro}</p>
-{positions.length > 0 && <section aria-labelledby="open-positions"><h2 id="open-positions" class="section-title">Open positions</h2>
+{positions.length > 0 && <section aria-labelledby="open-positions"><h2 id="open-positions" class="section-title">{site.wording['join.openPositions']}</h2>
   <ul class="job-list">{positions.map(job => <li class="job-card"><b>{job.title}</b><span>{[job.place, job.type].filter(Boolean).join(' · ')}</span></li>)}</ul>
-  <p class="job-note">Nothing that fits? Send a spontaneous application below.</p>
+  <p class="job-note">{site.wording['join.spontaneous']}</p>
 </section>}
 <div class="application-layout"><InquiryForm kind="join" /></div>

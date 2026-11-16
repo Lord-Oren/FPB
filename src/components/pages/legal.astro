@@ -3,10 +3,11 @@
 // No legal text is written here: until the studio adds its PDF, the page only says where it will be.
 import { site } from '../../data/public-site-content.js';
 const { intro, documentId } = site.legal;
+const w = site.wording;
 ---
 <div class="legal-page">
-  {intro ? <p class="page-intro">{intro}</p> : <p class="page-intro">Our Privacy Policy and Terms of Service.</p>}
+  {intro ? <p class="page-intro">{intro}</p> : <p class="page-intro">{w['legal.intro']}</p>}
   {documentId
-    ? <p class="legal-document"><a class="about-btn" href={`files/${documentId}`} target="_blank" rel="noopener">Read the Privacy Policy and Terms of Service (PDF) <span aria-hidden="true">↗</span></a></p>
-    : <p class="legal-pending">The document will be published here soon. For any question, <a href="contact.html">contact us</a>.</p>}
+    ? <p class="legal-document"><a class="about-btn" href={`files/${documentId}`} target="_blank" rel="noopener">{w['legal.pdfLink']} <span aria-hidden="true">↗</span></a></p>
+    : <p class="legal-pending">{w['legal.pending']} <a href="contact.html">{w['legal.contactLink']}</a>.</p>}
 </div>

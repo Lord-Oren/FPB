@@ -5,21 +5,23 @@
   const TOO_LARGE = 'This file is too large (10 MB maximum). Please send a link instead, or contact us by email.';
   document.querySelectorAll('[data-inquiry-form]').forEach(form => {
     const ready = form.dataset.ready === 'true';
+    // Site wording (Pond Desk) puts its texts on the form; the English originals stay as the fallback.
+    const say = (name, fallback) => form.dataset[name] || fallback;
     const cv = form.querySelector('[data-cv]');
     const feedback = form.querySelector('[data-cv-feedback]');
     const status = form.querySelector('[data-form-status]');
     const requiredText = [...form.querySelectorAll('[data-trim-required]')];
     function validateText(field) {
-      field.setCustomValidity(field.value.trim() ? '' : 'Please complete this field.');
+      field.setCustomValidity(field.value.trim() ? '' : say('msgMissing', 'Please complete this field.'));
     }
     function validateFile() {
       if (!cv) return true;
       const file = cv.files[0];
       let error = '';
       if (file) {
-        if (!FILE_NAME.test(file.name) || (file.type && !FILE_TYPES.includes(file.type))) error = 'Please choose a PDF, a Word file (DOCX), an image (JPG, PNG, WebP) or a short video (MP4, WebM). Save older Word files (DOC) as PDF first.';
-        else if (!file.size) error = 'This file is empty. Please choose another one.';
-        else if (file.size > Number(form.dataset.cvMaxBytes)) error = TOO_LARGE;
+        if (!FILE_NAME.test(file.name) || (file.type && !FILE_TYPES.includes(file.type))) error = say('msgFileType', 'Please choose a PDF, a Word file (DOCX), an image (JPG, PNG, WebP) or a short video (MP4, WebM). Save older Word files (DOC) as PDF first.');
+        else if (!file.size) error = say('msgFileEmpty', 'This file is empty. Please choose another one.');
+        else if (file.size > Number(form.dataset.cvMaxBytes)) error = say('msgFileLarge', TOO_LARGE);
       }
       cv.setCustomValidity(error);
       cv.setAttribute('aria-invalid', String(Boolean(error)));

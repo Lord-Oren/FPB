@@ -81,3 +81,11 @@ Presentations are gone from Case Studies and Pond Desk. Case studies are a thumb
 - **Page change in A** is the same iris, now moving in visible steps (`steps()` in `motion.css`). Reduced motion still turns it off.
 - **Home news band.** The announcement card only shows when its title or text is filled. When there is no announcement, event or press, the band says "News is on its way." The `#news` anchor always stays.
 - **Desk.** Files are read inside the shared lock (`readBase64` inside `busy`). Message lines show the real send state (test, sending, sent, trying again, held for review). Attachments show kind, size and the checked copy; the unchecked original needs a confirmation. Settings → Deleted brings items back as drafts. Case context and work are optional when a PDF is attached; announcement, story and ethos are optional.
+
+### T8 — Site wording (17 November 2026)
+
+- Every short site text comes from `site.wording["key"]` (66 keys, contract in `docs/SITE-WORDING.md`). An empty value means the original text; components never hardcode those sentences again (`scripts/front-wording.test.mjs`).
+- Texts are rendered as escaped text only, never with `set:html`. Inline scripts stay static for the CSP hashes: dynamic messages travel through `data-msg-*` (forms) and `data-pause`/`data-resume` (motion button), with an English fallback in the script.
+- Form fields moved from `ContactFields.html`/`JoinFields.html` to `.astro` components so their labels can use wording. Forms stay closed.
+- Variant B keeps the mixed-case "Frog Pond Boys" title while `home.title` is the original.
+- Pond Desk: "Site wording" row in the site list opens one screen with 10 groups, "Back to the original" per field, "Save without publishing" and "Publish to the site" through the shared writer lock; a 409 keeps the form.

@@ -4,6 +4,7 @@
 import { site } from '../../data/public-site-content.js';
 import RubenArtwork from '../pond/RubenArtwork.astro';
 const a = site.about;
+const w = site.wording;
 const skins = ['var(--aero-blue)', 'var(--dandelion)', '#7cc4ff', '#f4a7b9'];
 const paragraphs = value => value.split(/\n{2,}/).filter(Boolean);
 const parts = [
@@ -29,4 +30,4 @@ const teams = [
     <b>{person.name}</b>{person.role && <span>{person.role}</span>}
   </li>)}</ul>}
 </section>)}
-<section class="about-cta" aria-labelledby="work-with-us"><h2 id="work-with-us" class="section-title">Work with us</h2><p>Got a project, or want to join the team?</p><p class="about-cta-links"><a class="about-btn" href="contact.html">Start a project</a><a class="about-btn about-btn--ghost" href="join.html">Join the pond</a></p></section>
+<section class="about-cta" aria-labelledby="work-with-us"><h2 id="work-with-us" class="section-title">{w['about.ctaTitle']}</h2><p>{w['about.ctaText']}</p><p class="about-cta-links"><a class="about-btn" href="contact.html">{w['about.ctaProject']}</a><a class="about-btn about-btn--ghost" href="join.html">{w['about.ctaJoin']}</a></p></section>

@@ -206,3 +206,9 @@ input::placeholder,textarea::placeholder { color:var(--muted); opacity:1 }
 .file-actions { display:flex; gap:8px; flex-wrap:wrap }
 .file-preview { display:block; width:100%; max-width:480px; max-height:270px; background:#000; margin-top:10px }
 .main[aria-busy="true"] .bar .btn:disabled,.main[aria-busy="true"] .bar-inline .btn:disabled { opacity:.55 }
+
+/* Site wording: one box per page of the site, the original text under each field. */
+.wording-group { border:3px solid var(--ink); margin:0 0 22px; padding:14px 16px 4px; min-width:0 }
+.wording-group > legend { font-weight:900; padding:0 8px; color:var(--dandelion) }
+.wording-group .field .hint { overflow-wrap:anywhere }
+.wording-group .bar-inline { margin-top:6px }

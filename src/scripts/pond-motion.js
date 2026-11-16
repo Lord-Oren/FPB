@@ -7,7 +7,7 @@
     pond?.classList.toggle('motion-paused', paused);
     document.body.classList.toggle('motion-paused', paused);
     control.setAttribute('aria-pressed', String(paused));
-    control.textContent = paused ? 'Resume motion' : 'Pause motion';
+    control.textContent = paused ? (control.getAttribute('data-resume') || 'Resume motion') : (control.getAttribute('data-pause') || 'Pause motion');
   }
   control.hidden = false;
   setPaused(preference.matches);

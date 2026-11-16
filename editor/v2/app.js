@@ -266,6 +266,7 @@ async function listSite(showWelcome=true){
  try{siteTree=await call('GET','/structure');}catch(e){toast(e.message);return;}
  const body=$('#list-body');body.replaceChildren();
  body.append(h('button',{class:'row',type:'button','data-search':'home titles text croak',onclick:()=>{if(guardLeave())openPage('home');}},h('span',{class:'badge','aria-hidden':'true',text:'H'}),h('span',{class:'row-text'},h('b',{text:'Home titles & text, and Croak'}),h('small',{text:'Edit your existing site content'})),h('span',{class:'row-meta'})));
+ body.append(h('button',{class:'row',type:'button','data-search':'site wording small texts buttons labels messages',onclick:()=>{if(guardLeave()){state.dirty=false;openWording();}}},h('span',{class:'badge','aria-hidden':'true',text:'W'}),h('span',{class:'row-text'},h('b',{text:'Site wording'}),h('small',{text:'Buttons, labels and short messages on every page'})),h('span',{class:'row-meta'})));
  const render=(node,depth=0)=>{
   const row=h('div',{class:'tree-node','data-search':node.title.toLowerCase(),style:`--tree-depth:${Math.min(depth,5)}`},
    h('button',{class:'tree-open',type:'button',onclick:()=>{if(guardLeave()){state.dirty=false;openNode(node.id);}}},node.title,h('small',{text:node.visible?'':'Hidden — content kept'})),
@@ -513,6 +514,73 @@ async function openPage(slug) {
   };
   main(topBar({ title: page.title, small: page.small, actions: [viewOnSite(slug)] }),
     h('div', { class: 'body' }, form, h('div', { class: 'bar' }, h('button', { class: 'btn main', type: 'button', onclick: writer(publish, PUBLISHING) }, 'Publish to the site'))));
+}
+
+// ---------- Site wording: every small text of the site (buttons, labels, short messages) ----------
+// The server owns the 66 keys, their original text and their limits (GET /pages/wording). An empty field means
+// "use the original". Save keeps a draft; Publish saves then puts it live. Nothing here is ever read as HTML.
+const WORDING = [
+  ['Home page', [['home.title', 'Big title above the frogs'], ['home.latestEmpty', 'Recent work, when there is none yet'], ['home.newsEmpty', 'News, when there is none yet'], ['home.announcementLabel', 'Label on the announcement card'], ['home.ribbitEmpty', 'Ribbit, when there are no photos yet'], ['home.instagramLink', 'Button to Instagram'], ['home.croakEmpty', 'Croak, when there is no song yet'], ['home.tuneIn', 'Button to the song']]],
+  ['Every page', [['nav.home', 'First link of the top menu'], ['nav.back', 'Link back to the home page'], ['footer.copyright', 'Copyright line'], ['footer.pauseMotion', 'Button that stops the animations'], ['footer.resumeMotion', 'Same button, when the animations are stopped'], ['empty.page', 'Page with no text yet']]],
+  ['Empty sections', [['empty.title', 'Section with nothing in it yet'], ['empty.suggestion', 'Start of the suggestion (a link follows)'], ['empty.backHome', 'Link back to the home page']]],
+  ['Projects and events', [['work.view', 'Link to a project'], ['work.allImages', 'Open all the images of a project'], ['work.video', 'Tag on a video'], ['work.audio', 'Tag on a song'], ['events.upcoming', 'Title above upcoming events'], ['events.none', 'When no event is announced'], ['events.details', 'Link to an event']]],
+  ['Case Studies', [['case.readSummary', 'Link to the summary page'], ['case.pdfNote', 'Note read after a PDF link'], ['case.openPdf', 'Button that opens the PDF'], ['case.all', 'Link back to all case studies'], ['case.client', 'Word before the client name'], ['case.context', 'Title — context'], ['case.work', 'Title — the work'], ['case.gallery', 'Title — gallery'], ['case.results', 'Title — results']]],
+  ['About', [['about.ctaTitle', 'Title of the last block'], ['about.ctaText', 'Text of the last block'], ['about.ctaProject', 'Button to Contact'], ['about.ctaJoin', 'Button to Join Us']]],
+  ['Contact and forms', [['contact.emailLabel', 'Label above the email address'], ['form.required', 'Note above the form'], ['form.name', 'Field — name'], ['form.email', 'Field — email'], ['form.message', 'Field — message'], ['form.send', 'Send button'], ['form.closed', 'When online sending is closed'], ['form.closedWithEmail', 'Same, when an email address is shown (the address follows)'], ['form.privacy', 'Link to the privacy policy'], ['form.missing', 'When a required field is empty']]],
+  ['Join Us', [['join.openPositions', 'Title above open positions'], ['join.spontaneous', 'Text under the positions'], ['join.fullName', 'Field — full name'], ['join.phone', 'Field — phone'], ['join.optional', 'Word after an optional field'], ['join.fileLabel', 'Field — file'], ['join.fileHelp', 'Help under the file field'], ['join.linkLabel', 'Field — link'], ['join.linkHelp', 'Help under the link field'], ['join.why', 'Field — message'], ['join.send', 'Send button'], ['join.fileType', 'When the file type is not accepted'], ['join.fileEmpty', 'When the file is empty'], ['join.fileTooLarge', 'When the file is too large']]],
+  ['Legal', [['legal.intro', 'Text when no short text is written'], ['legal.pdfLink', 'Button that opens the PDF'], ['legal.pending', 'Text before the PDF is added (a link follows)'], ['legal.contactLink', 'Link to Contact']]],
+  ['Croak page', [['croak.label', 'Small title above the song']]],
+];
+async function openWording() {
+  let data = await call('GET', '/pages/wording');
+  const keys = Object.keys(data.defaults || {});
+  const listed = WORDING.flatMap(([, rows]) => rows.map(([key]) => key));
+  // A key the server knows but this screen does not list still gets a field, so nothing is ever out of reach.
+  const extra = keys.filter(key => !listed.includes(key)).map(key => [key, key]);
+  const groups = extra.length ? [...WORDING, ['Other', extra]] : WORDING;
+  const inputs = {};
+  const row = ([key, label]) => {
+    if (!keys.includes(key)) return null;
+    const id = `w-${key.replace(/\W/g, '-')}`, limit = data.limits?.[key] || 240, original = data.defaults[key];
+    const input = h(limit > 240 ? 'textarea' : 'input', { class: 'text', id, name: key, maxlength: String(limit), placeholder: original, 'aria-describedby': `${id}-hint ${id}-error`, ...(limit > 240 ? { rows: '2' } : { type: 'text' }) });
+    input.value = data.fields?.[key] || ''; inputs[key] = input;
+    const live = data.live?.[key] || '';
+    const reset = h('button', { class: 'btn soft', type: 'button', onclick: () => { input.value = ''; state.dirty = true; input.focus(); } }, 'Back to the original');
+    return h('div', { class: 'field', 'data-field': key },
+      h('label', { for: id, text: label }), input,
+      h('p', { class: 'hint', id: `${id}-hint`, text: `Original: ${original}${live && live !== (data.fields?.[key] || '') ? ` · On the site now: ${live}` : ''}` }),
+      h('div', { class: 'bar-inline' }, reset),
+      h('p', { class: 'error', id: `${id}-error`, hidden: true }));
+  };
+  const form = h('form', { class: 'form', novalidate: true, onsubmit: event => event.preventDefault(), oninput: () => { state.dirty = true; } },
+    h('div', { class: 'form-lead' }, h('p', { text: 'The small texts of the site: buttons, labels and short messages. Leave a field empty to keep the original text, shown in grey.' }), h('p', { text: 'Save keeps your changes here. Publish puts them on the site. Changing a text never changes how the site works: file limits and forms stay as they are.' })),
+    ...groups.map(([title, rows]) => h('fieldset', { class: 'wording-group' }, h('legend', { text: title }), ...rows.map(row))));
+  const values = () => Object.fromEntries(keys.map(key => [key, inputs[key]?.value ?? '']));
+  const local = () => {
+    const problems = [];
+    for (const key of keys) { const value = inputs[key]?.value ?? ''; if (value.length > (data.limits?.[key] || 240)) problems.push([key, `Up to ${data.limits[key]} characters.`]); else if (/[<>\u0000-\u001f\u007f‪-‮⁦-⁩]/u.test(value)) problems.push([key, 'Use plain text on one line, without < or >.']); }
+    return problems;
+  };
+  const save = async () => {
+    const problems = local(); showProblems(form, problems); if (problems.length) return false;
+    try { const saved = await call('PUT', '/pages/wording', { revision: data.revision, fields: values() }); data.revision = saved.revision; state.dirty = false; return true; }
+    catch (error) {
+      const found = serverProblems(error, keys.map(name => ({ name, label: name })));
+      if (found.length) showProblems(form, found);
+      else toast(error.status === 409 ? 'Someone changed these texts in another window. Your changes are still here: copy what you need, then reload this screen.' : error.message);
+      return false;
+    }
+  };
+  const saveOnly = async () => { if (await save()) toast('Saved ✓ Not on the site yet.'); };
+  const publish = async () => {
+    if (!await save()) return;
+    try { const result = await call('POST', '/pages/wording/publish', {}); toast(result?.message || 'Published ✓ Live on the site in a minute or two.'); data = await call('GET', '/pages/wording'); }
+    catch (error) { toast(error.status === 409 ? 'Someone changed these texts in another window. Your changes are saved; reload this screen before publishing.' : error.message); }
+  };
+  main(topBar({ title: 'Site wording', small: 'Buttons, labels and short messages on every page', actions: [viewOnSite('home')] }),
+    h('div', { class: 'body' }, form, h('div', { class: 'bar' },
+      h('button', { class: 'btn soft', type: 'button', onclick: writer(saveOnly) }, 'Save without publishing'),
+      h('button', { class: 'btn main', type: 'button', onclick: writer(publish, PUBLISHING) }, 'Publish to the site'))));
 }
 
 // ---------- Space: applications and messages (one conversation per person) ----------

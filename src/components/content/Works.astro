@@ -6,6 +6,7 @@
 import { site } from '../../data/public-site-content.js';
 import Empty from './Empty.astro';
 const { rubric } = Astro.props;
+const w = site.wording;
 const items = site.works.filter(item => item.rubric === rubric);
 const month = value => new Date(value + '-01T12:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 const host = link => new URL(link).hostname.replace(/^www\./, '');
@@ -13,17 +14,17 @@ const host = link => new URL(link).hostname.replace(/^www\./, '');
 {items.length === 0 ? <Empty /> : <ul class="work-grid">
   {items.map(item => <li class="work-card" id={item.id}>
     <figure class="work-media">{item.videoId ? <video class="work-video" src={`files/${item.videoId}`} poster={item.image.src} controls preload="none" playsinline aria-label={`Video: ${item.title}`}></video> : <img src={item.image.src} alt={item.image.alt} loading="lazy" decoding="async" />}
-      {item.video || item.videoId ? <span class="work-kind">Video</span> : item.audio ? <span class="work-kind">Audio</span> : item.gallery.length > 0 ? <span class="work-kind">Gallery · {item.gallery.length + 1}</span> : null}
+      {item.video || item.videoId ? <span class="work-kind">{w['work.video']}</span> : item.audio ? <span class="work-kind">{w['work.audio']}</span> : item.gallery.length > 0 ? <span class="work-kind">Gallery · {item.gallery.length + 1}</span> : null}
     </figure>
     <div class="work-body">
       <p class="work-meta">{month(item.date)}{item.client && <> · {item.client}</>}</p>
       <h2 class="work-title">{item.title}</h2>
       <p class="work-summary">{item.summary}</p>
-      {item.gallery.length > 0 && <details class="work-gallery"><summary>See all images</summary><div class="work-gallery-grid">{item.gallery.map(image => <img src={image.src} alt={image.alt} loading="lazy" decoding="async" />)}</div></details>}
+      {item.gallery.length > 0 && <details class="work-gallery"><summary>{w['work.allImages']}</summary><div class="work-gallery-grid">{item.gallery.map(image => <img src={image.src} alt={image.alt} loading="lazy" decoding="async" />)}</div></details>}
       <p class="work-links">
         {item.video && <a href={item.video} rel="noopener">Watch on {host(item.video)} <span aria-hidden="true">↗</span></a>}
         {item.audio && <a href={item.audio} rel="noopener">Listen on {host(item.audio)} <span aria-hidden="true">↗</span></a>}
-        {item.link && <a href={item.link} rel="noopener">View project <span aria-hidden="true">↗</span></a>}
+        {item.link && <a href={item.link} rel="noopener">{w['work.view']} <span aria-hidden="true">↗</span></a>}
       </p>
     </div>
   </li>)}

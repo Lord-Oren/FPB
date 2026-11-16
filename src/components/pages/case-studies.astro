@@ -3,6 +3,8 @@
 // A click opens the full PDF when there is one (checked and rebuilt by the server), otherwise the case study page.
 import { caseStudies } from '../../data/public-case-studies.js';
 import Empty from '../content/Empty.astro';
+import { site } from '../../data/public-site-content.js';
+const w = site.wording;
 const fileHref = id => `files/${id}`;
 ---
 {caseStudies.length === 0 ? <Empty here="case-studies" /> : <ul class="case-grid">
@@ -13,9 +15,9 @@ const fileHref = id => `files/${id}`;
         {item.brandLogo && <img class="case-logo" src={item.brandLogo.src} alt={item.brandLogo.alt} loading="lazy" decoding="async" />}
         {item.documentId && <span class="case-badge">PDF</span>}
       </a>
-      <h2 class="case-title"><a href={item.documentId ? fileHref(item.documentId) : item.href} target={item.documentId ? '_blank' : undefined} rel={item.documentId ? 'noopener' : undefined}>{item.title}{item.documentId && <span class="visually-hidden"> (PDF, opens in a new tab)</span>}</a></h2>
+      <h2 class="case-title"><a href={item.documentId ? fileHref(item.documentId) : item.href} target={item.documentId ? '_blank' : undefined} rel={item.documentId ? 'noopener' : undefined}>{item.title}{item.documentId && <span class="visually-hidden"> {w['case.pdfNote']}</span>}</a></h2>
       <p class="case-text">{item.summary}</p>
-      {item.documentId && <p class="case-more"><a href={item.href}>Read the summary</a></p>}
+      {item.documentId && <p class="case-more"><a href={item.href}>{w['case.readSummary']}</a></p>}
     </article>
   </li>)}
 </ul>}

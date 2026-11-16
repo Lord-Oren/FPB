@@ -11,7 +11,7 @@ const channels = socials.filter(link => link.url);
   <section aria-labelledby="write-us"><h2 id="write-us" class="section-title">{title || 'Write to us'}</h2><InquiryForm kind="contact" /></section>
   {(email || channels.length > 0 || socialText) && <aside class="contact-channels" id="socials" aria-labelledby="elsewhere"><h2 id="elsewhere" class="section-title">{socialTitle || 'Social channels'}</h2>
     {socialText && <p class="channel-text">{socialText}</p>}
-    {email && <><p class="channel-label">Email</p><a class="direct-email" href={`mailto:${email}`}>{email}</a></>}
+    {email && <><p class="channel-label">{site.wording['contact.emailLabel']}</p><a class="direct-email" href={`mailto:${email}`}>{email}</a></>}
     {channels.length > 0 && <ul class="social-links">{channels.map(link => <li><a href={link.url} rel="noopener"><SocialIcon name={link.label}/> {link.label} <span aria-hidden="true">↗</span></a></li>)}</ul>}
   </aside>}
 </div>
