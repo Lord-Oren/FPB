@@ -24,6 +24,7 @@ button { cursor:pointer }
 .brand { position:absolute; z-index:7; top:5.5%; left:50%; transform:translateX(-50%); width:94%; text-align:center }
 .brand h1 { margin:0; color:var(--dandelion); font-family:Boohong,sans-serif; font-size:clamp(1.8rem,min(8.3cqw,6.8cqh),5.4rem); font-weight:400; line-height:1; white-space:nowrap; letter-spacing:0; text-shadow:0 4px 0 rgba(0,0,0,.15) }
 .brand h1 > span { display:block }
+.brand-emblem { display:none }
 .pond-tagline { position:absolute; z-index:7; top:calc(26% + 102px); left:50%; transform:translateX(-50%); width:min(86%,720px); margin:0; text-align:center; color:rgb(255 219 118 / .92); font-size:clamp(1rem,2.8cqh,1.4rem); font-weight:700; line-height:1.25; letter-spacing:.015em; text-shadow:0 2px 10px rgb(0 0 0 / .12) }
 .tagline-copy { display:block; animation:taglineFloat 9s -2s ease-in-out infinite }
 .tagline-copy > span { display:block }.tagline-copy > span:first-child { font-weight:300; opacity:.88 }

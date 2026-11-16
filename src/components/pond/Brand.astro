@@ -1,8 +1,11 @@
 ---
 import { site } from "../../data/public-site-content.js";
 import { menuPages } from "../../data/public-pages.js";
+// The studio emblem above the title: shown on phones (pond-mobile-a.css), where the title alone did not say who this is.
+import emblem from "../../assets/logos/emblem-home.webp?inline";
 ---
 <div class="brand">
+  <img class="brand-emblem" src={emblem} alt="" width="76" height="84" />
   <h1><span>FROG POND BOYS</span></h1>
 </div>
 <p class="grand-central">{site.home.editorial.grandCentral}</p>

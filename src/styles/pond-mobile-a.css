@@ -4,15 +4,20 @@
 @media (max-width:600px){
  .home-page:has(.home-more)>main{height:auto;min-height:0}
  .home-page:has(.pond-page[data-artwork-mode="original"]){min-height:0}
- .home-page .pond-page[data-artwork-mode="original"]{--stage:min(360px,100%);--x0:calc(50% - var(--stage) / 2);height:auto;min-height:0;padding:0 0 48px;container-type:normal;overflow:hidden;display:flex;flex-direction:column;
+ .home-page .pond-page[data-artwork-mode="original"]{--stage:min(360px,100%);--x0:calc(50% - var(--stage) / 2);height:auto;min-height:0;padding:0 0 132px;position:relative;container-type:normal;overflow:hidden;display:flex;flex-direction:column;
   background:var(--pm-water) 0 0/120px 120px repeat,#0a3157;image-rendering:pixelated}
- .home-page .pond-page[data-artwork-mode="original"]::after,
  .home-page .pond-page[data-artwork-mode="original"] :is(.pixel-water,.ripples,.lily,.log){display:none}
+ /* The water sinks into the next band step by step (bands of 4 art pixels), then a dithered row: no hard line. */
+ .home-page .pond-page[data-artwork-mode="original"]::after{content:'';display:block;position:absolute;z-index:5;pointer-events:none;left:0;right:0;bottom:0;top:auto;height:108px;
+  background:linear-gradient(to bottom,#04313a00 0 12px,#04313a1f 12px 24px,#04313a40 24px 36px,#04313a66 36px 48px,#04313a8c 48px 60px,#04313ab3 60px 72px,#04313ad1 72px 84px,#04313aeb 84px 96px,#04313a 96px)}
+ .home-page:has(.pond-page[data-artwork-mode="original"]) .home-more::before{display:block;top:-18px;height:18px;background-size:24px 18px;opacity:.9}
+ /* the studio emblem, so the first screen says who this is */
+ .home-page .pond-page[data-artwork-mode="original"] .brand-emblem{display:block;width:76px;height:84px;margin:0 auto 12px}
  /* title, frogs on their log, tagline: normal flow, centred, in reading order */
  .home-page .pond-page[data-artwork-mode="original"]>*{flex:none}
  .home-page .pond-page[data-artwork-mode="original"] .brand{order:1}.home-page .pond-page[data-artwork-mode="original"] .grand-central{order:2}
  .home-page .pond-page[data-artwork-mode="original"] .frogs{order:3}.home-page .pond-page[data-artwork-mode="original"] .pond-tagline{order:4}.home-page .pond-page[data-artwork-mode="original"] .pond-lower{order:5}
- .home-page .pond-page[data-artwork-mode="original"] .brand{position:relative;inset:auto;transform:none;margin:0 auto;padding-top:30px;text-align:center}
+ .home-page .pond-page[data-artwork-mode="original"] .brand{position:relative;inset:auto;transform:none;margin:0 auto;padding-top:22px;text-align:center}
  .home-page .pond-page[data-artwork-mode="original"] .grand-central{position:relative;inset:auto;transform:none;margin:0 auto;text-align:center}
  .home-page .pond-page[data-artwork-mode="original"] .frogs{position:relative;inset:auto;transform:none;margin:54px auto 0;width:336px;height:72px;display:flex;justify-content:space-around;align-items:center;
   background:var(--pm-log) center/336px 72px no-repeat;image-rendering:pixelated}

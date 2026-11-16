@@ -31,7 +31,9 @@
  .form-field label{font-size:16px}
  .form-field input,.form-field textarea{min-height:50px;font-size:16px}
  /* footer */
- footer{gap:14px 18px;padding:28px 16px 32px}
+ /* The page ends in the footer's blue: the strip under the footer and the browser's bottom bar take that colour too. */
+ html{background:var(--blue-marine)}
+ footer{gap:14px 18px;padding:28px 16px calc(32px + env(safe-area-inset-bottom,0px))}
  footer .footer-logos img{height:44px}
  footer .footer-socials a{min-height:44px;font-size:15px}
  footer .motion-toggle{min-height:44px;font-size:14px;padding-inline:16px}
