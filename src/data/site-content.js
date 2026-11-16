@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
+import {aboutDefaults,contactDefaults} from './page-fields.js';
 import {prepareStructure,collectionKinds} from './structure.js';
 import { editorialDefaults, navigationDefaults, homeLabelDefaults } from './editorial.js';
 
 // Build-time boundary for the public site content edited in Pond Desk (everything except
 // Case Studies, which keep their own snapshot). Strings stay data: Astro escapes them.
 export const rubrics = {
-  works: ['client-work', 'mock-ads', 'presentations', 'photography', 'films-videos', 'music', 'collabs', 'magazine', 'gram', 'prc', 'recognition', 'statements'],
+  works: ['client-work', 'mock-ads', 'photography', 'films-videos', 'music', 'collabs', 'magazine', 'gram', 'prc', 'recognition', 'statements'],
   events: ['events-shows', 'events-launches'],
   press: ['press', 'media-relations', 'influencer-relations'],
 };
@@ -29,7 +30,7 @@ function url(value, where, hosts) {
   assert(typeof value === 'string' && value.length <= 300, `${where}: invalid link`);
   const parsed = new URL(value);
   assert(parsed.protocol === 'https:' && !parsed.username && !parsed.password, `${where}: HTTPS link required`);
-  if (hosts) assert(hosts.some(host => parsed.hostname === host || parsed.hostname.endsWith('.' + host)) || parsed.hostname === 'example.com', `${where}: unsupported host`);
+  if (hosts) assert(hosts.some(host => parsed.hostname === host || parsed.hostname.endsWith('.' + host)), `${where}: unsupported host`);
   return parsed.href;
 }
 function page(value, where) {
@@ -80,7 +81,7 @@ function picture(value, media, where, required = false) {
 
 export function prepareSiteContent(snapshot, options = {}) {
   prefer = options.prefer === 'pixel' ? 'pixel' : '';
-  plain(snapshot, ['schemaVersion', 'demo', 'home', 'intros', 'works', 'events', 'press', 'about', 'contact', 'join', 'media', 'structure'], 'content');
+  plain(snapshot, ['schemaVersion', 'demo', 'home', 'intros', 'works', 'events', 'press', 'about', 'contact', 'join', 'media', 'structure','legal'], 'content');
   assert(snapshot.schemaVersion === 1, 'content: unsupported schema');
   const structure = prepareStructure(snapshot.structure, snapshot.home);
   const sectionKinds = Object.fromEntries(structure.nodes.map(n=>[n.id,n.kind]));
@@ -106,10 +107,12 @@ export function prepareSiteContent(snapshot, options = {}) {
   assert(Array.isArray(snapshot.works) && snapshot.works.length <= 400, 'works: invalid list');
   const works = snapshot.works.map((item, index) => {
     const where = `works[${index}]`;
-    plain(item, ['id', 'rubric', 'title', 'date', 'summary', 'image', 'gallery', 'link', 'video', 'audio', 'client', 'demo'], where);
-    assert((rubrics.works.includes(item.rubric) || sectionKinds[item.rubric] === 'works'), `${where}: unknown rubric`);
+    plain(item, ['id', 'rubric', 'title', 'date', 'summary', 'image', 'gallery', 'link', 'video', 'videoId', 'audio', 'client', 'demo'], where);
+    assert((item.rubric==='presentations' || rubrics.works.includes(item.rubric) || sectionKinds[item.rubric] === 'works'), `${where}: unknown rubric`);
     assert(Array.isArray(item.gallery) && item.gallery.length <= 12, `${where}: gallery of 12 images at most`);
+    assert(item.videoId==null||/^file-[a-f0-9]{24}$/.test(item.videoId),'Invalid video');
     return {
+      videoId:item.videoId??null,
       id: unique(id(item.id, where), where), rubric: item.rubric, title: text(item.title, 90, `${where}.title`), date: date(item.date, `${where}.date`, /^\d{4}-\d{2}$/),
       summary: text(item.summary, 240, `${where}.summary`), image: picture(item.image, media, `${where}.image`, true),
       gallery: item.gallery.map((image, n) => picture(image, media, `${where}.gallery[${n}]`, true)),
@@ -142,20 +145,28 @@ export function prepareSiteContent(snapshot, options = {}) {
     };
   }).sort((a, b) => b.date.localeCompare(a.date));
 
-  plain(snapshot.about, ['story', 'ethos', 'photos', 'team'], 'about');
+  plain(snapshot.about, ['story', 'ethos', 'photos', 'team',...Object.keys(aboutDefaults)], 'about');
+  const aboutExtra={...aboutDefaults,...Object.fromEntries(Object.keys(aboutDefaults).filter(k=>k in snapshot.about).map(k=>[k,snapshot.about[k]]))};
+  for(const key of Object.keys(aboutDefaults).filter(k=>k!=='extendedTeam'))aboutExtra[key]=text(aboutExtra[key],key.endsWith('Title')?120:4000,'about.'+key,false);
+  assert(Array.isArray(aboutExtra.extendedTeam)&&aboutExtra.extendedTeam.length<=24,'about.extendedTeam:24 people at most');
+  aboutExtra.extendedTeam=aboutExtra.extendedTeam.map((person,n)=>{const w='about.extendedTeam['+n+']';plain(person,['name','role','photo'],w);return {name:text(person.name,90,w+'.name'),role:text(person.role,90,w+'.role'),photo:picture(person.photo,media,w+'.photo')};});
   assert(Array.isArray(snapshot.about.photos ?? []) && (snapshot.about.photos ?? []).length <= 6, 'about.photos: 6 photos at most');
   assert(Array.isArray(snapshot.about.team) && snapshot.about.team.length <= 24, 'about.team: 24 people at most');
   const about = {
+    ...aboutExtra,
     story: text(snapshot.about.story, 4000, 'about.story'), ethos: text(snapshot.about.ethos, 4000, 'about.ethos'),
     photos: (snapshot.about.photos ?? []).map((image, n) => picture(image, media, `about.photos[${n}]`, true)),
     team: snapshot.about.team.map((person, n) => { const where = `about.team[${n}]`; plain(person, ['name', 'role', 'photo', 'demo'], where); return { name: text(person.name, 90, `${where}.name`), role: text(person.role, 90, `${where}.role`), photo: picture(person.photo, media, `${where}.photo`) }; }),
   };
 
-  plain(snapshot.contact, ['intro', 'email', 'socials'], 'contact');
+  plain(snapshot.contact, ['intro', 'email', 'socials',...Object.keys(contactDefaults)], 'contact');
+  const contactExtra={...contactDefaults,...Object.fromEntries(Object.keys(contactDefaults).filter(k=>k in snapshot.contact).map(k=>[k,snapshot.contact[k]]))};
+  for(const key of Object.keys(contactDefaults))contactExtra[key]=text(contactExtra[key],key==='socialText'?600:120,'contact.'+key,false);
   const email = text(snapshot.contact.email ?? '', 254, 'contact.email', false);
   assert(!email || /^[^\s@?&#%]+@[^\s@?&#%]+\.[^\s@?&#%]+$/.test(email), 'contact.email: invalid address');
   assert(Array.isArray(snapshot.contact.socials) && snapshot.contact.socials.length <= 6, 'contact.socials: 6 links at most');
   const contact = {
+    ...contactExtra,
     intro: text(snapshot.contact.intro, 600, 'contact.intro'), email,
     socials: snapshot.contact.socials.map((link, n) => { const where = `contact.socials[${n}]`; plain(link, ['label', 'url'], where); return { label: text(link.label, 40, `${where}.label`), url: url(link.url, `${where}.url`) }; }),
   };
@@ -166,9 +177,10 @@ export function prepareSiteContent(snapshot, options = {}) {
     intro: text(snapshot.join.intro, 1200, 'join.intro'),
     positions: snapshot.join.positions.map((job, n) => { const where = `join.positions[${n}]`; plain(job, ['title', 'place', 'type', 'demo'], where); return { title: text(job.title, 90, `${where}.title`), place: text(job.place ?? '', 60, `${where}.place`, false), type: text(job.type ?? '', 40, `${where}.type`, false) }; }),
   };
-  plain(snapshot.intros ?? {}, [...rubrics.works, ...rubrics.events, ...rubrics.press, 'case-studies', ...structure.nodes.map(n=>n.id)], 'intros');
+  plain(snapshot.intros ?? {}, [...rubrics.works, ...rubrics.events, ...rubrics.press, 'presentations', 'case-studies', ...structure.nodes.map(n=>n.id)], 'intros');
   const intros = Object.fromEntries(Object.entries(snapshot.intros ?? {}).map(([slug, value]) => [slug, text(value, 240, `intros.${slug}`, false)]));
-  return { structure, home, intros, works, events, press, about, contact, join };
+  const legal={intro:'',documentId:null,...snapshot.legal};plain(legal,['intro','documentId'],'legal');legal.intro=text(legal.intro,600,'legal.intro',false);assert(legal.documentId==null||/^file-[a-f0-9]{24}$/.test(legal.documentId),'Invalid legal document');
+  return { structure, home, intros, works, events, press, about, contact, join,legal };
 }
 
 // Events move to "Past" on the day after they end (or start). The site rebuilds nightly.

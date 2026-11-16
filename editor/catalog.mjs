@@ -19,7 +19,7 @@ function text(value, key, field) {
   return value.trim();
 }
 export function draftContent(value, media, key) {
-  plain(value, ['title','summary','context','work','client','results','cover','gallery'], key);
+  plain(value, ['title','summary','context','work','client','results','cover','brandLogo','documentId','gallery'], key);
   validateFields(value,media,key,false);
   const result = {};
   for (const field of ['title','summary','context','work','client','results']) result[field] = text(value[field] ?? '', field, `${key}.${field}`);
@@ -30,11 +30,13 @@ export function draftContent(value, media, key) {
   };
   if (Object.hasOwn(value, 'cover')) result.cover = image(value.cover, `${key}.cover`);
   check(Array.isArray(value.gallery) && value.gallery.length <= 12, `${key}.gallery : maximum 12 images.`);
+  if(value.brandLogo)result.brandLogo=image(value.brandLogo,key+'.brandLogo');
+  if(value.documentId){check(/^file-[a-f0-9]{24}$/.test(value.documentId),'Invalid document');result.documentId=value.documentId;}
   result.gallery = value.gallery.map((v,i)=>image(v,`${key}.gallery[${i+1}]`));
   return result;
 }
 export function assetsFor(cases, media) {
-  const used = new Set(cases.flatMap(item => [item.content.cover,...(item.content.gallery || [])]).filter(Boolean).map(image => image.assetId));
+  const used = new Set(cases.flatMap(item => [item.content.cover,item.content.brandLogo,...(item.content.gallery || [])]).filter(Boolean).map(image => image.assetId));
   return media.filter(asset => used.has(asset.id));
 }
 export function selectedSnapshot(state) {

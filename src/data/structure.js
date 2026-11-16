@@ -9,7 +9,7 @@ export function defaultStructure(home={}){
  const names=home.navigation??{};const nodes=[];
  const add=(id,title,kind,zone,parentId=null,extra={})=>nodes.push({id,title:names[id]??title,kind,zone,parentId,slug:['link','anchor'].includes(kind)?'':id,visible:true,newTab:id==='gram',text:'',href:'',...extra});
  for(const [id,title]of [['advertising','Advertising'],['creative','Creative'],['pr','PR']])add(id,title,'menu','menus');
- for(const page of legacyPages){
+ for(const page of legacyPages.filter(p=>p.slug!=='presentations')){
   let kind=['about','contact','join','legal','croak','case-studies'].includes(page.slug)?page.slug:page.slug==='events-shows'||page.slug==='events-launches'?'events':['press','media-relations','influencer-relations'].includes(page.slug)?'press':'works';
   const parentId=page.hidden?null:page.group==='Advertising'?'advertising':page.group==='Creative'?'creative':page.group==='PR'?'pr':null;
   const zone=page.hidden?'archive':parentId?'menus':['gram','croak'].includes(page.slug)?'screens':'stones';
@@ -18,8 +18,8 @@ export function defaultStructure(home={}){
  add('announcements','Announcements','anchor','screens',null,{href:'#news'});add('recents','Recents','anchor','screens',null,{href:'#latest'});
  for(const title of ['Instagram','LinkedIn','Vimeo','YouTube'])add('footer-'+title.toLowerCase(),title,'link','footer');
  add('footer-legal','Legal','link','footer',null,{href:'legal.html'});
- const ordered=[];const walk=n=>{ordered.push(n);nodes.filter(c=>c.parentId===n.id).sort((a,b)=>a.title.localeCompare(b.title,'en')).forEach(walk);};
- for(const z of zones){const roots=nodes.filter(n=>n.parentId===null&&n.zone===z.id);roots.sort((a,b)=>z.id==='screens'?(['announcements','recents','gram','croak'].indexOf(a.id)-['announcements','recents','gram','croak'].indexOf(b.id)):a.title.localeCompare(b.title,'en'));roots.forEach(walk);}
+ const ordered=[];const walk=n=>{ordered.push(n);nodes.filter(c=>c.parentId===n.id).forEach(walk);};
+ for(const z of zones){const roots=nodes.filter(n=>n.parentId===null&&n.zone===z.id);roots.sort((a,b)=>z.id==='screens'?(['announcements','recents','gram','croak'].indexOf(a.id)-['announcements','recents','gram','croak'].indexOf(b.id)):0);roots.forEach(walk);}
  return {schemaVersion:1,nodes:ordered};
 }
 export function prepareStructure(value,home={}){

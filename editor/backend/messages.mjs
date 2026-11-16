@@ -1,6 +1,6 @@
 // Display old system labels in English without rewriting saved content or messages.
 const historyLabels={
-  "Images pixel et liens de démonstration actualisés": "Pixel images and sample links updated",
+  "Images pixel et liens de démonstration actualisés": "Website images and links updated",
   "Contenu publié": "Content published",
   "Contenu retiré": "Content taken off the site",
   "Contenu supprimé": "Content deleted",

@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { prepareSiteContent, splitEvents, rubrics } from '../src/data/site-content.js';
 
-const demo = JSON.parse(await readFile(new URL('../src/data/site-content.json', import.meta.url), 'utf8'));
+const production = JSON.parse(await readFile(new URL('../src/data/site-content.json', import.meta.url), 'utf8'));
+const demo = JSON.parse(await readFile(new URL('./fixtures/site-content.json', import.meta.url), 'utf8'));
 const copy = () => structuredClone(demo);
 
-test('sample content is valid and labeled', () => {
+test('production is empty and valid; security fixtures cover every rubric', () => {
   const site = prepareSiteContent(copy());
-  assert.equal(demo.demo, true);
-  assert.ok(demo.works.every(item => item.demo === true) && demo.events.every(item => item.demo === true) && demo.press.every(item => item.demo === true));
+  assert.equal(Object.hasOwn(production,'demo'),false);
+  assert.deepEqual(production.works,[]);assert.deepEqual(production.events,[]);assert.deepEqual(production.press,[]);
   for (const slug of [...rubrics.works, ...rubrics.events, ...rubrics.press]) assert.ok([...site.works, ...site.events, ...site.press].some(item => item.rubric === slug), `empty section : ${slug}`);
 });
 // Sample navigation must stay within the site.

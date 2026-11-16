@@ -1,13 +1,10 @@
 const legacy = ['presentations','music','media-relations','influencer-relations','events-launches'];
+// Retired address metadata is retained for compatibility; it creates no live section.
 export const pages = [
+  {slug:'presentations',title:'Presentations',group:'Advertising'},
   {
     "slug": "case-studies",
     "title": "Case Studies",
-    "group": "Advertising"
-  },
-  {
-    "slug": "presentations",
-    "title": "Presentations",
     "group": "Advertising"
   },
   {
@@ -93,4 +90,5 @@ export const pages = [
   {slug:'recognition',title:'Recognition',group:'PR'},
   {slug:'statements',title:'Statements',group:'PR'}
 ].map(page => ({...page, hidden:legacy.includes(page.slug)}));
+// Legacy metadata helper only; live navigation preserves structure.nodes order.
 export const menuPages = group => pages.filter(page => page.group === group && !page.hidden).sort((a,b)=>a.title.localeCompare(b.title,'en'));

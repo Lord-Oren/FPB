@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {historyLabel,conversationView} from '../editor/backend/messages.mjs';
 test('old system labels display in English without changing saved or user-authored text',()=>{
- assert.equal(historyLabel('Images pixel et liens de démonstration actualisés'),'Pixel images and sample links updated');
+ assert.equal(historyLabel('Images pixel et liens de démonstration actualisés'),'Website images and links updated');
  assert.equal(historyLabel('Page mise à jour'),'Page updated');
  assert.equal(historyLabel('Customer custom label'),'Customer custom label');
  const text='[Simulation — aucun e-mail envoyé]\nMerci pour votre message.';

@@ -15,7 +15,7 @@ export async function createHosted({root=fileURLToPath(new URL('../',import.meta
  const {hosts,www,publicSite}=config;
  if(!Number.isInteger(port)||port<0||port>65535||!store||!testers?.length)throw Error('Hosted configuration incomplete.');
  const checkToken=verify??accessVerifier({issuer,audience,emails:testers});
- const v2=createV2({root,store,maxStateBytes:16*1024*1024,sessionSeconds,hosted:true,testers,publicUrls:{a:'https://'+hosts.a,b:'https://'+hosts.b},builder});
+ const v2=createV2({root,store,maxStateBytes:16*1024*1024,sessionSeconds,hosted:true,testers,publicVariants:publicSite?['a']:['a','b'],publicUrls:{a:'https://'+hosts.a,b:'https://'+hosts.b},builder});
  try{await v2.initialize();}catch(error){await v2.close();await store.close();throw error;}let ready=true;
  const reply=(res,status,message)=>{res.writeHead(status,{...safeHeaders,'Content-Type':'application/json','Content-Security-Policy':"default-src 'none'; frame-ancestors 'none'"});res.end(JSON.stringify({message}));};
  const handle=async(req,res)=>{
@@ -46,12 +46,13 @@ export async function createHosted({root=fileURLToPath(new URL('../',import.meta
    if(variant!=='desk'){
     if(form)return void await v2.handler(req,res,url);
     if(req.method!=='GET'&&req.method!=='HEAD')return reply(res,405,'This action is not allowed.');
+    if(url.pathname.startsWith('/files/')){if(!await v2.publicFile(url.pathname.slice(7),res,req.method==='HEAD'))reply(res,404,'File not found.');return;}
     const filename=url.pathname==='/'?'index.html':url.pathname.slice(1);
     if(!/^[a-z0-9-]+\.html$/.test(filename))return reply(res,404,'Page not found.');
     const release=v2.release();if(!release)return reply(res,503,'The site is starting. Please try again shortly.');
     let html;try{html=await readFile(path.join(root,'.local-editor/v2/releases',release,variant,filename),'utf8');}catch{return reply(res,404,'Page not found.');}
     const hashes=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>"'sha256-"+createHash('sha256').update(m[1]).digest('base64')+"'");
-    res.writeHead(200,{...safeHeaders,'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':`default-src 'none'; script-src ${hashes.join(' ')||"'none'"}; style-src 'unsafe-inline'; img-src data: 'self'; font-src data: 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'`});res.end(req.method==='HEAD'?'':html);return;
+    res.writeHead(200,{...safeHeaders,'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':`default-src 'none'; script-src ${hashes.join(' ')||"'none'"}; style-src 'unsafe-inline'; img-src data: 'self'; font-src data: 'self'; media-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'`});res.end(req.method==='HEAD'?'':html);return;
    }
    if(form||url.pathname.startsWith('/api/v2/testing/'))return reply(res,404,'This page or action is not available.');
    if(req.method==='GET'&&url.pathname==='/'){res.writeHead(302,{...safeHeaders,Location:'/v2/'});res.end();return;}

@@ -38,6 +38,7 @@ export async function openPostgres({connectionString,ssl,onFailure=()=>{}}) {
    const lock=await next.query('SELECT pg_try_advisory_lock(736427, 1) AS locked');
    if(!lock.rows[0].locked){const error=Error('Another Pond Desk instance holds the database lock.');error.code='POND_WRITER_BUSY';throw error;}
    await next.query('CREATE TABLE IF NOT EXISTS pond_state (id integer PRIMARY KEY CHECK (id = 1), payload jsonb NOT NULL, revision integer NOT NULL DEFAULT 0, updated_at timestamptz NOT NULL DEFAULT now())');
+   await next.query('CREATE TABLE IF NOT EXISTS pond_files (id text PRIMARY KEY, bytes bytea NOT NULL)');
    await next.query('CREATE TABLE IF NOT EXISTS pond_sessions (digest text PRIMARY KEY, payload jsonb NOT NULL, expires_at bigint NOT NULL)');
    await next.query('ALTER TABLE pond_state ADD COLUMN IF NOT EXISTS revision integer NOT NULL DEFAULT 0');
    const current=(await next.query('SELECT revision FROM pond_state WHERE id=1')).rows[0]?.revision??0;
@@ -53,6 +54,8 @@ export async function openPostgres({connectionString,ssl,onFailure=()=>{}}) {
   async saveSession(digest,value,now){const db=await connect();await db.query('DELETE FROM pond_sessions WHERE expires_at<=$1',[now]);
    const count=Number((await db.query('SELECT count(*) AS n FROM pond_sessions WHERE digest<>$1',[digest])).rows[0].n);if(count>=1000)throw Error('Session capacity reached.');
    await db.query('INSERT INTO pond_sessions(digest,payload,expires_at) VALUES($1,$2::jsonb,$3) ON CONFLICT(digest) DO UPDATE SET payload=EXCLUDED.payload,expires_at=EXCLUDED.expires_at',[digest,JSON.stringify(value),value.expires]);},
+  async saveFile(id,bytes){await(await connect()).query('INSERT INTO pond_files(id,bytes) VALUES($1,$2)',[id,bytes]);},
+  async loadFile(id){return (await(await connect()).query('SELECT bytes FROM pond_files WHERE id=$1',[id])).rows[0]?.bytes;},
   async ping(){await(await connect()).query('SELECT 1');},
   async close(){closing=true;if(client){const current=client;client=null;await current.end();}}
  };

@@ -63,9 +63,11 @@ export function preparePublicCases(snapshot) {
     assert(!ids.has(key) && !slugs.has(slug), 'Duplicate case identifier or slug');
     ids.add(key); slugs.add(slug);
     const content = item.content;
-    object(content, ['title', 'summary', 'context', 'work', 'cover', 'gallery', 'client', 'results']);
+    object(content, ['title', 'summary', 'context', 'work', 'cover', 'brandLogo', 'documentId', 'gallery', 'client', 'results']);
     assert(Array.isArray(content.gallery) && content.gallery.length <= 12, 'Invalid gallery');
+    assert(content.documentId==null||/^file-[a-f0-9]{24}$/.test(content.documentId),'Invalid document');
     return {
+      brandLogo:content.brandLogo?image(content.brandLogo,'brandLogo'):null,documentId:content.documentId??null,
       id: key, slug, href: caseStudyHref(slug), title: text(content.title, true, 90, 'title'), summary: text(content.summary, true, 240, 'summary'),
       context: text(content.context, true, 4000, 'context'), work: text(content.work, true, 4000, 'work'), client: text(content.client ?? '', false, 90, 'client'),
       results: text(content.results ?? '', false, 1500, 'results'), cover: image(content.cover, 'cover'), gallery: content.gallery.map((value,index) => image(value, `gallery[${index+1}]`)),

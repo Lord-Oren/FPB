@@ -9,8 +9,11 @@ import {fileURLToPath} from 'node:url';
 import {clone,uid,sections,sectionIds,group,fail,check,plain,text,email,address,draftFields,migrate,snapshots,status,revision,mediaView,viewItem,log as modelLog,setPage,homeFields} from './model.mjs';
 import {prepareStructure,collectionKinds,zones} from '../../src/data/structure.js';
 import {atomic,buildRelease,validateImages} from './publisher.mjs';
-import {upgradeContent,cleanPlaceholderLinks} from './content-upgrade.mjs';
+import {upgradeContent,cleanPlaceholderLinks,cleanPublicSnapshot} from './content-upgrade.mjs';
+import {prepareUpload} from './public-files.mjs';
+import {FILE_TOO_LARGE_MESSAGE} from './attachment-policy.mjs';
 import {image,pdf} from './files.mjs';
+import {compactHistory,hydrateSnapshot,preserveRestoredMedia} from './history.mjs';
 import {historyLabel,conversationView} from './messages.mjs';
 const hash=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
 const read=async p=>JSON.parse(await readFile(p,'utf8'));
@@ -19,26 +22,29 @@ function send(res,status,data,type='application/json',extra={}){res.writeHead(st
 async function bodyOf(req,form=false){
  const type=req.headers['content-type']??'';
  check(type==='application/json'||(form&&/^(multipart\/form-data;|application\/x-www-form-urlencoded)/.test(type)),'This data format is not supported.',415);
- let size=0;const chunks=[];for await(const part of req){size+=part.length;check(size<=8*1024*1024,'This upload is too large. The limit is 8 MiB per request.',413);chunks.push(part);}const bytes=Buffer.concat(chunks);
+ const fileRequest=new URL(req.url,'http://local').pathname==='/api/v2/files';
+ let size=0;const chunks=[];for await(const part of req){size+=part.length;if(size>(fileRequest?15:8)*1024*1024){const error=new Error(fileRequest?FILE_TOO_LARGE_MESSAGE:'This upload is too large. The limit is 8 MiB per request.');error.status=413;if(fileRequest)error.code='file_too_large';throw error;}chunks.push(part);}const bytes=Buffer.concat(chunks);
  if(type==='application/json'){const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));plain(value);return value;}
  const data=await new Response(bytes,{headers:{'Content-Type':type}}).formData();
  const fields={name:data.get('full_name'),email:data.get('email'),message:data.get('message'),website:data.get('website'),facts:data.get('phone')??''};
  const cv=data.get('cv');if(cv&&typeof cv.arrayBuffer==='function')fields.cv={name:cv.name,base64:Buffer.from(await cv.arrayBuffer()).toString('base64')};return fields;
 }
-export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,scanPdf=null,store=null,hosted=false,testers=[],publicUrls={},maxStateBytes=128*1024*1024,sessionSeconds=28800}){
+export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,scanPdf=null,store=null,hosted=false,testers=[],publicUrls={},maxStateBytes=128*1024*1024,sessionSeconds=28800,publicVariants=['a','b']}){
  check(Number.isInteger(sessionSeconds)&&sessionSeconds>=1&&sessionSeconds<=604800,'Invalid session length.');
  const folder=path.join(root,'.local-editor','v2'),file=path.join(folder,'state.json'),pending=path.join(folder,'pending.json'),lock=path.join(folder,'lock.json');
  const siteFile=path.join(root,'src/data/site-content.json'),caseFile=path.join(root,'src/data/case-studies-public.json');
+ const fileFolder=path.join(folder,'files');
+ const fileBytes=async id=>store?.loadFile?store.loadFile(id):readFile(path.join(fileFolder,id));
  let state,init,queue=Promise.resolve(),locked=false;const rates=new Map(), sessions=new Map();
  let actor='local';
  const log=(next,action,at)=>modelLog(next,action,at,actor);
  const now=()=>clock().toISOString();
  const diskSnapshot=async()=>({site:await read(siteFile),cases:await read(caseFile)});
- const save=async next=>{check(Buffer.byteLength(JSON.stringify(next))<=maxStateBytes,`This test version has reached its ${Math.round(maxStateBytes/1024/1024)} MiB storage limit. Your previous data is safe. Contact the site manager.`,413);if(store)await store.save(next);else await atomic(file,next);state=next;};
+ const save=async next=>{compactHistory(next);check(Buffer.byteLength(JSON.stringify(next))<=maxStateBytes,`This test version has reached its ${Math.round(maxStateBytes/1024/1024)} MiB storage limit. Your previous data is safe. Contact the site manager.`,413);if(store)await store.save(next);else await atomic(file,next);state=next;};
  async function initialize(){
   if(state)return;if(init)return init;
   init=(async()=>{
-   await mkdir(folder,{recursive:true,mode:0o700});
+   await mkdir(folder,{recursive:true,mode:0o700});await mkdir(fileFolder,{recursive:true,mode:0o700});
    try{await writeFile(lock,JSON.stringify({pid:process.pid}),{flag:'wx',mode:0o600});}catch(e){if(e.code!=='EEXIST')throw e;let held=true;try{process.kill((await read(lock)).pid,0)}catch(err){if(err.code==='ESRCH')held=false;}check(!held,'Another editor is using this data. Close it before continuing.',409);await rm(lock);await writeFile(lock,JSON.stringify({pid:process.pid}),{flag:'wx',mode:0o600});}locked=true;
    try{state=store?await store.load():await read(file);if(!state){const missing=new Error();missing.code='ENOENT';throw missing;}check(state.schemaVersion===2,'This saved data uses an unsupported format.');}catch(e){if(e.code!=='ENOENT')throw e;let legacy;try{legacy=await read(path.join(root,'.local-editor/draft.json'))}catch(e){if(e.code!=='ENOENT')throw e;}const pub=await diskSnapshot();state=migrate(pub.site,pub.cases,legacy,now());state.sourceHash=hash(pub);state.initialPublic=pub;await save(state);}
    const upgrade=upgradeContent(state,(await diskSnapshot()).site);
@@ -51,7 +57,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
     await atomic(siteFile,upgrade.snapshot.site);await atomic(caseFile,upgrade.snapshot.cases);await save(next);
    }
    if(store&&!upgrade?.changed){
-    const pub=state.publishes[0]?.snapshot??state.initialPublic;check(pub,'Missing durable public snapshot.');
+    const pub=hydrateSnapshot(state,state.publishes[0]?.snapshot??state.initialPublic);check(pub,'Missing durable public snapshot.');
     await atomic(siteFile,pub.site);await atomic(caseFile,pub.cases);state.sourceHash=hash(pub);
     const id=uid('boot');await builder(root,folder,id,pub);state.release=id;await save(state);
    }
@@ -61,7 +67,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
  }
  async function publish(next,summary){
   const before=await diskSnapshot();check(hash(before)===state.sourceHash,'The site files changed outside Pond Desk. Ask the site manager to check them before publishing. Your drafts are saved.',409);
-  let pub;try{pub=snapshots(next);await validateImages(pub);}catch(e){if(e.status)throw e;fail('Cannot publish. Check the required fields, dates, links, and photos. Your drafts are saved.',422);}
+  let pub;try{pub=snapshots(next);const checkRefs=x=>{if(!x||typeof x!=='object')return;for(const[k,v]of Object.entries(x)){if(['documentId','videoId'].includes(k)&&v){const f=next.files?.find(f=>f.id===v);check(f&&(k==='videoId'?f.kind==='video':f.kind==='pdf'),'Upload a checked file before publishing.',422,k);}else checkRefs(v);}};checkRefs(pub);await validateImages(pub);}catch(e){if(e.status)throw e;fail('Cannot publish. Check the required fields, dates, links, and photos. Your drafts are saved.',422);}
   const id=uid('release');try{await builder(root,folder,id,pub);}catch(e){const failed=clone(state);log(failed,'publication_failed',now());failed.lastFailure={at:now(),message:'The site could not be built. The previous site is still available.'};(failed.failures??=[]).unshift({id:uid('failed'),at:now(),summary:'FAILED - previous site kept',status:'failed'});await save(failed);fail(failed.lastFailure.message,422);}
   next.release=id;next.sourceHash=hash(pub);next.publishes.unshift({id,at:now(),summary,snapshot:pub});next.lastFailure=null;log(next,'publish',now());
   await atomic(pending,{id,before,next:pub});
@@ -82,7 +88,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
  function readOnly(method,url){
   if(method!=='GET')return false;
   const route=url.pathname.slice('/api/v2'.length);
-  return /^\/(sections|counts|structure|settings|people|publishes|journal)$/.test(route)||route==='/conversations'||/^\/items(?:\/[^/]+(?:\/history)?)?$/.test(route)||/^\/pages\/[^/]+$/.test(route)||/^\/media\/[^/]+$/.test(route);
+  return /^\/(sections|counts|structure|settings|people|publishes|journal)$/.test(route)||route==='/conversations'||/^\/items(?:\/[^/]+(?:\/history)?)?$/.test(route)||/^\/pages\/[^/]+$/.test(route)||/^\/(media|files)\/[^/]+$/.test(route);
  }
  async function execute(method,url,body,res,sessionState,requestActor=actor){
   const route=url.pathname.slice('/api/v2'.length),parts=route.split('/').filter(Boolean).map(decodeURIComponent);const [resource,id,action]=parts;
@@ -121,18 +127,20 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
    if(method==='GET'&&!action)return {...clone(p),fields:id==='home'?{...homeFields(next.base.home),...clone(p.fields)}:clone(p.fields),media:assetUrls()};
    if(method==='PUT'&&!action){revision(p,body.revision);plain(body.fields);check(Buffer.byteLength(JSON.stringify(body.fields))<=60000,'This page is too large. Shorten its content and try again.',413);const candidate=clone(next);setPage(candidate.base,id,body.fields);
     // Merge fields the current UI does not expose (team photos and job locations).
-    const f=id==='home'?{...p.fields,...clone(body.fields)}:clone(body.fields);if(id==='about')f.team=(f.team??[]).map(person=>({...p.fields.team?.find(x=>x.name===person.name),...person}));if(id==='join')f.positions=(f.positions??[]).map(job=>({...p.fields.positions?.find(x=>x.title===job.title),...job}));
+    const f=['home','about','contact'].includes(id)?{...p.fields,...clone(body.fields)}:clone(body.fields);if(id==='about')f.team=(f.team??[]).map(person=>({...p.fields.team?.find(x=>x.name===person.name),...person}));if(id==='join')f.positions=(f.positions??[]).map(job=>({...p.fields.positions?.find(x=>x.title===job.title),...job}));
     p.fields=f;p.revision++;sessionState.pages[id]=p.revision;result={revision:p.revision};changed=true;
    }
    if(method==='POST'&&action==='publish'){check(sessionState.pages[id]===p.revision,'This page changed in another window. Save it again before publishing.',409);p.live=clone(p.fields);return publish(next,'Page updated');}
+  }else if(resource==='files'){
+   if(method==='POST'&&!id){check((next.files??[]).length<100,'The limit of 100 uploaded documents and videos has been reached.',413);const upload=await prepareUpload(body,folder);const {bytes,...metadata}=upload;if(store){check(store.saveFile,'File storage is not available.',503);await store.saveFile(upload.id,bytes);}else await writeFile(path.join(fileFolder,upload.id),bytes,{mode:0o600,flag:'wx'});(next.files??=[]).push(metadata);result={...metadata,url:'/files/'+upload.id};changed=true;}
+   if(method==='GET'&&id){const file=next.files?.find(f=>f.id===id);check(file,'File not found.',404);send(res,200,await fileBytes(id),file.mime,{'Content-Disposition':file.kind==='pdf'?'attachment; filename="document.pdf"':'inline'});return null;}
   }else if(resource==='media'){
    if(method==='POST'&&!id){const a=await image(body);check(next.media.length<500,'The limit of 500 media files has been reached.',413);next.media.push(a);result={mediaId:a.id,src:`/api/v2/media/${a.id}`};changed=true;}
    if(method==='GET'&&id){const a=next.media.find(m=>m.id===id);check(a,'Photo not found.',404);send(res,200,Buffer.from(a.base64,'base64'),a.mime);return null;}
   }else if(resource==='publishes'){
    if(method==='GET'&&!id)return [...next.publishes.map(({snapshot,...entry})=>entry),...(next.failures??[])].map(entry=>({...entry,summary:historyLabel(entry.summary)}));
-   if(method==='POST'&&action==='restore'){const saved=next.publishes.find(p=>p.id===id);check(saved,'Version not found.',404);const safe=cleanPlaceholderLinks(saved.snapshot);const restored=migrate(safe.site,safe.cases,undefined,now());for(const i of next.items)i.live=null;
+   if(method==='POST'&&action==='restore'){const saved=next.publishes.find(p=>p.id===id);check(saved,'Version not found.',404);const safe=cleanPublicSnapshot(hydrateSnapshot(next,saved.snapshot));const restored=migrate(safe.site,safe.cases,undefined,now());preserveRestoredMedia(next,restored);for(const i of next.items)i.live=null;
     for(const old of restored.items){const current=next.items.find(i=>i.publicId===old.publicId&&i.section===old.section);if(current)current.live=clone(old.live);else{next.items.push(old);next.reserved.push(old.slug);}}
-    for(const m of restored.media)if(!next.media.some(a=>a.id===m.id))next.media.push(m);
     for(const name of Object.keys(next.pages))next.pages[name].live=clone(restored.pages[name].live);
     // Restore published navigation without discarding newer drafts or reserved addresses.
     next.structure.live=clone(restored.structure.live);
@@ -200,7 +208,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
     if(result!==null)send(res,200,result);
     return true;
    }
-   const operation=async()=>{await initialize();actor=req.pondIdentity?.email??'local';await purge();if(session){const token=uid('session');const duration=hosted?sessionSeconds*1000:28800000;const info={expires:clock().getTime()+duration,pages:{},email:actor};if(hosted&&store?.saveSession)await store.saveSession(hash(token),info,clock().getTime());else{check(sessions.size<1000,'Too many open sessions. Try again later.',429);sessions.set(token,info);}send(res,200,{token,user:{email:actor==='local'?'local@example.invalid':actor},mode:hosted?'hosted-test':'local',mail:'simulated',publicUrls },'application/json',{'Set-Cookie':`pond_session=${token}; ${hosted?'Secure; ':''}HttpOnly; SameSite=Strict; Path=/api/v2; Max-Age=${hosted?sessionSeconds:28800}`});return;}
+   const operation=async()=>{await initialize();actor=req.pondIdentity?.email??'local';await purge();if(session){const token=uid('session');const duration=hosted?sessionSeconds*1000:28800000;const info={expires:clock().getTime()+duration,pages:{},email:actor};if(hosted&&store?.saveSession)await store.saveSession(hash(token),info,clock().getTime());else{check(sessions.size<1000,'Too many open sessions. Try again later.',429);sessions.set(token,info);}send(res,200,{token,user:{email:actor==='local'?'local@example.invalid':actor},mode:hosted?'hosted-test':'local',mail:'simulated',publicUrls,publicVariants },'application/json',{'Set-Cookie':`pond_session=${token}; ${hosted?'Secure; ':''}HttpOnly; SameSite=Strict; Path=/api/v2; Max-Age=${hosted?sessionSeconds:28800}`});return;}
     if(form){body.box=url.pathname.endsWith('/join')?'cv':'msg';body.rateKey=hosted?req.pondIdentity.subject:req.socket.remoteAddress;url=new URL('/api/v2/testing/receive',url);}
     const previousContext=auth?JSON.stringify(auth.pages):null;
     const result=await execute(req.method,url,body,res,auth);
@@ -208,8 +216,11 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
     if(result!==null)send(res,200,result);
    };
    const task=queue.then(operation);queue=task.catch(()=>{});await task;
-  }catch(error){if(res.headersSent){res.end();return true;}if(error.status===413)res.setHeader('Connection','close');send(res,error.status??400,{message:error.status?error.message:'Could not process this data. Check the fields and try again.',...(error.diagnostics?{diagnostics:error.diagnostics}:{})});}
+  }catch(error){if(res.headersSent){res.end();return true;}if(error.status===413)res.setHeader('Connection','close');send(res,error.status??400,{...(error.code?{code:error.code}:{}),message:error.status?error.message:'Could not process this data. Check the fields and try again.',...(error.diagnostics?{diagnostics:error.diagnostics}:{})});}
   return true;
  }
- return {handler,initialize,release:()=>state?.release,active:()=>Boolean(state)||existsSync(file),close:async()=>{await queue;if(locked)await rm(lock,{force:true});locked=false;},purge:()=>queue=queue.then(async()=>{if(state)await purge()}).catch(()=>{})};
+ async function publicFile(id,res,head=false){
+  if(!/^file-[a-f0-9]{24}$/.test(id))return false;const pub=hydrateSnapshot(state,state.publishes[0]?.snapshot??state.initialPublic);let used=false;const walk=x=>{if(!x||typeof x!=='object')return;for(const[k,v]of Object.entries(x))if(['documentId','videoId'].includes(k)&&v===id)used=true;else walk(v);};walk(pub);const file=state.files?.find(f=>f.id===id);if(!used||!file)return false;send(res,200,head?Buffer.alloc(0):await fileBytes(id),file.mime,{'Content-Disposition':file.kind==='pdf'?'attachment; filename="document.pdf"':'inline'});return true;
+ }
+ return {handler,publicFile,initialize,release:()=>state?.release,active:()=>Boolean(state)||existsSync(file),close:async()=>{await queue;if(locked)await rm(lock,{force:true});locked=false;},purge:()=>queue=queue.then(async()=>{if(state)await purge()}).catch(()=>{})};
 }
