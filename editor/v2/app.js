@@ -215,11 +215,11 @@ async function start() {
   }
   if (session) {
     clearTimeout(waitingScreen.timer); $('#waiting')?.remove(); $('#app').hidden = false;
-    state.token = session.token || ''; state.me = session.user?.email || ''; state.mode = session.mode || ''; state.publicUrls = session.publicUrls || {}; state.mail = session.mail || '';
+    state.token = session.token || ''; state.me = session.user?.email || ''; state.mode = session.mode || ''; state.deployment = session.deployment || (session.mode === 'hosted-test' ? 'hosted' : 'local'); state.publicUrls = session.publicUrls || {}; state.mail = session.mail || '';
     // Which public versions exist: given by the server when it knows (publicVariants), else both only on this computer.
-    state.publicB = Array.isArray(session.publicVariants) ? session.publicVariants.includes('b') : state.mode === 'local';
+    state.publicB = Array.isArray(session.publicVariants) ? session.publicVariants.includes('b') : state.deployment === 'local';
     const band = $('#notice-band');
-    if (state.mail === 'simulated') { band.textContent = state.mode === 'local' ? 'Test version on this computer: everything is really saved, but no email goes out.' : 'Emails are not sent yet.'; band.classList.add('local'); band.hidden = false; }
+    if (state.mail === 'simulated') { band.textContent = state.deployment === 'local' ? 'Test version on this computer: everything is really saved, but no email goes out.' : 'Emails are not sent yet.'; band.classList.add('local'); band.hidden = false; }
     else band.hidden = true;
   } else return waitingScreen(status);
   $('#me').textContent = initials(state.me.split('@')[0].replace(/[._-]/g, ' ') || 'FP');
@@ -524,7 +524,16 @@ const QUICK = [
 // What happened to a reply sent from Desk. The server owns the status; a simulated reply never claims an email went out.
 function deliveryText(message) {
   if (message.simulation || message.status === 'simulated') return 'test, not sent';
-  return { queued: 'sending…', sent: 'sent by email', failed: 'not sent yet, trying again', review_required: 'not sent: ask the site manager before sending again' }[message.status] ?? 'sent by email';
+  return { queued: 'sending…', sent: 'sent by email', failed: 'not sent yet, trying again', review_required: 'delivery not confirmed' }[message.status] ?? 'status unavailable';
+}
+// A reply whose delivery could not be confirmed may already have arrived: sending again needs an explicit yes.
+function retryRow(id, box, message) {
+  return h('div', { class: 'file' }, h('span', { class: 'grow', text: 'We could not confirm that this email arrived.' }),
+    h('button', { class: 'btn soft', type: 'button', onclick: writer(async () => {
+      if (!confirm('This email may already have reached the person. Sending it again can deliver it twice. Send it again?')) return;
+      const result = await call('POST', `/conversations/${id}/retry-reply`, { mailId: message.mailId, confirmPotentialDuplicate: true });
+      toast(result?.message || 'Sending again ✓'); openConversation(id, box, false, true);
+    }) }, 'Send again'));
 }
 const fileSize = bytes => typeof bytes === 'number' ? (bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`) : String(bytes ?? '');
 // Attachments open as the checked copy rebuilt by the server. The original stays private and is only downloaded after a warning.
@@ -563,6 +572,7 @@ async function openConversation(id, box, quiet = false, force = false) {
     chat.append(h('div', { class: `bubble ${message.from}${message.status === 'failed' && !message.simulation ? ' failed' : ''}` },
       message.facts ? h('p', { class: 'facts', text: message.facts }) : null, message.text,
       ...(message.attachments || []).map(attachmentRow),
+      message.from === 'us' && message.status === 'review_required' && message.mailId && !message.simulation ? retryRow(id, box, message) : null,
       h('time', { text: `${new Date(message.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${message.from === 'us' ? ' · ' + deliveryText(message) : ''}` })));
   }
   const text = h('textarea', { class: 'text', rows: '1', placeholder: 'Write a reply…', 'aria-label': state.mail === 'simulated' ? `Your reply to ${talk.name} (test version, no email sent)` : `Your reply, emailed to ${talk.name}` });
@@ -599,9 +609,9 @@ async function openSetting(key, quiet = false) {
   const panels = {
     people: async () => {
       const people = await call('GET', '/people'); const email = h('input', { class: 'text', type: 'email', placeholder: 'name@frogpondboys.com', 'aria-label': 'Email address to allow' });
-      return [h('div', { class: 'panel' }, h('h3', { text: 'People' }), h('p', { text: state.mode === 'local' ? 'Test version on this computer: the list is saved, but nobody gets a sign-in code yet. Once online, each address will sign in with a code sent by email.' : 'Each person signs in with their own address and a code sent by email. Everyone on this list sees the same inbox and the same content.' }),
-        ...people.map(person => h('div', { class: 'person' }, h('span', { text: person.email + (person.me ? ' (you)' : '') }), state.mode === 'hosted-test' || person.me || people.length === 1 ? null : h('button', { class: 'btn danger', type: 'button', onclick: writer(async () => { if (!confirm(`Remove access for ${person.email}?`)) return; await call('DELETE', `/people/${encodeURIComponent(person.email)}`); toast('Access removed ✓'); openSetting('people'); }) }, 'Remove'))),
-        state.mode === 'hosted-test' ? h('p', { text: 'To add or remove a person, ask the site manager: the address must be added to the sign-in list and to the server settings.' }) : h('div', { class: 'person' }, email, h('button', { class: 'btn main', type: 'button', onclick: writer(async () => { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { toast('This email address does not look right.'); email.focus(); return; } await call('POST', '/people', { email: email.value.trim() }); toast(state.mode === 'local' ? 'Address added to the list ✓' : 'Access granted ✓'); openSetting('people'); }) }, 'Add')))];
+      return [h('div', { class: 'panel' }, h('h3', { text: 'People' }), h('p', { text: state.deployment === 'local' ? 'Test version on this computer: the list is saved, but nobody gets a sign-in code yet. Once online, each address will sign in with a code sent by email.' : 'Each person signs in with their own address and a code sent by email. Everyone on this list sees the same inbox and the same content.' }),
+        ...people.map(person => h('div', { class: 'person' }, h('span', { text: person.email + (person.me ? ' (you)' : '') }), state.deployment === 'hosted' || person.me || people.length === 1 ? null : h('button', { class: 'btn danger', type: 'button', onclick: writer(async () => { if (!confirm(`Remove access for ${person.email}?`)) return; await call('DELETE', `/people/${encodeURIComponent(person.email)}`); toast('Access removed ✓'); openSetting('people'); }) }, 'Remove'))),
+        state.deployment === 'hosted' ? h('p', { text: 'To add or remove a person, ask the site manager: the address must be added to the sign-in list and to the server settings.' }) : h('div', { class: 'person' }, email, h('button', { class: 'btn main', type: 'button', onclick: writer(async () => { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { toast('This email address does not look right.'); email.focus(); return; } await call('POST', '/people', { email: email.value.trim() }); toast(state.deployment === 'local' ? 'Address added to the list ✓' : 'Access granted ✓'); openSetting('people'); }) }, 'Add')))];
     },
     notify: async () => [h('div', { class: 'panel' }, h('h3', { text: 'Notifications' }), h('p', { text: 'The email only says there is something new, without the content or the résumé.' }), state.mail === 'simulated' ? h('p', { class: 'hint', text: 'Emails are not sent yet: these choices apply once sending is switched on.' }) : null,
       ...[['cv', 'Tell me about a new application'], ['msg', 'Tell me about a new message']].map(([name, label]) => { const box = h('input', { type: 'checkbox' }); box.checked = settings.notifications?.[name] !== false; box.addEventListener('change', () => busy(box, async () => { Object.assign(settings, await call('PUT', '/settings', { ...settings, notifications: { ...settings.notifications, [name]: box.checked } })); toast('Saved ✓'); })); return h('label', { class: 'check' }, box, label); }))],

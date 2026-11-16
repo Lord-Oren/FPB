@@ -26,3 +26,23 @@ test('An original attachment is only downloaded after a warning', () => {
   assert.match(app, /attachments\/\$\{file\.id\}\?original=1&confirm=1/);
   assert.match(app, /original\.addEventListener\('click', event => \{ if \(!confirm\(/);
 });
+
+test('an unconfirmed delivery is never shown as sent or as not sent, and sending again asks first', () => {
+  assert.match(app, /review_required: 'delivery not confirmed'/);
+  assert.match(app, /\?\? 'status unavailable'/);
+  const retry = app.slice(app.indexOf('function retryRow'), app.indexOf('const fileSize'));
+  assert.match(retry, /writer\(async/); assert.match(retry, /confirm\('This email may already have reached the person/);
+  assert.ok(retry.indexOf('confirm(') < retry.indexOf('retry-reply'));
+  assert.match(retry, /confirmPotentialDuplicate: true/);
+});
+
+test('access management follows the deployment value, not the legacy mode', () => {
+  assert.doesNotMatch(app, /state\.mode === /);
+  assert.match(app, /state\.deployment === 'hosted'/);
+});
+
+test('a footer social link named with punctuation only shows its icon and keeps a spoken name', async () => {
+  const footer = await readFile(new URL('../src/components/Footer.astro', import.meta.url), 'utf8');
+  assert.match(footer, /aria-label=\{iconOnly\(n\)\?network\(n\):undefined\}/);
+  assert.match(footer, /\{iconOnly\(n\)\?'':' '\+n\.title\}/);
+});
