@@ -1,4 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
+import {defaultStructure} from '../src/data/structure.js';
 import {migrate} from '../editor/backend/model.mjs';import {upgradeContent,cleanPublicSnapshot} from '../editor/backend/content-upgrade.mjs';import {editorialDefaults} from '../src/data/editorial.js';
 const read=p=>JSON.parse(fs.readFileSync(new URL(p,import.meta.url)));
 const cases={schemaVersion:1,cases:[],media:[]};const seed=read('../src/data/site-content.json');const legacy=read('./fixtures/legacy-site-content.json');
@@ -18,6 +19,7 @@ test('replaced About images and private retired content keep their bytes and ref
  const saved=result.state.retiredSections[0].items.find(i=>i.id===retired.id);assert.equal(saved.fields.title,'Client presentation');assert.equal(result.state.media.find(m=>m.id===saved.fields.image.mediaId).base64,original);assert(!result.snapshot.site.works.some(w=>w.rubric==='presentations'));
 });
 test('home defaults change only when unedited and explicit collection order survives',()=>{
+ assert.deepEqual(defaultStructure().nodes.filter(n=>n.zone==='screens').map(n=>n.title),['Announcements','Recent.','Ribbit.','Croak.']);assert.equal(defaultStructure({navigation:{gram:'Backstage'}}).nodes.find(n=>n.id==='gram').title,'Backstage');
  const state=migrate(legacy,cases,undefined,'2026-11-16');state.pages.home.fields.editorial_homeLatestKicker='Our own label';state.pages.home.live.editorial_homeLatestKicker='Latest work';state.pages.home.live.editorial_homeCroakLink='Listen now';
  const result=upgradeContent(state);assert.equal(result.state.pages.home.fields.editorial_homeLatestKicker,'Our own label');assert.equal(result.state.pages.home.live.editorial_homeLatestKicker,'');assert.equal(result.state.pages.home.live.editorial_homeCroakLink,'Tune in');
 });

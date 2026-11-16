@@ -1,4 +1,4 @@
-# Version 0.16.0 - local backend review
+# Version 0.16.1 - local backend review
 
 This is an intermediate implementation for review, not the completed public release. Deployment of the new content model remains scheduled for the final rollout.
 
@@ -30,3 +30,5 @@ Backups must include pond_state, pond_sessions and pond_files. Upgrading hosting
 211 automated tests passed with PostgreSQL 17, none skipped. The real hosted build and four Case Studies build scenarios passed. Both standalone variants exported 26 pages. The empty Recent section was checked in Chromium at 390 and 1440 pixels in both variants. This is a narrow visual check, not full editor or physical-device acceptance.
 
 The earlier hosting batch at 3d50713 was authorized separately; these new backend features remain local until the final rollout.
+
+Revision 0.16.1 aligns the default screen labels in fresh exports with migrated content: Announcements, Recent., Ribbit., Croak. Custom owner labels remain unchanged.

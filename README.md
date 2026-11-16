@@ -35,6 +35,6 @@ CI checks pull requests and pushes to `main`. The Render template requests deplo
 
 ## Current limits
 
-Version 0.16.0 prepares the next content model with an empty production seed and a migration that preserves edited owner content. The public configuration serves version A with Contact and Join submission disabled. Email replies and notifications are still simulated. Authenticated public PDF/video uploads are processed before publication and stored separately; the older private resume flow remains quarantined until its planned integration. New editor fields and public rendering still require interface integration. See docs/RELEASE-0.16.0.md for the exact scope.
+Version 0.16.1 prepares the next content model with an empty production seed and a migration that preserves edited owner content. The public configuration serves version A with Contact and Join submission disabled. Email replies and notifications are still simulated. Authenticated public PDF/video uploads are processed before publication and stored separately; the older private resume flow remains quarantined until its planned integration. New editor fields and public rendering still require interface integration. See docs/RELEASE-0.16.1.md for the exact scope.
 
 Pond Desk and its data must remain private. Never publish the editor state, sessions, incoming messages, resumes, or database backups to GitHub Pages or Git.

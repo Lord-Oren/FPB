@@ -1,4 +1,5 @@
 import {pages as legacyPages} from './pages.js';
+import {navigationDefaults} from './editorial.js';
 export const zones=[{id:'menus',title:'Frog menus'},{id:'screens',title:'Lily-pad screens'},{id:'stones',title:'Stone links'},{id:'footer',title:'Footer links'},{id:'archive',title:'Hidden sections'}];
 export const collectionKinds=['works','events','press'];
 export const kinds=['menu','page','link','anchor',...collectionKinds,'case-studies','about','contact','join','legal','croak'];
@@ -6,7 +7,7 @@ const internal=/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const clean=s=>typeof s==='string'&&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u202a-\u202e\u2066-\u2069]/u.test(s);
 function require(ok,message){if(!ok)throw new Error(message);}
 export function defaultStructure(home={}){
- const names=home.navigation??{};const nodes=[];
+ const names={...navigationDefaults,...home.navigation};const nodes=[];
  const add=(id,title,kind,zone,parentId=null,extra={})=>nodes.push({id,title:names[id]??title,kind,zone,parentId,slug:['link','anchor'].includes(kind)?'':id,visible:true,newTab:id==='gram',text:'',href:'',...extra});
  for(const [id,title]of [['advertising','Advertising'],['creative','Creative'],['pr','PR']])add(id,title,'menu','menus');
  for(const page of legacyPages.filter(p=>p.slug!=='presentations')){
