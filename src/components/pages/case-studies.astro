@@ -5,7 +5,7 @@ import { caseStudies } from '../../data/public-case-studies.js';
 import Empty from '../content/Empty.astro';
 const fileHref = id => `files/${id}`;
 ---
-{caseStudies.length === 0 ? <Empty /> : <ul class="case-grid">
+{caseStudies.length === 0 ? <Empty here="case-studies" /> : <ul class="case-grid">
   {caseStudies.map(item => <li>
     <article class="case-card">
       <a class="case-thumb" href={item.documentId ? fileHref(item.documentId) : item.href} target={item.documentId ? '_blank' : undefined} rel={item.documentId ? 'noopener' : undefined}>

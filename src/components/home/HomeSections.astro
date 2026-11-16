@@ -17,6 +17,9 @@ const latest = [
   ...site.works.filter(item=>!pages.find(page=>page.slug===item.rubric)?.hidden).map(item => ({ title: item.title, kind: title(item.rubric), href: `${item.rubric}.html#${item.id}`, image: item.image, date: item.date })),
 ].slice(0, 5);
 const next = splitEvents(site.events).upcoming[0];
+// An empty announcement is hidden. The section stays, so the Announcements screen of the pond always has somewhere to land.
+const announcement = site.home.announcement;
+const hasAnnouncement = Boolean(announcement.title?.trim() || announcement.text?.trim());
 const press = site.press[0];
 const team = site.about.team.slice(0, 4);
 const gramUrl = site.home.gram.url;
@@ -37,8 +40,9 @@ const day = value => new Date(value + ':00Z').toLocaleDateString('en-US', { week
 
   <section data-reveal class="hm-band hm-news" id="news" aria-labelledby="hm-news">
     <div class="hm-head">{e.homeNewsKicker?.trim() && <p class="hm-kicker">{e.homeNewsKicker}</p>}<h2 id="hm-news">{site.home.editorial.homeNewsTitle}</h2></div>
+    {!hasAnnouncement && !next && !press && <p>News is on its way.</p>}
     <div class="hm-cards">
-      <article class="hm-card"><span class="hm-tag">Announcement</span><h3>{site.home.announcement.title}</h3><p>{site.home.announcement.text}</p></article>
+      {hasAnnouncement && <article class="hm-card"><span class="hm-tag">Announcement</span>{announcement.title && <h3>{announcement.title}</h3>}{announcement.text && <p>{announcement.text}</p>}</article>}
       {next && <article class="hm-card"><span class="hm-tag">Next event · {day(next.start)}</span><h3>{next.title}</h3><p>{next.venue}{next.city && <>, {next.city}</>}{next.description && <> — {next.description}</>}</p></article>}
       {press && <article class="hm-card"><span class="hm-tag">In the press · {press.outlet}</span><h3><a href={press.url} rel="noopener">{press.title} <span aria-hidden="true">↗</span></a></h3></article>}
     </div>

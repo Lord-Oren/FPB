@@ -11,9 +11,10 @@
 :root[data-skin=modern]::view-transition-new(root) { animation:vt-enter .6s var(--ease-out) .08s both }
 @keyframes vt-leave { to { opacity:0; transform:translateY(-12px) scale(.995) } }
 @keyframes vt-enter { from { opacity:0; transform:translateY(20px) scale(.99) } }
-/* A: an iris opening from where the visitor clicked, like the old console games. */
-:root[data-skin=pixel]::view-transition-old(root) { animation:vt-dim .7s var(--ease-glide) both }
-:root[data-skin=pixel]::view-transition-new(root) { animation:vt-iris .7s var(--ease-glide) both }
+/* A: an iris opening from where the visitor clicked, like the old console games. It moves in visible
+   steps, frame by frame, so the change of page feels as pixel as Ruben's art. */
+:root[data-skin=pixel]::view-transition-old(root) { animation:vt-dim .7s steps(4, end) both }
+:root[data-skin=pixel]::view-transition-new(root) { animation:vt-iris .7s steps(10, jump-start) both }
 @keyframes vt-dim { to { opacity:.35 } }
 @keyframes vt-iris { from { clip-path:circle(0 at var(--from-x,50%) var(--from-y,50%)) } to { clip-path:circle(150% at var(--from-x,50%) var(--from-y,50%)) } }
 

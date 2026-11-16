@@ -1,0 +1,40 @@
+/* Phone ergonomics for version A (maquette approved 16 Nov 2026): frog menus as a solid panel with big buttons,
+   compact inner-page header, 44 to 50 px targets, 14 px minimum helper text and a tidy footer. Phones only. */
+@media (max-width:600px){
+ /* frog menus: a solid panel with big buttons instead of small flies floating over the text */
+ .home-page .pond-page:has(.tongue:not([hidden]))::before{content:'';position:absolute;inset:0;z-index:11;background:#03161dcc;pointer-events:none}
+ .home-page .tongue{width:min(300px,84vw);padding-top:22px;z-index:30}
+ .home-page .f1 .tongue{--tongue-offset:78px}.home-page .f3 .tongue{--tongue-offset:-78px}
+ .home-page .tongue::before,.home-page .tongue::after{display:none}
+ .home-page .menu-flies{max-height:none;gap:10px;padding:14px;background:#062a33;border:3px solid #0b1a2a;box-shadow:5px 5px 0 #0b1a2a;pointer-events:auto}
+ .home-page .menu-flies::before{content:attr(aria-label);display:block;color:var(--dandelion);font-weight:900;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:2px 0 4px}
+ .home-page .frog-wrap:has(.tongue:not([hidden])){z-index:31}
+ .home-page .fly{min-height:50px;font-size:16px;font-weight:800;border-radius:0;letter-spacing:.01em}
+ .home-page .fly::before,.home-page .fly::after{display:none}
+ /* sections under the pond */
+ .home-page .hm-kicker,.home-page .hm-tag,.home-page .hm-cap small{font-size:13px}
+ .related-pages a{min-height:48px!important}
+ /* ---------- Inner pages: compact header, bigger targets, calmer type ---------- */
+ body.interior-page .page-header{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:14px;padding:14px 16px}
+ .page-header .client-wordmark img{width:58px;height:64px}
+ body.interior-page .page-header nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+ body.interior-page .page-header nav a{min-height:44px;display:flex;align-items:center;justify-content:center;font-size:15px;padding:0 8px;margin:0}
+ .content-page{padding-inline:20px}
+ .content-page h1{font-size:clamp(2rem,9vw,2.4rem);line-height:1.05}
+ .page-lede{font-size:1.06rem;line-height:1.55;color:#e8f1ef}
+ .page-group{font-size:13px}
+ .related-pages{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+ .related-pages a{min-height:48px;display:flex;align-items:center;justify-content:center;font-size:15px;margin:0}
+ .case-more a,.legal-pending a,.empty a{display:inline-block;padding:10px 0}
+ /* forms */
+ .required-note,.field-help,.field-optional,.form-status,[data-form-status],.inquiry-status{font-size:14px!important;line-height:1.5}
+ .form-field label{font-size:16px}
+ .form-field input,.form-field textarea{min-height:50px;font-size:16px}
+ /* footer */
+ footer{gap:14px 18px;padding:28px 16px 32px}
+ footer .footer-logos img{height:44px}
+ footer .footer-socials a{min-height:44px;font-size:15px}
+ footer .motion-toggle{min-height:44px;font-size:14px;padding-inline:16px}
+ footer > span{font-size:13px;flex-basis:100%;text-align:center}
+ footer .footer-logos{flex-basis:100%;justify-content:center}
+}

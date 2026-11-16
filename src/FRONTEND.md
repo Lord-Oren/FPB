@@ -73,3 +73,11 @@ Navigation, Brand and Footer are now Astro components. Gram is a works gallery; 
 ## V1 — 16 November 2026
 
 Presentations are gone from Case Studies and Pond Desk. Case studies are a thumbnail grid (cover, brand logo, one sentence; the PDF opens in a new tab). About, Contact and Legal read every field from Pond Desk. Ribbit and Croak have their own bands on the home page. On phones, the inner pages have no ripple layer behind the text and the home keeps only the pixel rings under the pads (F4).
+
+### T4 — phone pond, Desk send states, archive
+
+- **Phone pond (A only, ≤600 px, `src/styles/pond-mobile-a.css`).** One column on a pixel water tile: title, the three frogs on Ruben's log, the tagline, then the four pads in a zigzag with the section name inside each TV, then the stones in a 2 × 2 grid. Sprites live in `src/assets/pond-mobile/` and are inlined as data URIs (`--pm-*` variables in `SiteLayout.astro`) because the CSP only allows `data:` and same-origin images. One art pixel is 3 CSS px. Site fonts are kept. Desktop and B are untouched.
+- **Phone ergonomics (A only, `src/styles/mobile-a.css`).** Menu panel, compact inner header, form fields at 16 px with 50 px targets, footer.
+- **Page change in A** is the same iris, now moving in visible steps (`steps()` in `motion.css`). Reduced motion still turns it off.
+- **Home news band.** The announcement card only shows when its title or text is filled. When there is no announcement, event or press, the band says "News is on its way." The `#news` anchor always stays.
+- **Desk.** Files are read inside the shared lock (`readBase64` inside `busy`). Message lines show the real send state (test, sending, sent, trying again, held for review). Attachments show kind, size and the checked copy; the unchecked original needs a confirmation. Settings → Deleted brings items back as drafts. Case context and work are optional when a PDF is attached; announcement, story and ethos are optional.

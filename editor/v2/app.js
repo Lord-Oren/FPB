@@ -52,6 +52,8 @@ async function busy(control, work, waitText = '') {
 }
 // lock:end
 const writer = (work, waitText) => event => busy(event.currentTarget, () => work(event), waitText);
+// Reading the chosen file happens inside the lock too, so a publish cannot start between choosing and sending it.
+const readBase64 = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(file); });
 const when = iso => { const d = new Date(iso); const today = new Date(); return d.toDateString() === today.toDateString() ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
 const initials = name => { const words = name.trim().split(/\s+/).filter(Boolean); return ((words[0]?.[0] || '') + (words.length > 1 ? words.at(-1)[0] : '')).toUpperCase(); };
 
@@ -98,8 +100,8 @@ const FIELDS = {
     { name: 'brandLogo', label: 'Brand logo', type: 'image', optional: true, hint: 'Shown in the corner of the thumbnail.' },
     { name: 'documentId', label: 'Full case study (PDF)', type: 'file', kind: 'pdf', optional: true, hint: 'Visitors open it by clicking the thumbnail. One PDF, up to 10 MB and 100 pages. Word files are not accepted: save them as PDF first.' },
     { name: 'client', label: 'Which client?', max: 90, optional: true },
-    { name: 'context', label: 'The background', max: 4000, required: true, area: true },
-    { name: 'work', label: 'What you did', max: 4000, required: true, area: true },
+    { name: 'context', label: 'The background', max: 4000, required: true, unlessFilled: 'documentId', area: true, hint: 'Not needed when you add the full case study as a PDF.' },
+    { name: 'work', label: 'What you did', max: 4000, required: true, unlessFilled: 'documentId', area: true, hint: 'Not needed when you add the full case study as a PDF.' },
     { name: 'gallery', label: 'More photos', type: 'gallery', optional: true, hint: 'Up to 12 photos.' },
     { name: 'results', label: 'The results', max: 1500, optional: true, area: true }],
   work: [
@@ -147,15 +149,15 @@ const PAGES = {
     ].map(([key,label,max])=>({name:'editorial_'+key,label,max,optional:true,type:key==='croakUrl'?'url':undefined})),
     ...Object.entries({advertising:'Advertising',creative:'Creative',pr:'PR','case-studies':'Case Studies','client-work':'Client Work','mock-ads':'Mock Ads',collabs:'Collabs','events-shows':'Events & Shows','films-videos':'Films & Videos',magazine:'Magazine',photography:'Photography',press:'Press',prc:'PRC',recognition:'Recognition',statements:'Statements',about:'About',contact:'Contact',join:'Join Us',legal:'Legal',gram:'Gram',croak:'Croak',announcements:'Announcements',recents:'Recents'}).map(([key,label])=>({name:'navigation_'+key,label:'Navigation label — '+label,max:40,required:true})),
 
-    { name: 'announcementTitle', label: 'Announcement title', max: 60, required: true, hint: 'Shown in “What\'s happening”, further down the home page.' },
-    { name: 'announcementText', label: 'Announcement text', max: 140, required: true, area: true },
+    { name: 'announcementTitle', label: 'Announcement title', max: 60, optional: true, hint: 'Shown in “What\'s happening”, further down the home page. Leave the title and the text empty to hide the announcement.' },
+    { name: 'announcementText', label: 'Announcement text', max: 140, optional: true, area: true },
     { name: 'gramLabel', label: 'Ribbit screen text (version B)', max: 40, required: true },
     { name: 'gramUrl', label: 'Instagram link, shown under Ribbit', type: 'url', optional: true }] },
-  about: { title: 'About', small: 'About page', lead: ['Each part has its own title. Our Story and Our Ethos are required; any other part whose text is empty is not shown on the site.'], fields: [
+  about: { title: 'About', small: 'About page', lead: ['Each part has its own title. A part whose text is empty is not shown on the site.'], fields: [
     { name: 'storyTitle', label: 'Title — Our Story', max: 120, optional: true },
-    { name: 'story', label: 'Our Story', max: 4000, required: true, area: true },
+    { name: 'story', label: 'Our Story', max: 4000, optional: true, area: true },
     { name: 'ethosTitle', label: 'Title — Our Ethos', max: 120, optional: true },
-    { name: 'ethos', label: 'Our Ethos', max: 4000, required: true, area: true },
+    { name: 'ethos', label: 'Our Ethos', max: 4000, optional: true, area: true },
     { name: 'manifestoTitle', label: 'Title — Our Manifesto', max: 120, optional: true },
     { name: 'manifesto', label: 'Our Manifesto', max: 4000, optional: true, area: true },
     { name: 'differentiatorTitle', label: 'Title — What makes you different', max: 120, optional: true },
@@ -357,8 +359,7 @@ function imageControl(spec, value, media, id) {
     for (const file of [...files].slice(0, many ? limit - list.length : 1)) {
       if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast(`“${file.name}” is not a JPG, PNG or WebP photo.`); continue; }
       if (file.size > 5 * 1024 * 1024) { toast(`“${file.name}” is too large (5 MB max).`); continue; }
-      const base64 = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(file); });
-      const result = await busy(null, () => call('POST', '/media', { name: file.name, base64 }), 'Preparing the photo…');
+      const result = await busy(null, async () => call('POST', '/media', { name: file.name, base64: await readBase64(file) }), 'Preparing the photo…');
       if (!result) continue;
       media[result.mediaId] = result.src; const picture = { mediaId: result.mediaId, alt: '' }; if (many) list.push(picture); else list = [picture]; state.dirty = true; draw(); toast('Photo added ✓');
     }
@@ -398,8 +399,7 @@ function fileControl(spec, value, id) {
     if (!file) return;
     if (!type.name.test(file.name)) { toast(`“${file.name}” ${type.wrong}`); return; }
     if (file.size > FILE_MAX_BYTES) { toast(FILE_TOO_LARGE); return; }
-    const base64 = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(file); });
-    const result = await busy(null, () => call('POST', '/files', { name: file.name, base64 }), 'Checking the file… this can take up to a minute');
+    const result = await busy(null, async () => call('POST', '/files', { name: file.name, base64: await readBase64(file) }), 'Checking the file… this can take up to a minute');
     if (!result) return;
     current = result.id; name = result.name; state.dirty = true; draw(); toast('File checked and added ✓ Publish to put it on the site.');
   };
@@ -437,7 +437,7 @@ function check(form, specs, fields) {
   for (const spec of specs) {
     const value = fields[spec.name];
     if (spec.hidden) continue;
-    if (spec.required && (!value || (Array.isArray(value) && !value.length))) problems.push([spec.name, `${spec.label}: please fill this in.`]);
+    if (spec.required && !(spec.unlessFilled && fields[spec.unlessFilled]) && (!value || (Array.isArray(value) && !value.length))) problems.push([spec.name, `${spec.label}: please fill this in.`]);
     else if (spec.max && typeof value === 'string' && value.length > spec.max) problems.push([spec.name, `${spec.label}: ${spec.max} characters max (now ${value.length}).`]);
     else if (spec.type === 'url' && value && !/^https:\/\/\S+$/.test(value)) problems.push([spec.name, `${spec.label}: the link must start with https://`]);
     else if ((spec.type === 'image' || spec.type === 'gallery') && value && [].concat(value).some(picture => !picture.alt?.trim())) problems.push([spec.name, `${spec.label}: say in a few words what each photo shows.`]);
@@ -489,7 +489,7 @@ async function openItem(id) {
   const actions = item.id ? [menu([
     ['View on the site', () => window.open(`${state.publicUrls?.a || 'http://127.0.0.1:4321'}/${section.slug}.html`, '_blank', 'noopener')],
     ...(item.status !== 'draft' ? [['Take off the site (keep here)', async () => { if (!confirm('Take this off the site? It stays here and can be published again.')) return; await call('POST', `/items/${item.id}/unpublish`, { revision: item.revision }); toast('Taken off the site ✓'); openSection(section.slug); }]] : []),
-    ['Delete for good', async () => { if (!confirm('Delete for good? This cannot be undone.')) return; await call('DELETE', `/items/${item.id}`); toast('Deleted ✓'); state.dirty = false; openSection(section.slug); }, true],
+    ['Delete', async () => { if (!confirm('Delete this item? If it is on the site, it is removed right away. You can bring it back from Settings → Deleted.')) return; await call('DELETE', `/items/${item.id}`); toast('Deleted ✓'); state.dirty = false; openSection(section.slug); }, true],
   ])] : [];
   main(topBar({ title: item.id ? item.fields.title || 'Untitled' : `New ${NOUN[section.kind]}`, small: section.title, actions: [item.id ? statusBadge(item.status) : null, ...actions].filter(Boolean) }),
     h('div', { class: 'body' }, form, h('div', { class: 'bar' },
@@ -521,6 +521,20 @@ const QUICK = [
   ['Suggest a call', 'We like your profile. Would you be free for a call this week?'],
   ['Not right now', 'Thanks for your interest. We are not moving forward right now, but we will keep your profile in mind.'],
 ];
+// What happened to a reply sent from Desk. The server owns the status; a simulated reply never claims an email went out.
+function deliveryText(message) {
+  if (message.simulation || message.status === 'simulated') return 'test, not sent';
+  return { queued: 'sending…', sent: 'sent by email', failed: 'not sent yet, trying again', review_required: 'not sent: ask the site manager before sending again' }[message.status] ?? 'sent by email';
+}
+const fileSize = bytes => typeof bytes === 'number' ? (bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`) : String(bytes ?? '');
+// Attachments open as the checked copy rebuilt by the server. The original stays private and is only downloaded after a warning.
+function attachmentRow(file) {
+  const label = { pdf: 'PDF', image: 'IMG', video: 'VID' }[file.kind] ?? 'FILE';
+  const original = h('a', { class: 'btn soft', href: `${API}/attachments/${file.id}?original=1&confirm=1`, rel: 'noopener' }, 'Original');
+  original.addEventListener('click', event => { if (!confirm('The original file has not been checked. Download it only if you trust the sender. Continue?')) event.preventDefault(); });
+  return h('div', { class: 'file' }, h('span', { class: 'pdf', 'aria-hidden': 'true' }, label), h('span', { class: 'grow' }, h('b', { text: file.name }), h('br'), h('small', { text: `${fileSize(file.size)} · checked copy` })),
+    h('a', { class: 'btn soft', href: `${API}/attachments/${file.id}`, target: '_blank', rel: 'noopener' }, 'Download'), original);
+}
 async function listInbox(box) {
   $('#list-title').textContent = box === 'cv' ? 'Applications' : 'Messages'; $('#search').placeholder = 'Search a name';
   const [open, archived] = await Promise.all([call('GET', `/conversations?box=${box}&state=open`), call('GET', `/conversations?box=${box}&state=archived`)]);
@@ -548,9 +562,8 @@ async function openConversation(id, box, quiet = false, force = false) {
     if (label !== day) { day = label; chat.append(h('span', { class: 'day', text: label })); }
     chat.append(h('div', { class: `bubble ${message.from}${message.status === 'failed' && !message.simulation ? ' failed' : ''}` },
       message.facts ? h('p', { class: 'facts', text: message.facts }) : null, message.text,
-      ...(message.attachments || []).map(file => h('div', { class: 'file' }, h('span', { class: 'pdf', 'aria-hidden': 'true' }, 'PDF'), h('span', { class: 'grow' }, h('b', { text: file.name }), h('br'), h('small', { text: file.size })),
-        h('a', { class: 'btn soft', href: `${API}/attachments/${file.id}`, target: '_blank', rel: 'noopener' }, 'Open'))),
-      h('time', { text: `${new Date(message.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${message.from === 'us' ? (message.simulation || message.status === 'simulated' ? ' · test, not sent' : message.status === 'failed' ? ' · not sent' : ' · sent by email') : ''}` })));
+      ...(message.attachments || []).map(attachmentRow),
+      h('time', { text: `${new Date(message.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${message.from === 'us' ? ' · ' + deliveryText(message) : ''}` })));
   }
   const text = h('textarea', { class: 'text', rows: '1', placeholder: 'Write a reply…', 'aria-label': state.mail === 'simulated' ? `Your reply to ${talk.name} (test version, no email sent)` : `Your reply, emailed to ${talk.name}` });
   const send = async () => {
@@ -563,7 +576,7 @@ async function openConversation(id, box, quiet = false, force = false) {
   const actions = [menu([
     ...(box === 'cv' ? [['Mark “call back”', async () => { await call('POST', `/conversations/${id}/state`, { state: 'callback' }); toast('Marked “call back” ✓'); }]] : []),
     [talk.state === 'archived' ? 'Move back to the list' : 'Archive', async () => { await call('POST', `/conversations/${id}/state`, { state: talk.state === 'archived' ? 'open' : 'archived' }); toast('Done ✓'); listInbox(box); }],
-    [box === 'cv' ? 'Delete the application and résumé' : 'Delete the message', async () => { if (!confirm('Delete for good? This cannot be undone.')) return; await call('DELETE', `/conversations/${id}`); toast('Deleted ✓'); listInbox(box); }, true],
+    [box === 'cv' ? 'Delete the application and résumé' : 'Delete the message', async () => { if (!confirm('Delete this conversation? It leaves the inbox now and is removed for good at the end of the usual period.')) return; await call('DELETE', `/conversations/${id}`); toast('Deleted ✓'); listInbox(box); }, true],
   ])];
   main(topBar({ title: talk.name, small: [talk.email, talk.subject].filter(Boolean).join(' · '), actions }),
     h('div', { class: 'body' }, chat),
@@ -577,7 +590,7 @@ async function openConversation(id, box, quiet = false, force = false) {
 function listSettings() {
   $('#list-title').textContent = 'Settings'; $('#search').placeholder = 'Search';
   const body = $('#list-body'); body.replaceChildren();
-  const entries = [['people', 'People', 'Who can sign in'], ['notify', 'Notifications', 'Get an email heads-up'], ['signature', 'Signature', 'Added under your replies'], ['history', 'Site history', 'Go back to an earlier version'], ['data', 'Your data', 'How long things are kept, and a copy']];
+  const entries = [['people', 'People', 'Who can sign in'], ['notify', 'Notifications', 'Get an email heads-up'], ['signature', 'Signature', 'Added under your replies'], ['history', 'Site history', 'Go back to an earlier version'], ['archive', 'Deleted', 'Bring back a deleted item'], ['data', 'Your data', 'How long things are kept, and a copy']];
   for (const [key, title, hint] of entries) { const row = h('button', { class: 'row', type: 'button', onclick: () => { markCurrent(body, row); openSetting(key); } }, h('span', { class: 'badge', 'aria-hidden': 'true', text: title[0] }), h('span', { class: 'row-text' }, h('b', { text: title }), h('small', { text: hint })), h('span')); body.append(row); }
   body.querySelector('.row').setAttribute('aria-current', 'true'); openSetting('people', true);
 }
@@ -586,18 +599,21 @@ async function openSetting(key, quiet = false) {
   const panels = {
     people: async () => {
       const people = await call('GET', '/people'); const email = h('input', { class: 'text', type: 'email', placeholder: 'name@frogpondboys.com', 'aria-label': 'Email address to allow' });
-      return [h('div', { class: 'panel' }, h('h3', { text: 'People' }), h('p', { text: state.mode === 'local' ? 'Test version on this computer: the list is saved, but nobody gets a sign-in code yet. Once online, each address will sign in with a code sent by email.' : 'They sign in with a code sent by email. Everyone sees everything.' }),
+      return [h('div', { class: 'panel' }, h('h3', { text: 'People' }), h('p', { text: state.mode === 'local' ? 'Test version on this computer: the list is saved, but nobody gets a sign-in code yet. Once online, each address will sign in with a code sent by email.' : 'Each person signs in with their own address and a code sent by email. Everyone on this list sees the same inbox and the same content.' }),
         ...people.map(person => h('div', { class: 'person' }, h('span', { text: person.email + (person.me ? ' (you)' : '') }), state.mode === 'hosted-test' || person.me || people.length === 1 ? null : h('button', { class: 'btn danger', type: 'button', onclick: writer(async () => { if (!confirm(`Remove access for ${person.email}?`)) return; await call('DELETE', `/people/${encodeURIComponent(person.email)}`); toast('Access removed ✓'); openSetting('people'); }) }, 'Remove'))),
-        state.mode === 'hosted-test' ? h('p', { text: 'To add or remove a tester, ask the site manager to update the Cloudflare access and the server settings.' }) : h('div', { class: 'person' }, email, h('button', { class: 'btn main', type: 'button', onclick: writer(async () => { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { toast('This email address does not look right.'); email.focus(); return; } await call('POST', '/people', { email: email.value.trim() }); toast(state.mode === 'local' ? 'Address added to the list ✓' : 'Access granted ✓'); openSetting('people'); }) }, 'Add')))];
+        state.mode === 'hosted-test' ? h('p', { text: 'To add or remove a person, ask the site manager: the address must be added to the sign-in list and to the server settings.' }) : h('div', { class: 'person' }, email, h('button', { class: 'btn main', type: 'button', onclick: writer(async () => { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { toast('This email address does not look right.'); email.focus(); return; } await call('POST', '/people', { email: email.value.trim() }); toast(state.mode === 'local' ? 'Address added to the list ✓' : 'Access granted ✓'); openSetting('people'); }) }, 'Add')))];
     },
-    notify: async () => [h('div', { class: 'panel' }, h('h3', { text: 'Notifications' }), h('p', { text: 'The email only says there is something new, without the content or the résumé.' }),
+    notify: async () => [h('div', { class: 'panel' }, h('h3', { text: 'Notifications' }), h('p', { text: 'The email only says there is something new, without the content or the résumé.' }), state.mail === 'simulated' ? h('p', { class: 'hint', text: 'Emails are not sent yet: these choices apply once sending is switched on.' }) : null,
       ...[['cv', 'Tell me about a new application'], ['msg', 'Tell me about a new message']].map(([name, label]) => { const box = h('input', { type: 'checkbox' }); box.checked = settings.notifications?.[name] !== false; box.addEventListener('change', () => busy(box, async () => { Object.assign(settings, await call('PUT', '/settings', { ...settings, notifications: { ...settings.notifications, [name]: box.checked } })); toast('Saved ✓'); })); return h('label', { class: 'check' }, box, label); }))],
     signature: async () => { const area = h('textarea', { class: 'text', 'aria-label': 'Signature', maxlength: '300' }); area.value = settings.signature || ''; return [h('div', { class: 'panel' }, h('h3', { text: 'Reply signature' }), area, h('div', { class: 'bar-inline' }, h('button', { class: 'btn main', type: 'button', onclick: writer(async () => { Object.assign(settings, await call('PUT', '/settings', { ...settings, signature: area.value.trim() })); toast('Saved ✓'); }) }, 'Save')))]; },
     history: async () => { const list = await call('GET', '/publishes'); return [h('div', { class: 'panel' }, h('h3', { text: 'Site history' }), h('p', { text: 'Each publish keeps a version of the site. You can go back to an earlier one.' }),
       ...list.map((entry, index) => h('div', { class: 'person' }, h('span', { text: `${new Date(entry.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} — ${entry.summary}` }), index === 0 ? h('b', { text: 'Current version' }) : h('button', { class: 'btn soft', type: 'button', onclick: writer(async () => { if (!confirm('Put the site back to this version?')) return; const result = await call('POST', `/publishes/${entry.id}/restore`, {}); toast(result.message || 'Site restored to this version ✓'); openSetting('history'); }, PUBLISHING) }, 'Go back to this version'))))]; },
+    archive: async () => { const deleted = await call('GET', '/archive'); return [h('div', { class: 'panel' }, h('h3', { text: 'Deleted items' }), h('p', { text: 'A deleted item comes back as a draft: publish it again to show it on the site.' }),
+      ...(deleted.items.length ? deleted.items.map(item => h('div', { class: 'person' }, h('span', { text: `${item.title || 'Untitled'} — deleted ${new Date(item.deletedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}` }), h('button', { class: 'btn soft', type: 'button', onclick: writer(async () => { await call('POST', `/archive/${encodeURIComponent(item.id)}/restore`, {}); toast('Brought back as a draft ✓'); openSetting('archive'); }) }, 'Bring back'))) : [h('p', { class: 'hint', text: 'Nothing has been deleted.' })])),
+      deleted.conversations.length ? h('div', { class: 'panel' }, h('h3', { text: 'Deleted conversations' }), h('p', { text: 'They are kept until the end of the usual period, then removed for good. Ask the site manager if one must come back.' }), ...deleted.conversations.map(talk => h('div', { class: 'person' }, h('span', { text: `${talk.name} — deleted ${new Date(talk.deletedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}` })))) : null]; },
     data: async () => [h('div', { class: 'panel' }, h('h3', { text: 'Your data' }), h('p', { text: 'Applications and their résumés are deleted automatically after 12 months, messages after 24 months.' }), h('a', { class: 'btn soft', href: `${API}/export` }, 'Download a copy of the site content'))],
   };
-  const titles = { people: 'People', notify: 'Notifications', signature: 'Signature', history: 'Site history', data: 'Your data' };
+  const titles = { people: 'People', notify: 'Notifications', signature: 'Signature', history: 'Site history', archive: 'Deleted items', data: 'Your data' };
   main(topBar({ title: titles[key] }), h('div', { class: 'body' }, ...(await panels[key]())));
   if (quiet) setPane('list');
 }

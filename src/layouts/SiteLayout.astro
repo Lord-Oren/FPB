@@ -27,8 +27,21 @@ import fonts from '../styles/fonts.js';
 import frogMenus from '../scripts/frog-menus.js?raw';
 import flyCursor from '../scripts/fly-cursor.js?raw';
 import pondMotion from '../scripts/pond-motion.js?raw';
+import mobileA from '../styles/mobile-a.css?raw';
+import pondMobileA from '../styles/pond-mobile-a.css?raw';
+import pmPad1 from '../assets/pond-mobile/pad1.png?inline';
+import pmPad2 from '../assets/pond-mobile/pad2.png?inline';
+import pmPad3 from '../assets/pond-mobile/pad3.png?inline';
+import pmPad4 from '../assets/pond-mobile/pad4.png?inline';
+import pmTv from '../assets/pond-mobile/tv.png?inline';
+import pmLog from '../assets/pond-mobile/log.png?inline';
+import pmFrog from '../assets/pond-mobile/frog.png?inline';
+import pmStone from '../assets/pond-mobile/stone.png?inline';
+import pmWater from '../assets/pond-mobile/water.png?inline';
 import FlyCursor from '../components/FlyCursor.html';
 const svgUrl = svg => 'url("data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64') + '")';
+// Phone pond of A: small PNG sprites on one 3 px grid, inlined so the page stays self-contained (CSP img-src data:).
+const pondMobileVars = ':root{' + Object.entries({ pad1: pmPad1, pad2: pmPad2, pad3: pmPad3, pad4: pmPad4, tv: pmTv, log: pmLog, frog: pmFrog, stone: pmStone, water: pmWater }).map(([key, value]) => `--pm-${key}:url("${value}")`).join(';') + '}';
 const lilyStyle = `:root{--h2-lily:${svgUrl(pixelLily)};--px-frog:${svgUrl(pixelFrog)};--px-stone:${svgUrl(pixelStone)}}`;
 const { title = 'Frog Pond Boys — Creative Agency', pond = false, operations = false, form = false, cases = false } = Astro.props;
 ---
@@ -39,7 +52,7 @@ const { title = 'Frog Pond Boys — Creative Agency', pond = false, operations =
   <meta name="referrer" content="no-referrer" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>{title}</title>
-  <style is:inline set:html={fonts + flyStyles + motionStyles + (pond && look === 'modern' ? variantB + homeSections : styles) + (operations ? infoStyles : '') + (cases ? caseStyles : '') + (pond && artworkMode === 'original' ? originalArtwork + homeRetroA + `:root{--px-pond:${svgUrl(pixelPond)}}` : '') + (!pond ? contentStyles + interiorStyles + (look === 'pixel' ? lilyStyle + retroA : '') : '') + (look === 'modern' ? neoB : '') + clientMeeting + (pond && look === 'pixel' ? pondExpansionA : '')}></style>
+  <style is:inline set:html={fonts + flyStyles + motionStyles + (pond && look === 'modern' ? variantB + homeSections : styles) + (operations ? infoStyles : '') + (cases ? caseStyles : '') + (pond && artworkMode === 'original' ? originalArtwork + homeRetroA + `:root{--px-pond:${svgUrl(pixelPond)}}` : '') + (!pond ? contentStyles + interiorStyles + (look === 'pixel' ? lilyStyle + retroA : '') : '') + (look === 'modern' ? neoB : '') + clientMeeting + (pond && look === 'pixel' ? pondExpansionA : '') + (look === 'pixel' ? mobileA : '') + (pond && look === 'pixel' && artworkMode === 'original' ? pondMobileVars + pondMobileA : '')}></style>
 </head>
 <body class:list={{ 'interior-page': !pond, 'home-page': pond && look !== 'modern', 'variant-b': pond && look === 'modern' }}>
   <a class="skip-link" href="#main">Skip to content</a>
