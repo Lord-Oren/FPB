@@ -35,3 +35,7 @@ At the October 29 migration, 195 local tests passed, including PostgreSQL persis
 ## Recovery
 
 The old GitHub IPs and www CNAME were retained underneath the Cloudflare proxy. Before restoring old public traffic, restore GitHub Pages from the archived source, then remove only the public apex/www Worker routes and switch those records to DNS only. Keep Desk protection in place. Changing source or DNS does not restore the database: use a separately verified backup for data recovery. Never delete the current database as a rollback step.
+
+## Local integration release 0.17.0
+
+The November 16 backend/form changes are local only. They have not changed the live application, owner allowlist, DNS or email configuration. A fresh encrypted production backup was restored to a disposable local database with exact table-content comparisons; see BACKUPS.md. Sending remains unconfigured and public forms remain closed. See RELEASE-0.17.0.md and MAIL-AND-FORMS.md before the final rollout. New CI changes have been checked locally and still require their first authorized push to run on GitHub.

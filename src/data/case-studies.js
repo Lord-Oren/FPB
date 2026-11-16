@@ -69,7 +69,7 @@ export function preparePublicCases(snapshot) {
     return {
       brandLogo:content.brandLogo?image(content.brandLogo,'brandLogo'):null,documentId:content.documentId??null,
       id: key, slug, href: caseStudyHref(slug), title: text(content.title, true, 90, 'title'), summary: text(content.summary, true, 240, 'summary'),
-      context: text(content.context, true, 4000, 'context'), work: text(content.work, true, 4000, 'work'), client: text(content.client ?? '', false, 90, 'client'),
+      context: text(content.context??'', !content.documentId, 4000, 'context'), work: text(content.work??'', !content.documentId, 4000, 'work'), client: text(content.client ?? '', false, 90, 'client'),
       results: text(content.results ?? '', false, 1500, 'results'), cover: image(content.cover, 'cover'), gallery: content.gallery.map((value,index) => image(value, `gallery[${index+1}]`)),
     };
     } catch (error) { throw new Error(`${item?.id ?? "case"}: ${error.message}`); }

@@ -21,7 +21,7 @@ export function cleanSite(input,report=[]){
  for(const [parent,key,known]of [[site.about,'team',baseline.team],[site.about,'photos',baseline.photos],[site.join,'positions',baseline.jobs]])parent[key]=(parent[key]??[]).filter(v=>!known.includes(fingerprint(v))||(key==='photos'&&site.media.some(m=>m.id===v.mediaId&&baseline.media[m.id]!==fingerprint({mime:m.mime,base64:m.base64}))));
  for(const job of site.join.positions)if(job.type==='Demo — opportunities')job.type='';
  if(site.contact.email===baseline.email)site.contact.email='';
- if(fingerprint(site.home.announcement)===fingerprint(baseline.home.announcement))site.home.announcement={title:'Announcements',text:'News from the studio.',link:''};
+ if(fingerprint(site.home.announcement)===fingerprint(baseline.home.announcement)||fingerprint(site.home.announcement)===fingerprint({title:'Announcements',text:'News from the studio.',link:''}))site.home.announcement={title:'',text:'',link:''};
  if(site.home.gram.label===baseline.home.gram.label)site.home.gram.label='Ribbit.';
  const ed=site.home.editorial??{};
  for(const key of ['croakTitle','croakText','legalPrivacy','legalCookies','legalTerms','legalConduct','legalValues'])if(baseline.editorial?.[key]===fingerprint(ed[key]??''))ed[key]='';

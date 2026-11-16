@@ -49,6 +49,7 @@ export async function createEditor({ root = fileURLToPath(new URL('../', import.
       const url = new URL(req.url, origin);
       if (req.method === 'GET' && url.pathname === '/favicon.ico') return respond(res, 204, '', 'image/x-icon');
       if (req.method === 'GET' && url.pathname === '/') { res.writeHead(302, {Location:'/v2/', 'Cache-Control':'no-store'}); res.end(); return; }
+      if(['GET','HEAD'].includes(req.method)&&url.pathname.startsWith('/files/')){await v2.initialize();if(!await v2.publicFile(url.pathname.slice(7),res,req.method==='HEAD'))respond(res,404,{message:'File not found.'});return;}
       if (await v2.handler(req,res,url)) return;
       if ((!legacyWrites || v2.active()) && req.method === 'POST' && url.pathname.startsWith('/api/')) return respond(res,409,{error:'Pond Desk v2 is using this data. Open /v2/ to edit the current catalog.'});
       const assets = { '/diagnostics.js':['diagnostics.js','text/javascript'] };

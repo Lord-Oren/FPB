@@ -6,7 +6,7 @@ export const communication = {
   joinAction: '',
   privacyUrl: '',
 };
-export const cvMaxBytes = 5 * 1024 * 1024;
+export const cvMaxBytes = 10 * 1024 * 1024;
 
 export function httpsDestination(value) {
   if (!value || !value.trim()) return undefined;

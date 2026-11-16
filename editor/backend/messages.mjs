@@ -11,6 +11,8 @@ const historyLabels={
 export const historyLabel=value=>historyLabels[value]??value;
 export function conversationView(value){
  const result=structuredClone(value);
- for(const message of result.messages??[])if(message.simulation===true&&message.from==='us'&&message.text?.startsWith('[Simulation — aucun e-mail envoyé]\n'))message.text='[Simulation - no email sent]\n'+message.text.slice('[Simulation — aucun e-mail envoyé]\n'.length);
+ for(const message of result.messages??[])if(message.simulation===true&&message.from==='us'){
+  for(const prefix of ['[Simulation — aucun e-mail envoyé]\n','[Simulation - no email sent]\n'])if(message.text?.startsWith(prefix))message.text=message.text.slice(prefix.length);
+ }
  return result;
 }

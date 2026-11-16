@@ -21,7 +21,11 @@ test('video uploads persist outside JSON state, reject forged content and publis
  const {snapshotFixture}=await import('./fixtures/case-studies.mjs');const image=await(await req('/media','POST',{name:'pixel.png',base64:snapshotFixture().media[0].base64})).json();
  const itemResponse=await req('/items','POST',{section:'films-videos',fields:{title:'Studio film',date:'2026-11',summary:'A short film.',image:{mediaId:image.mediaId,alt:'Blue frame'},gallery:[],video:'',videoId:file.id,audio:'',link:''}});assert.equal(itemResponse.status,200,await itemResponse.clone().text());const item=await itemResponse.json();const publication=await req('/items/'+item.id+'/publish','POST',{revision:item.revision});assert.equal(publication.status,200,await publication.clone().text());
  const published=JSON.parse(await readFile(path.join(root,'src/data/site-content.json')));assert.equal(published.works[0].videoId,file.id);
- assert.equal((await req('/files/'+file.id)).status,200);assert.equal((await fetch(auth.base+'/api/v2/files/'+file.id)).status,403);
+ assert.equal((await req('/files/'+file.id)).status,200);assert.equal((await fetch(auth.base+'/files/'+file.id)).status,200);assert.equal((await fetch(auth.base+'/api/v2/files/'+file.id)).status,403);
+ const metadata=await(await req('/items/'+item.id)).json();assert.equal(metadata.files[file.id].name,'clip.mp4');
+ await req('/items/'+item.id,'DELETE');assert.equal((await fetch(auth.base+'/files/'+file.id)).status,404);
+ assert.equal((await(await req('/archive')).json()).items[0].id,item.id);
+ const restored=await(await req('/archive/'+item.id+'/restore','POST',{})).json();assert.equal(restored.status,'draft');assert.equal((await fetch(auth.base+'/files/'+file.id)).status,404,'restored drafts stay private');
  const state=JSON.parse(await readFile(path.join(root,'.local-editor/v2/state.json')));assert(!JSON.stringify(state.files).includes('base64'));assert(state.files.find(f=>f.id===file.id));
  const forged=await req('/files','POST',{name:'fake.mp4',base64:Buffer.from('0000ftypgarbage').toString('base64')});assert.equal(forged.status,400);
  await new Promise(r=>app.close(r));app=null;auth=await start();assert.equal((await req('/files/'+file.id)).status,200);
@@ -42,7 +46,7 @@ test('uploaded PDF is private until publication, durable in separate storage, an
  assert.equal((await req('/files/'+file.id,'GET',undefined,true)).status,404);
  let page=await(await req('/api/v2/pages/legal')).json();let saved=await req('/api/v2/pages/legal','PUT',{revision:page.revision,fields:{intro:'Our policies.',documentId:file.id}});assert.equal(saved.status,200);
  const publication=await req('/api/v2/pages/legal/publish','POST',{});assert.equal(publication.status,200,await publication.clone().text());
- const publicPdf=await req('/files/'+file.id,'GET',undefined,true);assert.equal(publicPdf.status,200);assert.equal(publicPdf.headers.get('content-type'),'application/pdf');assert.match(publicPdf.headers.get('content-disposition'),/attachment/);
+ const publicPdf=await req('/files/'+file.id,'GET',undefined,true);assert.equal(publicPdf.status,200);assert.equal(publicPdf.headers.get('content-type'),'application/pdf');assert.match(publicPdf.headers.get('content-disposition'),/^inline/);
  assert.equal(payload.files[0].id,file.id);assert.equal(blobs.size,1);assert(!JSON.stringify(payload.files).includes('base64'));
  const {snapshotFixture}=await import('./fixtures/case-studies.mjs');const fixture=snapshotFixture();const uploadImage=await(await req('/api/v2/media','POST',{name:'logo.png',base64:fixture.media[0].base64})).json();const picture={mediaId:uploadImage.mediaId,alt:'Studio logo'};
  const itemResponse=await req('/api/v2/items','POST',{section:'case-studies',fields:{title:'A case study',summary:'A concise summary.',context:'Client brief.',work:'Studio work.',cover:picture,brandLogo:picture,gallery:[],documentId:file.id}});assert.equal(itemResponse.status,200,await itemResponse.clone().text());const item=await itemResponse.json();assert.equal((await req('/api/v2/items/'+item.id+'/publish','POST',{revision:item.revision})).status,200);

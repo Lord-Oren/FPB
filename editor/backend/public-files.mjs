@@ -3,7 +3,7 @@ import {mkdtemp,writeFile,readFile,readdir,rm} from 'node:fs/promises';
 import path from 'node:path';import sharp from 'sharp';
 import {run} from './publisher.mjs';import {check,uid} from './model.mjs';
 import {validateAttachmentEnvelope,JOIN_MAX_BYTES} from './attachment-policy.mjs';
-function imagePdf(images){
+export function imagePdf(images){
  const objects=[Buffer.from('<< /Type /Catalog /Pages 2 0 R >>'),null];const kids=[];
  for(const [i,image]of images.entries()){
   const page=3+i*3,content=page+1,pic=page+2;kids.push(`${page} 0 R`);

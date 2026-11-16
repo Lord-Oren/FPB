@@ -1,6 +1,6 @@
 {
   "name": "frog-pond-boys",
-  "version": "0.16.1",
+  "version": "0.17.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,16 +17,19 @@
     "dev:editor": "node editor/server.mjs",
     "start": "node editor/hosted.mjs",
     "test:hosted": "node --test scripts/hosted*.test.mjs",
-    "test:public-build": "node scripts/test-public-build.mjs"
+    "test:public-build": "node scripts/test-public-build.mjs",
+    "lint": "node scripts/lint.mjs",
+    "backup": "node scripts/backup.mjs"
   },
   "engines": {
     "node": "24.x"
   },
   "packageManager": "npm@11.16.0",
   "dependencies": {
-    "astro": "7.3.4",
+    "astro": "7.4.12",
     "jose": "6.2.13",
     "pg": "8.23.1",
+    "postal-mime": "4.2.1",
     "sharp": "0.35.5"
   }
 }

@@ -12,3 +12,6 @@ dist
 *.dump
 *.log
 exports
+
+*.fpb.enc
+.private-backups

@@ -100,7 +100,7 @@ export function prepareSiteContent(snapshot, options = {}) {
   for (const key of Object.keys(navigation)) navigation[key] = text(navigation[key], 40, key);
   const home = {
     editorial, navigation,
-    announcement: { title: text(snapshot.home.announcement.title, 60, 'home.announcement.title'), text: text(snapshot.home.announcement.text, 140, 'home.announcement.text'), link: page(snapshot.home.announcement.link, 'home.announcement.link') },
+    announcement: { title: text(snapshot.home.announcement.title, 60, 'home.announcement.title', false), text: text(snapshot.home.announcement.text, 140, 'home.announcement.text', false), link: page(snapshot.home.announcement.link, 'home.announcement.link') },
     gram: { label: text(snapshot.home.gram.label, 40, 'home.gram.label'), url: url(snapshot.home.gram.url, 'home.gram.url') },
   };
 
@@ -154,7 +154,7 @@ export function prepareSiteContent(snapshot, options = {}) {
   assert(Array.isArray(snapshot.about.team) && snapshot.about.team.length <= 24, 'about.team: 24 people at most');
   const about = {
     ...aboutExtra,
-    story: text(snapshot.about.story, 4000, 'about.story'), ethos: text(snapshot.about.ethos, 4000, 'about.ethos'),
+    story: text(snapshot.about.story, 4000, 'about.story', false), ethos: text(snapshot.about.ethos, 4000, 'about.ethos', false),
     photos: (snapshot.about.photos ?? []).map((image, n) => picture(image, media, `about.photos[${n}]`, true)),
     team: snapshot.about.team.map((person, n) => { const where = `about.team[${n}]`; plain(person, ['name', 'role', 'photo', 'demo'], where); return { name: text(person.name, 90, `${where}.name`), role: text(person.role, 90, `${where}.role`), photo: picture(person.photo, media, `${where}.photo`) }; }),
   };

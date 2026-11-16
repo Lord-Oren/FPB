@@ -2,11 +2,11 @@
 
 The Frog Pond Boys website and Pond Desk, the private content editor. Version A is the pixel presentation selected for the public website. Version B remains available for local review.
 
-This branch prepares a migration. The original website is preserved on [`archive/original-site`](https://github.com/Lord-Oren/FPB/tree/archive/original-site). Do not merge until the [deployment checklist](docs/DEPLOYMENT.md) is complete. No domain or live hosting change is made by this branch.
+Version 0.17.0 is a local integration release. The original website is preserved on [`archive/original-site`](https://github.com/Lord-Oren/FPB/tree/archive/original-site). A push to main can deploy the application; publish only after the owner approves the reviewed release. See [release notes](docs/RELEASE-0.17.0.md).
 
 ## Local development
 
-Install Node.js 24 and Poppler (`poppler-utils` on Debian/Ubuntu; used to validate PDF attachments), then run:
+Install Node.js 24, Poppler, FFmpeg, Python 3, util-linux and DejaVu fonts (the Dockerfile installs them), then run:
 
 ```sh
 npm ci
@@ -27,11 +27,11 @@ The static website is exported to `exports/`. GitHub Pages can serve that export
 
 ## Hosting
 
-The proposed setup is a Node service on Render in Virginia, PostgreSQL in the US, and Cloudflare routing and Access for Pond Desk. See [Deployment](docs/DEPLOYMENT.md), [Configuration](.env.example), and [Migration and performance](docs/MIGRATION.md).
+The live setup uses Render Starter and PostgreSQL Basic-256mb in Virginia, plus Cloudflare routing and individual Access logins for the shared Pond Desk. See [Deployment](docs/DEPLOYMENT.md), [Configuration](.env.example), and [Migration and performance](docs/MIGRATION.md).
 
 Dependencies are declared in `package.json` and locked in `package-lock.json`; `npm ci` installs them during CI and the Docker build. Do not commit `node_modules`, credentials, database copies, or local editor data.
 
-CI checks pull requests and pushes to `main`. The Render template requests deployment after `main` checks pass, once the owners connect and provision the service. This is separate from the Publish button in Pond Desk, which rebuilds the public pages from saved editorial content.
+CI checks pull requests and pushes to `main`. The Render template requests deployment after `main` checks pass, using the existing authorized GitHub connection. This is separate from the Publish button in Pond Desk, which rebuilds the public pages from saved editorial content.
 
 ## Current limits
 

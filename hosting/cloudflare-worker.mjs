@@ -11,7 +11,8 @@ export async function proxy(request,env,forward=fetch){
  const {hosts,www,publicSite}=deploymentConfig(env);
  const allowed=new Set([...Object.values(hosts),www]);
  const publicRequest=publicSite&&(source.hostname===hosts.a||source.hostname===www);
- if(publicRequest&&( !['GET','HEAD'].includes(request.method)||source.pathname.startsWith('/api/')))return new Response('Not found',{status:404});
+ const form=publicRequest&&source.hostname===hosts.a&&request.method==='POST'&&['/api/v2/forms/contact','/api/v2/forms/join'].includes(source.pathname)&&env.POND_FORMS_ENABLED==='true'&&env.POND_FORM_PROXY_SECRET?.length>=32;
+ if(publicRequest&&!form&&( !['GET','HEAD'].includes(request.method)||source.pathname.startsWith('/api/')))return new Response('Not found',{status:404});
  if(publicSite&&source.hostname===hosts.b)return new Response('Not found',{status:404});
  if(source.protocol!=='https:'||!allowed.has(source.hostname))return new Response('Forbidden',{status:403});
  if(!publicRequest&&!request.headers.get('Cf-Access-Jwt-Assertion'))return new Response('Access session required',{status:403});
@@ -20,6 +21,8 @@ export async function proxy(request,env,forward=fetch){
  const upstream=new Request(target,request);upstream.headers.delete('Host');
  upstream.headers.set('X-Pond-Public-Host',source.hostname);
  upstream.headers.set('X-Forwarded-Proto','https');
+ upstream.headers.delete('X-Pond-Form-Proxy');upstream.headers.delete('X-Pond-Client-IP');
+ if(form){upstream.headers.set('X-Pond-Form-Proxy',env.POND_FORM_PROXY_SECRET);upstream.headers.set('X-Pond-Client-IP',request.headers.get('CF-Connecting-IP')||'unknown');}
  // Preserve relative redirects and streaming bodies, never cache private data.
  const navigation=request.method==='GET'&&!source.pathname.startsWith('/api/')&&(request.headers.get('Accept')??'').includes('text/html');
  let result;try{result=await forward(new Request(upstream,{redirect:'manual'}));}catch(error){if(navigation)return waking();throw error;}

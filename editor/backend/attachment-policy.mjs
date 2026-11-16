@@ -3,7 +3,7 @@
 export const JOIN_MAX_BYTES=10*1024*1024;
 export const FILE_TOO_LARGE_MESSAGE='This file is too large (10 MB maximum). Please send a link instead, or contact us by email.';
 export function attachmentError(code,message,status=422){return Object.assign(new Error(message),{code,status});}
-export function validateAttachmentEnvelope({name,base64}){
+export function validateAttachmentEnvelope({name,base64},{allowDocx=false}={}){
  if(typeof name!=='string'||name.length>160||!name.trim()||/[\x00-\x1f\x7f/\\]/.test(name))throw attachmentError('invalid_file','Use a valid filename.');
  if(typeof base64!=='string')throw attachmentError('invalid_file','The file could not be read.');
  if(base64.length>4*Math.ceil(JOIN_MAX_BYTES/3))throw attachmentError('file_too_large',FILE_TOO_LARGE_MESSAGE,413);
@@ -18,12 +18,14 @@ export function validateAttachmentEnvelope({name,base64}){
  else if(bytes.subarray(0,4).toString()==='RIFF'&&bytes.subarray(8,12).toString()==='WEBP'&&/\.webp$/i.test(name))kind='image';
  else if(bytes.subarray(4,8).toString()==='ftyp'&&/\.mp4$/i.test(name))kind='video';
  else if(bytes.subarray(0,4).equals(Buffer.from('1a45dfa3','hex'))&&/\.webm$/i.test(name))kind='video';
+ else if(allowDocx&&/\.docx$/i.test(name)&&bytes.subarray(0,4).equals(Buffer.from('504b0304','hex')))kind='document';
  else if(/\.docx?$/i.test(name))throw attachmentError('unsupported_file','Word files are not supported yet. Please send a PDF or a link instead.');
  if(!kind)throw attachmentError('unsupported_file','Choose a PDF, PNG, JPEG, WebP, MP4 or WebM file with matching contents.');
  return {name,kind,bytes,state:'quarantine'};
 }
 export function validatePortfolioUrl(value=''){
  if(value==='')return '';
+ if(typeof value!=='string'||/[\x00-\x20\x7f]|%(?:0[0-9a-f]|1[0-9a-f]|7f)/i.test(value))throw attachmentError('invalid_link','Use an HTTPS link without control characters.');
  try{const url=new URL(value);if(typeof value!=='string'||value.length>300||url.protocol!=='https:'||url.username||url.password)throw Error();return url.href;}
  catch{throw attachmentError('invalid_link','Use an HTTPS link without a username or password.');}
 }

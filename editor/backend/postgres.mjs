@@ -55,6 +55,7 @@ export async function openPostgres({connectionString,ssl,onFailure=()=>{}}) {
    const count=Number((await db.query('SELECT count(*) AS n FROM pond_sessions WHERE digest<>$1',[digest])).rows[0].n);if(count>=1000)throw Error('Session capacity reached.');
    await db.query('INSERT INTO pond_sessions(digest,payload,expires_at) VALUES($1,$2::jsonb,$3) ON CONFLICT(digest) DO UPDATE SET payload=EXCLUDED.payload,expires_at=EXCLUDED.expires_at',[digest,JSON.stringify(value),value.expires]);},
   async saveFile(id,bytes){await(await connect()).query('INSERT INTO pond_files(id,bytes) VALUES($1,$2)',[id,bytes]);},
+  async deleteFile(id){await(await connect()).query('DELETE FROM pond_files WHERE id=$1',[id]);},
   async loadFile(id){return (await(await connect()).query('SELECT bytes FROM pond_files WHERE id=$1',[id])).rows[0]?.bytes;},
   async ping(){await(await connect()).query('SELECT 1');},
   async close(){closing=true;if(client){const current=client;client=null;await current.end();}}

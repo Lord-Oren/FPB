@@ -8,7 +8,8 @@ const project = fileURLToPath(new URL('../', import.meta.url));
 // Structural checks for trusted generated files; this is not an HTML sanitizer.
 const attrs = text => Object.fromEntries([...text.matchAll(/([^\s=<>/"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g)].map(m => [m[1].toLowerCase(), m[2] ?? m[3] ?? m[4] ?? '']));
 
-export async function checkExport(directory, { expectedRoutes, maxPageBytes = 10 * 1024 * 1024, hostedForms = false } = {}) {
+export async function checkExport(directory, { expectedRoutes, maxPageBytes = 10 * 1024 * 1024, hostedForms = false, publishedFiles = {} } = {}) {
+  const fileLink=(value,kind)=>{const match=/^files\/(file-[a-f0-9]{24})$/.exec(value||'');return Boolean(match&&Object.hasOwn(publishedFiles,match[1])&&publishedFiles[match[1]]===kind);};
   const receiverSource=hostedForms?(await readFile(path.join(project,'src/scripts/local-forms.js'),'utf8')).trim():null;
   const output = path.resolve(directory);
   const files = [];
@@ -84,7 +85,7 @@ export async function checkExport(directory, { expectedRoutes, maxPageBytes = 10
       assert(!('srcset' in properties), `srcset requires adaptation before export : ${file}`);
       for (const attribute of ['src', 'poster', 'data', 'background', 'xlink:href']) {
         const value = properties[attribute];
-        if (value !== undefined) assert(/^(?:data:|#)/i.test(value), `Sidecar resource forbidden : ${value}`);
+        if (value !== undefined) assert((tag==='video'&&attribute==='src'&&fileLink(value,'video'))||/^(?:data:|#)/i.test(value), `Sidecar resource forbidden : ${value}`);
       }
       const value = properties.href;
       if (value === undefined) continue;
@@ -93,6 +94,7 @@ export async function checkExport(directory, { expectedRoutes, maxPageBytes = 10
         if (value.startsWith("#")) assert(pages.get(file).ids.has(value.slice(1)), `Missing embedded illustration : ${value}`);
         continue;
       }
+      if(fileLink(value,'pdf'))continue;
       if (/^https:/i.test(value)) {
         const destination = new URL(value);
         assert(!destination.username && !destination.password, `Credentials in a public link : ${file}`);

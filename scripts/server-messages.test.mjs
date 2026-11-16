@@ -8,6 +8,7 @@ test('old system labels display in English without changing saved or user-author
  const text='[Simulation — aucun e-mail envoyé]\nMerci pour votre message.';
  const original={messages:[{from:'us',simulation:true,text},{from:'them',text},{from:'us',simulation:false,text}]};
  const view=conversationView(original);
- assert.equal(view.messages[0].text,'[Simulation - no email sent]\nMerci pour votre message.');
+ assert.equal(view.messages[0].text,'Merci pour votre message.');
+ assert.equal(view.messages[0].simulation,true);
  assert.equal(view.messages[1].text,text);assert.equal(view.messages[2].text,text);assert.equal(original.messages[0].text,text);
 });

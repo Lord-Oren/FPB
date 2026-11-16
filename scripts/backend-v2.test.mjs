@@ -32,7 +32,7 @@ test('Pond Desk v2: contracts, persistence, isolated publication and private dat
   assert.equal((await fetch(base+'/api/create',{method:'POST'})).status,409);
   for(const origin of ['http://127.0.0.1:4321','http://127.0.0.1:4322']) {
    assert.equal((await fetch(base+'/api/v2/session',{headers:{Origin:origin}})).status,403);
-   const res=await fetch(base+'/api/v2/forms/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({name:'Origin test',email:'test@example.com',message:'test',website:''})});assert.equal(res.status,200);await ok('DELETE','/conversations/'+(await res.json()).id);
+   const res=await fetch(base+'/api/v2/forms/contact',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({name:'Origin test',email:'test@example.com',message:'test',website:''})});assert.equal(res.status,201);await ok('DELETE','/conversations/'+(await res.json()).id);
   }
   assert.equal((await fetch(base+'/api/v2/forms/contact',{method:'POST',headers:{Origin:'http://127.0.0.1:9999','Content-Type':'application/json'},body:'{}'})).status,403);
  });
@@ -102,14 +102,14 @@ test('Pond Desk v2: contracts, persistence, isolated publication and private dat
  await t.test('people: protect self and last access',async()=>{await ok('POST','/people',{email:'colleague@example.com'});assert.equal((await req('DELETE','/people/local%40example.invalid')).status,409);await ok('DELETE','/people/colleague%40example.com');assert.equal((await ok('GET','/people')).length,1);});
  await t.test('honeypot, forged PDF and rate limiting',async()=>{assert.equal((await req('POST','/testing/receive',{box:'cv',name:'Test',email:'test@example.com',message:'test',website:'spam'})).status,422);assert.equal((await req('POST','/testing/receive',{box:'cv',name:'Test',email:'test@example.com',message:'test',website:'',cv:{name:'cv.pdf',base64:Buffer.from('%PDF-not-a-file').toString('base64')}})).status,422);});
  await t.test('local form intake without a session but with origin validation',async()=>{
-  const response=await req('POST','/forms/contact',{name:'Contact local',email:'contact@example.com',message:'Un message local',website:''},false);assert.equal(response.status,200);
+  const response=await req('POST','/forms/contact',{name:'Contact local',email:'contact@example.com',message:'Un message local',website:''},false);assert.equal(response.status,201);
   assert.equal((await fetch(base+'/api/v2/forms/contact',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:'{}'})).status,403);
   const result=await response.json();await ok('DELETE','/conversations/'+result.id);
  });
  await t.test('rate limit: five public submissions per hour, then 429',async()=>{
   // The previous public-origin checks accepted three submissions from this peer.
   for(let i=0;i<2;i++) {
-   const response=await req('POST','/forms/contact',{name:'Quota test',email:'quota@example.com',message:'Test quota',website:''},false);assert.equal(response.status,200);await ok('DELETE','/conversations/'+(await response.json()).id);
+   const response=await req('POST','/forms/contact',{name:'Quota test',email:'quota@example.com',message:'Test quota',website:''},false);assert.equal(response.status,201);await ok('DELETE','/conversations/'+(await response.json()).id);
   }
   const rejected=await req('POST','/forms/contact',{name:'Quota test',email:'quota@example.com',message:'Excess',website:''},false);assert.equal(rejected.status,429);
  });

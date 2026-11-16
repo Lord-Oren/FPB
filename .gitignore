@@ -23,3 +23,6 @@ livrables/
 references/
 node_modules
 exports/
+
+*.fpb.enc
+.private-backups/
