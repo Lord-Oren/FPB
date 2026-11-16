@@ -7,6 +7,7 @@ import {gzipSync} from 'node:zlib';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {clone,uid,sections,sectionIds,group,fail,check,plain,text,email,address,draftFields,migrate,snapshots,status,revision,mediaView,viewItem,log as modelLog,setPage,homeFields} from './model.mjs';
+import {validateWording,wordingDefaults,wordingLimits} from '../../src/data/wording.js';
 import {prepareStructure,collectionKinds,zones} from '../../src/data/structure.js';
 import {atomic,buildRelease,validateImages} from './publisher.mjs';
 import {upgradeContent,cleanPlaceholderLinks,cleanPublicSnapshot} from './content-upgrade.mjs';
@@ -159,10 +160,10 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
    if(method==='DELETE'&&!action){(next.archivedItems??=[]).push({...x,deletedAt:now()});next.items=next.items.filter(i=>i.id!==id);log(next,'item_archived',now());if(x.live)return publish(next,'Content archived');changed=true;}
   }else if(resource==='pages'&&id){
    check(Object.hasOwn(next.pages,id),'Page not found.',404);const p=next.pages[id];
-   if(method==='GET'&&!action)return {...clone(p),fields:id==='home'?{...homeFields(next.base.home),...clone(p.fields)}:clone(p.fields),media:assetUrls(),files:filesView()};
+   if(method==='GET'&&!action)return {...clone(p),fields:id==='home'?{...homeFields(next.base.home),...clone(p.fields)}:clone(p.fields),media:assetUrls(),files:filesView(),...(id==='wording'?{defaults:wordingDefaults,limits:wordingLimits}:{})};
    if(method==='PUT'&&!action){revision(p,body.revision);plain(body.fields);check(Buffer.byteLength(JSON.stringify(body.fields))<=60000,'This page is too large. Shorten its content and try again.',413);const candidate=clone(next);setPage(candidate.base,id,body.fields);
     // Merge fields the current UI does not expose (team photos and job locations).
-    const f=['home','about','contact'].includes(id)?{...p.fields,...clone(body.fields)}:clone(body.fields);if(id==='about')f.team=(f.team??[]).map(person=>({...p.fields.team?.find(x=>x.name===person.name),...person}));if(id==='join')f.positions=(f.positions??[]).map(job=>({...p.fields.positions?.find(x=>x.title===job.title),...job}));
+    const f=id==='wording'?validateWording(body.fields):['home','about','contact'].includes(id)?{...p.fields,...clone(body.fields)}:clone(body.fields);if(id==='about')f.team=(f.team??[]).map(person=>({...p.fields.team?.find(x=>x.name===person.name),...person}));if(id==='join')f.positions=(f.positions??[]).map(job=>({...p.fields.positions?.find(x=>x.title===job.title),...job}));
     p.fields=f;p.revision++;sessionState.pages[id]=p.revision;result={revision:p.revision};changed=true;
    }
    if(method==='POST'&&action==='publish'){check(sessionState.pages[id]===p.revision,'This page changed in another window. Save it again before publishing.',409);p.live=clone(p.fields);return publish(next,'Page updated');}

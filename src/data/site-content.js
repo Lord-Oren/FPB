@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {resolveWording} from './wording.js';
 import {aboutDefaults,contactDefaults} from './page-fields.js';
 import {prepareStructure,collectionKinds} from './structure.js';
 import { editorialDefaults, navigationDefaults, homeLabelDefaults } from './editorial.js';
@@ -81,7 +82,7 @@ function picture(value, media, where, required = false) {
 
 export function prepareSiteContent(snapshot, options = {}) {
   prefer = options.prefer === 'pixel' ? 'pixel' : '';
-  plain(snapshot, ['schemaVersion', 'demo', 'home', 'intros', 'works', 'events', 'press', 'about', 'contact', 'join', 'media', 'structure','legal'], 'content');
+  plain(snapshot, ['schemaVersion', 'demo', 'home', 'intros', 'works', 'events', 'press', 'about', 'contact', 'join', 'media', 'structure','legal','wording'], 'content');
   assert(snapshot.schemaVersion === 1, 'content: unsupported schema');
   const structure = prepareStructure(snapshot.structure, snapshot.home);
   const sectionKinds = Object.fromEntries(structure.nodes.map(n=>[n.id,n.kind]));
@@ -180,7 +181,7 @@ export function prepareSiteContent(snapshot, options = {}) {
   plain(snapshot.intros ?? {}, [...rubrics.works, ...rubrics.events, ...rubrics.press, 'presentations', 'case-studies', ...structure.nodes.map(n=>n.id)], 'intros');
   const intros = Object.fromEntries(Object.entries(snapshot.intros ?? {}).map(([slug, value]) => [slug, text(value, 240, `intros.${slug}`, false)]));
   const legal={intro:'',documentId:null,...snapshot.legal};plain(legal,['intro','documentId'],'legal');legal.intro=text(legal.intro,600,'legal.intro',false);assert(legal.documentId==null||/^file-[a-f0-9]{24}$/.test(legal.documentId),'Invalid legal document');
-  return { structure, home, intros, works, events, press, about, contact, join,legal };
+  return { structure, home, intros, works, events, press, about, contact, join,legal,wording:resolveWording(snapshot.wording) };
 }
 
 // Events move to "Past" on the day after they end (or start). The site rebuilds nightly.

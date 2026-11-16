@@ -36,12 +36,10 @@ At the October 29 migration, 195 local tests passed, including PostgreSQL persis
 
 The old GitHub IPs and www CNAME were retained underneath the Cloudflare proxy. Before restoring old public traffic, restore GitHub Pages from the archived source, then remove only the public apex/www Worker routes and switch those records to DNS only. Keep Desk protection in place. Changing source or DNS does not restore the database: use a separately verified backup for data recovery. Never delete the current database as a rollback step.
 
-## Local integration release 0.17.0
+## November 16 live release and local follow-up
 
-The November 16 backend/form changes are local only. They have not changed the live application, owner allowlist, DNS or email configuration. A fresh encrypted production backup was restored to a disposable local database with exact table-content comparisons; see BACKUPS.md. Sending remains unconfigured and public forms remain closed. See RELEASE-0.17.0.md and MAIL-AND-FORMS.md before the final rollout. New CI changes have been checked locally and still require their first authorized push to run on GitHub.
+Commit 1b45277 (0.18.0) was approved and deployed on November 16. CI passed and Render reported the deployment live. The encrypted pre-deployment backup was restored into isolated PostgreSQL 17 and compared; the content migration removed unchanged examples and preserved edited content. Contact displays frogpondboys@gmail.com. Forms and notifications stay closed.
 
-## Local review release 0.18.0
+The first startup failed at 21:07:42 UTC and the service was ready at 21:07:59. Transient 502/503 responses were observed during rollout; subsequent HTTP checks and Chromium checks passed. The generic startup log does not identify the cause. Do not promise interruption-free upgrades with the single-writer handover.
 
-The next application release remains local and awaits explicit rollout approval. It includes the reviewed editor/file controls and the version A mobile pond from the November 16 interface pass, plus stricter inbound email authentication and Word attachment parsing. A shared-inbox PostgreSQL regression test now verifies two members and rejects cross-identity session reuse. The retry API requires explicit confirmation of possible duplicate delivery.
-
-No Render setting, DNS record, Access member, email account or production data was changed for this release. Public submissions and notifications remain disabled. The approved public Contact fallback is frogpondboys@gmail.com; this does not enable email notifications. See RELEASE-0.18.0.md.
+Local 0.19.0 adds Site wording backend support, the reviewed interface changes, an icon and runtime diagnostics/connection tuning. It has not been deployed. Existing Access members, DNS, provider plans and email settings are unchanged. Human acceptance of authenticated editing/publication is still required.

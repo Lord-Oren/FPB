@@ -1,4 +1,5 @@
 // Validated drafts, legacy migration and public snapshots. Private state never becomes public wholesale.
+import {validateWording} from '../../src/data/wording.js';
 import {aboutDefaults,contactDefaults} from '../../src/data/page-fields.js';
 import {prepareStructure,collectionKinds} from '../../src/data/structure.js';
 import {editorialDefaults,navigationDefaults} from '../../src/data/editorial.js';
@@ -46,7 +47,7 @@ export function migrate(site,cases,legacy,now){
  // Preserve public cases even if an old catalogue omitted them.
  for(const live of cases.cases)if(!items.some(x=>x.publicId===live.id&&x.section==='case-studies'))items.push({id:uid('case'),publicId:live.id,slug:live.slug,section:'case-studies',revision:1,fields:fields(live.content),live:fields(live.content)});
  for(const g of ['works','events','press'])for(const data of site[g]){const {id,rubric,demo,...f}=data;items.push({id:uid(g),publicId:id,slug:id,section:rubric,revision:1,fields:clone(f),live:clone(f),demo:!!demo});}
- const pages=Object.fromEntries(['home','about','contact','join','intros','legal'].map(n=>{const f=n==='home'?homeFields(site.home):{...(n==='about'?clone(aboutDefaults):n==='contact'?clone(contactDefaults):n==='legal'?{intro:'',documentId:null}:{}),...clone(site[n]??{})};return[n,{revision:1,fields:f,live:clone(f)}]}));
+ const pages=Object.fromEntries(['home','about','contact','join','intros','legal','wording'].map(n=>{const f=n==='home'?homeFields(site.home):n==='wording'?validateWording(site.wording):{...(n==='about'?clone(aboutDefaults):n==='contact'?clone(contactDefaults):n==='legal'?{intro:'',documentId:null}:{}),...clone(site[n]??{})};return[n,{revision:1,fields:f,live:clone(f)}]}));
  const structure=prepareStructure(site.structure,site.home);
  return {schemaVersion:2,structure:{revision:1,fields:structure,live:clone(structure)},items,media,pages,base:clone(site),reserved:items.flatMap(x=>[x.slug,x.publicId]),people:['local@example.invalid'],settings:{notifications:{cv:true,msg:true},signature:''},conversations:[],attachments:[],outbox:[],journal:[],publishes:[],release:null,createdAt:now};
 }

@@ -1,4 +1,5 @@
 // Idempotent upgrade: remove pristine shipped content; never repopulate examples.
+import {validateWording} from '../../src/data/wording.js';
 import {createHash} from 'node:crypto';
 import {prepareStructure} from '../../src/data/structure.js';
 import {homeFields,snapshots,setPage} from './model.mjs';
@@ -58,11 +59,20 @@ function upgradeLegacyContent(state){
 }
 
 // One-time owner-approved contact fallback. Later intentional edits stay untouched.
-export function upgradeContent(state){
+function upgradeContact(state){
  const upgrade=upgradeLegacyContent(state),marker='contact-address-20261116';
  if((upgrade?.state??state).migrations?.includes(marker))return upgrade;
  const next=upgrade?.state??structuredClone(state);let changed=false;
  for(const contact of [next.base?.contact,next.pages.contact?.fields,next.pages.contact?.live])if(contact&&!contact.email?.trim()){contact.email='frogpondboys@gmail.com';changed=true;}
  next.migrations=[...(next.migrations??[]),marker];
  return {state:next,snapshot:snapshots(next),changed:!!upgrade?.changed||changed};
+}
+
+// Add the editor page without publishing a draft or rewriting publication history.
+export function upgradeContent(state) {
+ const upgrade=upgradeContact(state), current=upgrade?.state??state;
+ if(current.pages.wording)return upgrade;
+ const next=upgrade?.state??structuredClone(state), fields=validateWording(next.base.wording);
+ next.pages.wording={revision:1,fields,live:structuredClone(fields)};
+ return {state:next,snapshot:snapshots(next),changed:!!upgrade?.changed};
 }

@@ -8,7 +8,7 @@ The public cutover was approved and completed on October 29, 2026. See [HOSTING-
 
 The owners should control the GitHub repository, Render and Cloudflare accounts. Invite the maintainer with the permissions needed for setup. Enter credentials directly into the providers' secret settings; do not put them in issues, commits, or chat.
 
-1. Connect Render's GitHub integration to `Lord-Oren/FPB`. A connected Git provider is needed for automatic deploys. The prepared `render.yaml` selects the free plan and `virginia`; it does not create a service until applied. Do not apply it against the old `main` source. Use a separate temporary service connected to the migration branch for acceptance testing.
+1. Connect Render's GitHub integration to `Lord-Oren/FPB`. A connected Git provider is needed for automatic deploys. The current `render.yaml` selects Starter and `virginia`. The existing service already tracks main; do not create a duplicate service or reapply historical migration instructions. Review and obtain approval before a new production push.
 2. Reuse the client-owned `frog-pond-boys-db` Render PostgreSQL database in Virginia. Keep the web service in the same workspace and region and external database access disabled. Set its internal connection URL as `DATABASE_URL`, `DATABASE_TLS_MODE=render-internal`, and its exact internal hostname as `DATABASE_RENDER_INTERNAL_HOST`. This requires TLS with Render's self-signed certificate on its private network; certificate authenticity is not verified in this explicit mode. The application rejects this mode outside Render or for an unpinned/public hostname. External endpoints retain verified TLS by default (`verify-full`, optional `DATABASE_CA`). Use a direct connection because the app holds a session-level writer lock. The runtime creates its tables. Never point tests at the client database.
 3. Create a Cloudflare Access self-hosted application for the eventual private Desk hostname. Restrict it to explicitly authorized owner/maintainer emails and email one-time passcodes only. Record the application audience and team issuer URL. Set `ACCESS_AUDIENCE`, `ACCESS_ISSUER`, and `POND_TESTER_EMAILS` on Render. Every private request is verified again by the origin.
 4. The Worker configuration now contains the approved production routes; use a separate route-free configuration for future staging. Set its `RENDER_ORIGIN_HOST` to the new Render hostname. Match all four `POND_*_HOST` values and `POND_PUBLIC_SITE` between Render and the Worker. Use separate test hostnames for future staging rather than changing the live production routes.
@@ -39,14 +39,14 @@ For a transfer, make an encrypted database backup outside Git, verify a restore 
 4. Configure the agreed Cloudflare DNS/routes and Access policies. Only now replace existing GitHub Pages routing for the public domain. Preserve mail records. Use `frogpondboys.com`, `www.frogpondboys.com`, and `desk.frogpondboys.com`; do not expose preview B.
 5. Enable public mode in the origin and Worker and verify HTTPS, redirects, anonymous public pages, protected Desk, publication, and restart durability from an external browser.
 
-## Costs and remaining latency
+## Current plans and remaining latency
 
-The templates select free services and do not authorize a paid purchase. Confirm current plan allowances in each owner's account before provisioning. Render Free can sleep when idle; waking and the first build remain slow. A paid always-on instance may be considered after measuring real use. No artificial keep-alive schedule is configured.
+The existing service is Starter and PostgreSQL 17 is Basic-256mb, both in Virginia, upgraded with owner approval. The database has no expiration date; the old November 28 trial deadline no longer applies. Keep verified encrypted backups outside Git. No artificial keep-alive schedule is required for the always-on service.
 
-The current database stores one JSON state record including media/history, with a 16 MiB application limit. This is suitable for a bounded trial, not an unlimited inbox or media library. Plan separate object storage and a more granular persistence model before increasing volume.
+The state record has a 16 MiB application limit; private attachments live in separate database rows. This is not an unlimited inbox or media library. Plan capacity and backup retention as usage grows.
 
-## Free database deadline
+Local 0.19.0 sets HTTP keepAliveTimeout to 120 seconds and headersTimeout to 121 seconds, including the startup listener, following [Render's runtime guidance](https://render.com/tutorials/when-deploys-go-wrong/runtime-errors). Startup logs expose only stage, allowlisted error code and elapsed time. They do not include credentials or arbitrary provider error messages. The previous failure's cause remains unproven.
 
-The client trial database expires on **November 28, 2026**. Upgrade it to a paid database before that date or export and verify a restore elsewhere beforehand. The free database is a temporary trial, not permanent free storage. No paid upgrade or backup automation is included in this preparation. Keep encrypted backups outside Git and test recovery before relying on this service for production content.
+Keep the existing /livez probe while the single writer lock is handed over: changing it blindly to /healthz can leave the new process waiting for a writer that the provider has not stopped. The startup listener returns 503 for site requests until initialization completes. A short maintenance interval is still possible. Review any future handover redesign separately.
 
 Provider reference: [Render PostgreSQL connections](https://render.com/docs/postgresql-creating-connecting).

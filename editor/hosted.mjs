@@ -1,5 +1,6 @@
 // Configurable public site and private Desk gateway; verified Access, PostgreSQL, simulated mail.
 import {createServer} from 'node:http';
+import {tuneHttpServer,startupDiagnostic} from '../hosting/http-runtime.mjs';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
@@ -12,6 +13,7 @@ import {mailTransport} from './backend/mail.mjs';
 import {createV2} from './backend/api.mjs';
 import {buildRelease} from './backend/publisher.mjs';
 import {deploymentConfig} from '../hosting/config.mjs';
+const favicon=await readFile(new URL('../hosting/favicon.ico',import.meta.url));
 const safeHeaders={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Permissions-Policy':'camera=(), microphone=(), geolocation=()','Strict-Transport-Security':'max-age=31536000'};
 export async function createHosted({root=fileURLToPath(new URL('../',import.meta.url)),port=Number(process.env.PORT),store,verify,testers,issuer,audience,server:existingServer,sessionSeconds=Number(process.env.POND_SESSION_SECONDS??28800),originHost=process.env.RENDER_EXTERNAL_HOSTNAME,config=deploymentConfig(process.env),forms={enabled:false},mail=mailTransport(),inboundSecret='',builder=(r,f,id,snapshot,options={})=>buildRelease(r,f,id,snapshot,{...options,hosted:true,publicSite:config.publicSite,variants:config.publicSite?['a']:['a','b']})}={}){
  const {hosts,www,publicSite}=config;
@@ -49,6 +51,7 @@ export async function createHosted({root=fileURLToPath(new URL('../',import.meta
    const accessNavigation=req.method==='GET'&&req.headers['sec-fetch-mode']==='navigate'&&!url.pathname.startsWith('/api/');
    if(!publicRequest&&req.headers['sec-fetch-site']==='cross-site'&&!accessNavigation)return reply(res,403,'This request came from an unapproved page.');
    if(!inbound&&['POST','PUT','DELETE','PATCH'].includes(req.method)&&req.headers.origin!=='https://'+host)return reply(res,403,'This request came from an unapproved page.');
+   if(['GET','HEAD'].includes(req.method)&&url.pathname==='/favicon.ico'){res.writeHead(200,{...safeHeaders,'Content-Type':'image/x-icon','Content-Length':favicon.length});res.end(req.method==='HEAD'?undefined:favicon);return;}
    if(variant!=='desk'){
     if(form||inbound)return void await v2.handler(req,res,url);
     if(req.method!=='GET'&&req.method!=='HEAD')return reply(res,405,'This action is not allowed.');
@@ -62,7 +65,6 @@ export async function createHosted({root=fileURLToPath(new URL('../',import.meta
    }
    if(form||url.pathname.startsWith('/api/v2/testing/'))return reply(res,404,'This page or action is not available.');
    if(req.method==='GET'&&url.pathname==='/'){res.writeHead(302,{...safeHeaders,Location:'/v2/'});res.end();return;}
-   if(req.method==='GET'&&url.pathname==='/favicon.ico'){res.writeHead(204,safeHeaders);res.end();return;}
    if(await v2.handler(req,res,url))return;
    reply(res,404,'This page or action is not available.');
   }catch(error){
@@ -72,12 +74,13 @@ export async function createHosted({root=fileURLToPath(new URL('../',import.meta
    if(!res.headersSent){if(status===503)res.setHeader('Retry-After','10');reply(res,status,status===403?'Access denied.':'The service is temporarily unavailable. Please try again.');}else res.end();
   }
  };
- const server=existingServer??createServer();server.removeAllListeners('request');server.on('request',handle);
+ const server=tuneHttpServer(existingServer??createServer());server.removeAllListeners('request');server.on('request',handle);
  if(!server.listening)await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'0.0.0.0',resolve);});
  const timer=setInterval(()=>v2.purge(),60000);timer.unref();
  return {server,async close(){ready=false;clearInterval(timer);await new Promise(resolve=>server.close(resolve));await v2.close();await store.close();}};
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)){
+ let stage='configuration';const started=Date.now();
  try{
   const env=process.env;const testers=(env.POND_TESTER_EMAILS??'').split(',').map(x=>x.trim()).filter(Boolean);
   if(!env.DATABASE_URL||!env.ACCESS_ISSUER||!env.ACCESS_AUDIENCE||!testers.length)throw Error('Missing configuration');
@@ -86,12 +89,16 @@ if(process.argv[1]===fileURLToPath(import.meta.url)){
   const port=Number(env.PORT);if(!Number.isInteger(port)||port<1||port>65535)throw Error('Invalid port');
   // The provider rolls containers before stopping the old writer. Accept TCP with a
   // data-free 503 while waiting for its lock, then rebuild from PostgreSQL.
-  const server=createServer((req,res)=>{const live=req.method==='GET'&&req.url==='/livez';res.writeHead(live?200:503,{...safeHeaders,'Retry-After':'5','Content-Type':'text/plain'});res.end(live?'alive':'The site is starting. Please retry shortly.');});
+  stage='listener';
+  const server=tuneHttpServer(createServer((req,res)=>{const live=req.method==='GET'&&req.url==='/livez';res.writeHead(live?200:503,{...safeHeaders,'Retry-After':'5','Content-Type':'text/plain'});res.end(live?'alive':'The site is starting. Please retry shortly.');}));
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'0.0.0.0',resolve);});
+  stage='database';let waiting=false;
   let store;const deadline=Date.now()+120000;
-  while(!store){try{store=await openPostgres({connectionString:env.DATABASE_URL,ssl,onFailure:()=>process.exit(1)});}catch(error){if(error.code!=='POND_WRITER_BUSY'||Date.now()>deadline)throw error;await new Promise(resolve=>setTimeout(resolve,1000));}}
+  while(!store){try{store=await openPostgres({connectionString:env.DATABASE_URL,ssl,onFailure:()=>process.exit(1)});}catch(error){if(error.code!=='POND_WRITER_BUSY'||Date.now()>deadline)throw error;if(!waiting){console.log(JSON.stringify({event:'pond_writer_wait',elapsedMs:Date.now()-started}));waiting=true;}await new Promise(resolve=>setTimeout(resolve,1000));}}
+  stage='application';
   const app=await createHosted({store,testers,verify,server,forms:formSecurity(env),mail:mailTransport(env),inboundSecret:env.POND_INBOUND_SECRET||''});
   console.log('Frog Pond Boys server ready.');
+  console.log(JSON.stringify({event:'pond_ready',elapsedMs:Date.now()-started}));
   for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>app.close().then(()=>process.exit(0)));
- }catch{console.error('Hosted startup failed. Check configuration and database availability.');process.exit(1);}
+ }catch(error){console.error(JSON.stringify(startupDiagnostic(error,stage)));process.exit(1);}
 }
