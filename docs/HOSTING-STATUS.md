@@ -39,3 +39,9 @@ The old GitHub IPs and www CNAME were retained underneath the Cloudflare proxy. 
 ## Local integration release 0.17.0
 
 The November 16 backend/form changes are local only. They have not changed the live application, owner allowlist, DNS or email configuration. A fresh encrypted production backup was restored to a disposable local database with exact table-content comparisons; see BACKUPS.md. Sending remains unconfigured and public forms remain closed. See RELEASE-0.17.0.md and MAIL-AND-FORMS.md before the final rollout. New CI changes have been checked locally and still require their first authorized push to run on GitHub.
+
+## Local review release 0.18.0
+
+The next application release remains local and awaits explicit rollout approval. It includes the reviewed editor/file controls and the version A mobile pond from the November 16 interface pass, plus stricter inbound email authentication and Word attachment parsing. A shared-inbox PostgreSQL regression test now verifies two members and rejects cross-identity session reuse. The retry API requires explicit confirmation of possible duplicate delivery.
+
+No Render setting, DNS record, Access member, email account or production data was changed for this release. Public submissions and notifications remain disabled. The approved public Contact fallback is frogpondboys@gmail.com; this does not enable email notifications. See RELEASE-0.18.0.md.

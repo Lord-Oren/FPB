@@ -9,7 +9,7 @@ export function cleanPlaceholderLinks(value){
  const walk=x=>{if(!x||typeof x!=='object')return;for(const [k,v]of Object.entries(x))if(typeof v==='string'&&['url','link','gramUrl','video','audio'].includes(k)){try{if(/(^|\.)example\.(com|org|net)$/i.test(new URL(v).hostname))x[k]='';}catch{}}else walk(v);if(Array.isArray(x.socials))x.socials=x.socials.filter(s=>s.url);};walk(copy);return copy;
 }
 export function cleanPublicSnapshot(snapshot,report=[]){const copy=cleanPlaceholderLinks(snapshot);copy.site=cleanSite(copy.site,report);return copy;}
-export function upgradeContent(state){
+function upgradeLegacyContent(state){
  const marker='v1-content-20261116';if(state.migrations?.includes(marker))return null;
  let next=structuredClone(state);const report=[];next.pages.legal??={revision:1,fields:{intro:'',documentId:null},live:{intro:'',documentId:null}};
  next.items=next.items.filter(item=>{
@@ -55,4 +55,14 @@ export function upgradeContent(state){
  }
  next=unmark(next);next.migrations=[...(next.migrations??[]),marker];next.contentMigrationReport=report;
  return {state:next,snapshot:snapshots(next),changed:true};
+}
+
+// One-time owner-approved contact fallback. Later intentional edits stay untouched.
+export function upgradeContent(state){
+ const upgrade=upgradeLegacyContent(state),marker='contact-address-20261116';
+ if((upgrade?.state??state).migrations?.includes(marker))return upgrade;
+ const next=upgrade?.state??structuredClone(state);let changed=false;
+ for(const contact of [next.base?.contact,next.pages.contact?.fields,next.pages.contact?.live])if(contact&&!contact.email?.trim()){contact.email='frogpondboys@gmail.com';changed=true;}
+ next.migrations=[...(next.migrations??[]),marker];
+ return {state:next,snapshot:snapshots(next),changed:!!upgrade?.changed||changed};
 }

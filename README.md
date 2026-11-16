@@ -2,7 +2,7 @@
 
 The Frog Pond Boys website and Pond Desk, the private content editor. Version A is the pixel presentation selected for the public website. Version B remains available for local review.
 
-Version 0.17.0 is a local integration release. The original website is preserved on [`archive/original-site`](https://github.com/Lord-Oren/FPB/tree/archive/original-site). A push to main can deploy the application; publish only after the owner approves the reviewed release. See [release notes](docs/RELEASE-0.17.0.md).
+Version 0.18.0 is a local review release. The original website is preserved on [`archive/original-site`](https://github.com/Lord-Oren/FPB/tree/archive/original-site). A push to main can deploy the application; publish only after the owner approves the reviewed release. See [release notes](docs/RELEASE-0.18.0.md).
 
 ## Local development
 
@@ -35,6 +35,6 @@ CI checks pull requests and pushes to `main`. The Render template requests deplo
 
 ## Current limits
 
-Version 0.16.1 prepares the next content model with an empty production seed and a migration that preserves edited owner content. The public configuration serves version A with Contact and Join submission disabled. Email replies and notifications are still simulated. Authenticated public PDF/video uploads are processed before publication and stored separately; the older private resume flow remains quarantined until its planned integration. New editor fields and public rendering still require interface integration. See docs/RELEASE-0.16.1.md for the exact scope.
+Version 0.18.0 includes the reviewed editor and mobile version A updates, a production seed without demonstration content and migration rules that preserve edited owner content. Contact and Join remain closed pending email and verification-widget setup. Public PDF/video publication and private Join attachment processing are integrated. Incoming email authentication, Word XML validation and confirmed manual retry have regression tests. Read docs/RELEASE-0.18.0.md and docs/MAIL-AND-FORMS.md for the remaining launch requirements.
 
 Pond Desk and its data must remain private. Never publish the editor state, sessions, incoming messages, resumes, or database backups to GitHub Pages or Git.

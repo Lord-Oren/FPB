@@ -1,9 +1,28 @@
 // Private inbound replies only. No mailbox is shared, and no message content is logged.
 import PostalMime from 'postal-mime';
+// Fetch Headers folds duplicate Authentication-Results fields with commas. Only
+// the first field is trusted; quoted strings/comments cannot introduce methods.
+export function trustedDmarc(headers){
+ const value=headers.get('Authentication-Results');if(typeof value!=='string'||value.length>16384)return false;
+ let clean='',quoted=false,comment=0,escaped=false;
+ for(const char of value){
+  if(escaped){escaped=false;continue;}
+  if(char==='\\'&&(quoted||comment)){escaped=true;continue;}
+  if(comment){if(char==='(')comment++;else if(char===')')comment--;if(comment>10)return false;continue;}
+  if(quoted){if(char==='"')quoted=false;continue;}
+  if(char==='"'){quoted=true;clean+='""';continue;}
+  if(char==='('){comment=1;clean+=' ';continue;}
+  if(char===',')break;
+  if(/[\x00-\x08\x0b-\x1f\x7f]/.test(char))return false;
+  clean+=char;
+ }
+ if(quoted||comment||escaped)return false;
+ const [service,...methods]=clean.split(';');if(!/^mx\.cloudflare\.net(?:\s+1)?$/i.test(service.trim()))return false;
+ const dmarc=methods.map(m=>/^\s*dmarc\s*=\s*([a-z]+)(?=\s|$)/i.exec(m)).filter(Boolean);
+ return dmarc.length===1&&dmarc[0][1].toLowerCase()==='pass';
+}
 export async function receiveEmail(message,env,forward=fetch){
- const auth=message.headers.get('Authentication-Results')||'';
- // Cloudflare documents the first Authentication-Results header as its trusted result.
- if(!/^mx\.cloudflare\.net\s*;/i.test(auth)||!/(?:^|;)\s*dmarc=pass(?:[;\s]|$)/i.test(auth)){message.setReject('Sender authentication required.');return;}
+ if(!trustedDmarc(message.headers)){message.setReject('Sender authentication required.');return;}
  if(!env.POND_INBOUND_SECRET||env.POND_INBOUND_SECRET.length<32||!/^reply-[a-f0-9]{24}$/.test(message.to.split('@')[0])||message.to.split('@')[1]!==env.POND_REPLY_DOMAIN){message.setReject('Unknown conversation.');return;}
  if(message.rawSize>1024*1024){message.setReject('Reply too large. Use the website for attachments.');return;}
  const reader=message.raw.getReader(),chunks=[];let length=0;

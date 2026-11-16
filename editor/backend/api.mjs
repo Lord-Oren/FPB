@@ -195,6 +195,17 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
     if(method==='POST'&&action==='state'){check(['open','archived','callback'].includes(body.state),'Unknown status.');t.state=body.state;changed=true;}
     if(method==='DELETE'&&!action){t.state='archived';t.deletedAt=now();t.unread=false;changed=true;}
     if(method==='POST'&&action==='restore-archived'){delete t.deletedAt;t.state='archived';changed=true;}
+    if(method==='POST'&&action==='retry-reply'){
+     check(mail.mode==='resend','Email sending is not configured.',503);
+     const previous=next.outbox.find(m=>m.id===body.mailId&&m.conversationId===t.id&&m.kind==='reply');check(previous,'Reply not found.',404);
+     const existing=next.outbox.find(m=>m.retryOf===previous.id);if(existing)return {mailId:existing.id,status:existing.status,message:'This retry is already saved.'};
+     check(previous.status==='review_required','This reply is not awaiting delivery review.',409);
+     check(body.confirmPotentialDuplicate===true,'Delivery may already have occurred. Review the provider record and confirm the risk of a duplicate before retrying.',409);
+     const message=t.messages.find(m=>m.mailId===previous.id);check(message,'Reply message not found.',404);
+     const entry=queueEmail(next,mail,{id:uid('mail'),conversationId:t.id,kind:'reply',to:previous.to,subject:previous.subject,text:previous.text,replyTo:previous.replyTo,at:now()});
+     entry.retryOf=previous.id;previous.status='superseded';message.mailId=entry.id;message.status=entry.status;
+     log(next,'reply_retry_authorized',now());await save(next);return {mailId:entry.id,status:entry.status,message:'Retry queued. A duplicate email is possible.'};
+    }
     if(method==='POST'&&action==='replies'){
      const value=text(body.text,10000,'text'),key=hash({text:value,signature:next.settings.signature});
      if(t.messages.at(-1)?.simulationKey===key)return {status:t.messages.at(-1).status,message:'This reply is already saved.'};
@@ -270,7 +281,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
    for(const [key,value] of sessions)if(value.expires<clock().getTime())sessions.delete(key);
    const sessionKey=req.headers['x-editor-token']||(req.method==='GET'?cookie:undefined);
    const auth=hosted&&store?.loadSession&&typeof sessionKey==='string'?await store.loadSession(hash(sessionKey),clock().getTime()):sessions.get(sessionKey);
-   if(hosted&&!req.pondPublicForm&&!inbound)check(req.pondIdentity&&(!auth||auth.email===req.pondIdentity.email),'Sign in to access this test site.',403);
+   if(hosted&&!req.pondPublicForm&&!inbound)check(req.pondIdentity&&(!auth||auth.email===req.pondIdentity.email),'Sign in to access Pond Desk.',403);
    if(hosted&&url.pathname.startsWith('/api/v2/testing/'))fail('This page or action is not available.',404);
    check(form||inbound||session||auth,'Your editor session has expired. Reload the page.',403);
    if(form||inbound){
@@ -292,7 +303,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
     if(result!==null)send(res,200,result);
     return true;
    }
-   const operation=async()=>{await initialize();actor=req.pondIdentity?.email??'local';await purge();if(session){const token=uid('session');const duration=hosted?sessionSeconds*1000:28800000;const info={expires:clock().getTime()+duration,pages:{},email:actor};if(hosted&&store?.saveSession)await store.saveSession(hash(token),info,clock().getTime());else{check(sessions.size<1000,'Too many open sessions. Try again later.',429);sessions.set(token,info);}send(res,200,{token,user:{email:actor==='local'?'local@example.invalid':actor},mode:hosted?'hosted-test':'local',mail:mail.mode,publicUrls,publicVariants },'application/json',{'Set-Cookie':`pond_session=${token}; ${hosted?'Secure; ':''}HttpOnly; SameSite=Strict; Path=/api/v2; Max-Age=${hosted?sessionSeconds:28800}`});return;}
+   const operation=async()=>{await initialize();actor=req.pondIdentity?.email??'local';await purge();if(session){const token=uid('session');const duration=hosted?sessionSeconds*1000:28800000;const info={expires:clock().getTime()+duration,pages:{},email:actor};if(hosted&&store?.saveSession)await store.saveSession(hash(token),info,clock().getTime());else{check(sessions.size<1000,'Too many open sessions. Try again later.',429);sessions.set(token,info);}send(res,200,{token,user:{email:actor==='local'?'local@example.invalid':actor},mode:hosted?'hosted-test':'local',deployment:hosted?'hosted':'local',mail:mail.mode,publicUrls,publicVariants },'application/json',{'Set-Cookie':`pond_session=${token}; ${hosted?'Secure; ':''}HttpOnly; SameSite=Strict; Path=/api/v2; Max-Age=${hosted?sessionSeconds:28800}`});return;}
     if(form){body.box=url.pathname.endsWith('/join')?'cv':'msg';body.rateKey=req.pondClientIp??req.pondIdentity?.subject??req.socket.remoteAddress;url=new URL('/api/v2/intake',url);}
     const previousContext=auth?JSON.stringify(auth.pages):null;
     const result=inbound?await execute('POST',new URL('/api/v2/mail-inbound',url),{raw:req.pondRawBody,headers:req.headers,value:body},res,auth):await execute(req.method,url,body,res,auth);

@@ -44,6 +44,14 @@ test('hosted PostgreSQL: origin gate, sessions, publishing and restart durabilit
   assert.equal((await req(desk,'/api/v2/settings','PUT',{},{Origin:'https://'+a})).status,403);
   const received=await req(a,'/api/v2/forms/contact','POST',{name:'Fictional sender',email:'sender@example.test',message:'PRIVATE_POSTGRES_SENTINEL',website:''});assert.equal(received.status,201);const conversation=(await received.json()).id;
   const reply=await req(desk,'/api/v2/conversations/'+conversation+'/replies','POST',{text:'Simulated reply'});assert.equal((await reply.json()).status,'simulated');
+  const aliceToken=token,bobHeaders={'Cf-Access-Jwt-Assertion':'bob-test-fixture','X-Editor-Token':''};
+  const bobToken=(await(await req(desk,'/api/v2/session','GET',null,bobHeaders)).json()).token;bobHeaders['X-Editor-Token']=bobToken;
+  const aliceList=await(await req(desk,'/api/v2/conversations?box=msg')).json();
+  assert.deepEqual(await(await req(desk,'/api/v2/conversations?box=msg','GET',null,bobHeaders)).json(),aliceList,'individual sign-ins share the PostgreSQL inbox');
+  const bobReply=await req(desk,'/api/v2/conversations/'+conversation+'/replies','POST',{text:'Reply from the second team member'},bobHeaders);assert.equal(bobReply.status,200);
+  assert.equal((await(await req(desk,'/api/v2/conversations/'+conversation)).json()).messages.at(-1).text,'Reply from the second team member');
+  assert.equal((await req(desk,'/api/v2/conversations/'+conversation,'GET',null,{...bobHeaders,'X-Editor-Token':aliceToken})).status,403,'another member cannot reuse a session');
+  assert.equal(details.deployment,'hosted');
   assert.equal((await req(desk,'/api/v2/forms/contact','POST',{})).status,404);
   await req(desk,'/api/v2/settings','PUT',{notifications:{cv:false,msg:false},signature:'Test signature'});
   const page=await(await req(desk,'/api/v2/pages/home')).json();await req(desk,'/api/v2/pages/home','PUT',{revision:page.revision,fields:{...page.fields,announcementTitle:'PostgreSQL publication'}});assert.equal((await req(desk,'/api/v2/pages/home/publish','POST',{})).status,200);
