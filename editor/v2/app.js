@@ -574,7 +574,7 @@ async function openWording() {
   const saveOnly = async () => { if (await save()) toast('Saved ✓ Not on the site yet.'); };
   const publish = async () => {
     if (!await save()) return;
-    try { const result = await call('POST', '/pages/wording/publish', {}); toast(result?.message || 'Published ✓ Live on the site in a minute or two.'); data = await call('GET', '/pages/wording'); }
+    try { const result = await call('POST', '/pages/wording/publish', {}); toast(result?.message || 'Published ✓ Live on the site in a minute or two.'); }
     catch (error) { toast(error.status === 409 ? 'Someone changed these texts in another window. Your changes are saved; reload this screen before publishing.' : error.message); }
   };
   main(topBar({ title: 'Site wording', small: 'Buttons, labels and short messages on every page', actions: [viewOnSite('home')] }),

@@ -1,6 +1,6 @@
-# Site wording API — 0.19.0
+# Site wording API — 0.20.0
 
-Status: backend ready locally; the editor screen and public components still need integration. This release does not yet make the 66 texts editable on screen. Public forms and notifications remain disabled.
+Status: the 66-field Site wording screen and both public variants are integrated for local release review. Save keeps a draft; Publish updates the site. Public forms and notifications remain disabled.
 
 ## Data contract
 
@@ -8,7 +8,7 @@ Status: backend ready locally; the editor screen and public components still nee
 
 - `GET /api/v2/pages/wording` returns `{revision, fields, live, defaults, limits, media, files}`. `fields` is the draft, `live` the published overrides. Empty values mean “use the original”. `defaults` and `limits` have exactly the same 66 keys.
 - `PUT /api/v2/pages/wording` accepts `{revision, fields}` and returns `{revision}`. Send the whole form. Missing keys reset to empty; unknown keys are rejected. Trimmed empty strings reset to the original. Stale revision: 409, rejected input: 422 with field diagnostics. The page size ceiling is 60,000 UTF-8 bytes.
-- Values are plain, single-line text; no HTML, angle brackets, control characters or direction overrides. Most fields allow 240 UTF-16 code units. The 600-unit fields are `events.none`, `about.ctaText`, `form.closedWithEmail`, `join.spontaneous`, `join.fileHelp`, `join.linkHelp`, `join.fileType`, `join.fileTooLarge`, `legal.pending`. The input limit is checked before trimming.
+- Values are plain, single-line text; no HTML, angle brackets, control characters, Unicode line/paragraph separators (U+2028/U+2029), or direction overrides. Most fields allow 240 UTF-16 code units. The 600-unit fields are `events.none`, `about.ctaText`, `form.closedWithEmail`, `join.spontaneous`, `join.fileHelp`, `join.linkHelp`, `join.fileType`, `join.fileTooLarge`, `legal.pending`. The input limit is checked before trimming.
 - `POST /api/v2/pages/wording/publish` accepts `{}` after a successful save in the same editing session. A newer save by another session invalidates publication with 409. A build failure keeps the previous website and draft.
 - Standard Desk authentication, origin checks, request serialization and session-bound publish rules apply. No public edit endpoint is added.
 
@@ -22,4 +22,4 @@ Changing attachment instructions does not alter the actual 10 MiB limit or accep
 
 ## Interface integration checklist
 
-Group keys by page in Site wording, show the original beside each override, and reset by setting an empty string. Use the existing common writer lock for Save and Publish. Keep failed/stale form contents visible, apply field diagnostics, and fetch current revisions. Connect each of the 66 public texts in both variants, including dynamic motion and form messages. Keep existing published wording until Publish succeeds. Verify escaping, keyboard use, empty fallbacks, desktop/mobile layout, multiple tabs and publication failure.
+Group keys by page in Site wording, show the original beside each override, and reset by setting an empty string. Use the existing common writer lock for Save and Publish. Keep failed/stale form contents visible, apply field diagnostics, and keep the revision associated with the displayed field values. Publishing does not change the draft revision. Never adopt a newer revision without refreshing its fields; doing so can overwrite another member’s work. Connect each of the 66 public texts in both variants, including dynamic motion and form messages. Keep existing published wording until Publish succeeds. Verify escaping, keyboard use, empty fallbacks, desktop/mobile layout, multiple tabs and publication failure.

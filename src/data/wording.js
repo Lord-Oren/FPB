@@ -69,7 +69,7 @@ export const wordingDefaults = Object.freeze({
 });
 const longKeys = new Set(["events.none", "about.ctaText", "form.closedWithEmail", "join.spontaneous", "join.fileHelp", "join.linkHelp", "join.fileType", "join.fileTooLarge", "legal.pending"]);
 export const wordingLimits = Object.freeze(Object.fromEntries(Object.keys(wordingDefaults).map(key => [key, longKeys.has(key) ? 600 : 240])));
-const forbidden = /[<>\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/u;
+const forbidden = /[<>\u0000-\u001f\u2028\u2029\u007f\u202a-\u202e\u2066-\u2069]/u;
 function invalid(field, message) {
   const error = new Error(message); error.status = 422;
   error.diagnostics = [{field, message}]; throw error;

@@ -19,6 +19,13 @@ test('wording: 66 original values, blank fallback and strict build-time text bou
  assert.equal(validateWording({'join.fileHelp':'x'.repeat(600)})['join.fileHelp'].length,600);
  assert.deepEqual(prepareSiteContent(site).wording,wordingDefaults);
 });
+test('wording: Unicode line and paragraph separators are rejected before trimming',()=>{
+ for(const separator of ['\u2028','\u2029'])for(const value of [separator+'text','two'+separator+'lines','text'+separator]){
+  assert.throws(()=>validateWording({'home.title':value}),error=>error.status===422);
+  assert.throws(()=>prepareSiteContent({...site,wording:{'join.fileHelp':value}}),error=>error.status===422);
+ }
+ assert.equal(validateWording({'home.title':'Accents é, apostrophe ’, emoji 🐸'})['home.title'],'Accents é, apostrophe ’, emoji 🐸');
+});
 test('wording: legacy state upgrade is idempotent and does not publish a draft or alter history',()=>{
  let state=migrate(site,cases,undefined,'2026-11-16T22:00:00Z');state=upgradeContent(state)?.state??state;
  delete state.pages.wording;state.pages.about.fields.title='Private draft';
@@ -42,7 +49,7 @@ test('wording API: auth, validation, stale edits, publication rollback, restore 
   let p=await ok('GET','/pages/wording');assert.deepEqual(p.defaults,wordingDefaults);assert.deepEqual(p.limits,wordingLimits);
   const legacy=(await ok('GET','/publishes'))[0].id;
   assert.equal((await request('POST','/pages/wording/publish',{})).status,409);
-  for(const fields of [{'bad.key':'no'},{'home.title':'<img src=x>'},{'home.title':false}])assert.equal((await request('PUT','/pages/wording',{revision:p.revision,fields})).status,422);
+  for(const fields of [{'bad.key':'no'},{'home.title':'<img src=x>'},{'home.title':false},{'home.title':'a\u2028b'},{'home.title':'a\u2029b'}])assert.equal((await request('PUT','/pages/wording',{revision:p.revision,fields})).status,422);
   assert.equal((await ok('GET','/pages/wording')).revision,p.revision);
   const before=await readFile(source,'utf8');
   await ok('PUT','/pages/wording',{revision:p.revision,fields:{'home.title':'Our shared studio'}});

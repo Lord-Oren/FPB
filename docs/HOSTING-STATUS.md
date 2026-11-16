@@ -43,3 +43,7 @@ Commit 1b45277 (0.18.0) was approved and deployed on November 16. CI passed and 
 The first startup failed at 21:07:42 UTC and the service was ready at 21:07:59. Transient 502/503 responses were observed during rollout; subsequent HTTP checks and Chromium checks passed. The generic startup log does not identify the cause. Do not promise interruption-free upgrades with the single-writer handover.
 
 Local 0.19.0 adds Site wording backend support, the reviewed interface changes, an icon and runtime diagnostics/connection tuning. It has not been deployed. Existing Access members, DNS, provider plans and email settings are unchanged. Human acceptance of authenticated editing/publication is still required.
+
+## November 17, 2026 - 0.20.0 prepared locally
+
+Site wording is integrated across Desk and both variants. The review corrected a concurrent-save overwrite and Unicode single-line validation. The existing Starter web service and Basic-256mb database remain available; the database has no expiry. Latest live deployment still points to 1b45277 / 0.18.0. Publication requires owner approval after the backup and local release checks. No DNS, Access list, analytics setting or email configuration is changed by this preparation. Forms and notifications stay closed.
