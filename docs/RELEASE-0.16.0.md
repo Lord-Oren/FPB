@@ -24,3 +24,9 @@ Node 24, npm, PostgreSQL 17 for persistence tests, Poppler (pdfinfo/pdftoppm), F
 Use npm test for the automated suite, npm run test:public-build for the hosted build, npm run test:case-studies-build for publication/export scenarios, and FPB_VARIANT=a or b with npm run export:client for the standalone pages. Test data remains in scripts/fixtures and must never be used as production content.
 
 Backups must include pond_state, pond_sessions and pond_files. Upgrading hosting is separate from deploying this code.
+
+## Verification on November 16, 2026
+
+211 automated tests passed with PostgreSQL 17, none skipped. The real hosted build and four Case Studies build scenarios passed. Both standalone variants exported 26 pages. The empty Recent section was checked in Chromium at 390 and 1440 pixels in both variants. This is a narrow visual check, not full editor or physical-device acceptance.
+
+The earlier hosting batch at 3d50713 was authorized separately; these new backend features remain local until the final rollout.
