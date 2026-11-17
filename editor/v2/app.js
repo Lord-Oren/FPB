@@ -378,7 +378,7 @@ async function listSite(showWelcome=true){
  if(showWelcome)main(topBar({title:'Your site, zone by zone',small:'Choose an existing section to change its name or edit its content.',actions:[h('button',{class:'btn main',type:'button',onclick:publishTreeButton},'Publish layout')]}),h('div',{class:'body'},h('div',{class:'panel'},h('h3',{text:'Changes stay in draft until you publish'}),h('p',{text:'Your site structure is already set up. Change names and content without creating pages or changing their addresses.'})),...rootZones.filter(z=>z.id!=='archive').map(zone=>h('div',{class:'panel zone-card'},h('h3',{text:zone.title}),h('p',{text:({menus:'The frogs on the wooden raft and their existing menu links.',screens:'The lily pads and their screens on the pond.',stones:'The stone links around the pond.',footer:'Links at the bottom of the pages.'})[zone.id]})))));
  if(showWelcome&&matchMedia('(max-width:860px)').matches)setPane('list');
 }
-const SCREEN_MESSAGE_MAX=60;
+const SCREEN_MESSAGE_MAX=14;
 const graphemes=typeof Intl==='object'&&Intl.Segmenter?new Intl.Segmenter('en',{granularity:'grapheme'}):null;
 const screenChars=text=>graphemes?[...graphemes.segment(text)].length:[...text].length;
 function screenMessageProblem(value){

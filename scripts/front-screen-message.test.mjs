@@ -1,4 +1,4 @@
-// Lily-pad screen message: optional, 60 characters as a reader counts them (spaces included), plain text, A and B.
+// Lily-pad screen message: optional, 14 characters (what always fits the smallest TV glass at 10px or more) as a reader counts them (spaces included), plain text, A and B.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -7,17 +7,18 @@ const app = readFileSync(new URL('../editor/v2/app.js', import.meta.url), 'utf8'
 const screen = readFileSync(new URL('../src/components/pond/ZoneScreen.astro', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/styles/screen-message.css', import.meta.url), 'utf8');
 const layout = readFileSync(new URL('../src/layouts/SiteLayout.astro', import.meta.url), 'utf8');
-const helpers = app.slice(app.indexOf('const SCREEN_MESSAGE_MAX=60;'), app.indexOf('function openNode(id){'));
+const helpers = app.slice(app.indexOf('const SCREEN_MESSAGE_MAX='), app.indexOf('function openNode(id){'));
 const context = { Intl }; vm.createContext(context); vm.runInContext(helpers + '\nglobalThis.chars=screenChars;globalThis.problem=screenMessageProblem;', context);
 test('screen message: the Desk counts characters as readers see them, spaces included', () => {
   assert.equal(context.chars('Fresh work from the pond'), 24);
-  assert.equal(context.chars('🐸'.repeat(60)), 60, 'an emoji counts once');
+  assert.equal(context.chars('🐸'.repeat(14)), 14, 'an emoji counts once');
   assert.equal(context.chars('👨‍👩‍👧 é'), 3, 'a family emoji and an accented letter count once each');
   assert.equal(context.chars('é'), 1, 'a letter with a combining accent counts once');
-  assert.equal(context.problem('x'.repeat(60)), '');
-  assert.equal(context.problem('  ' + 'x'.repeat(60) + '  '), '', 'outer spaces are removed on save');
-  assert.match(context.problem('x'.repeat(61)), /Up to 60 characters, spaces included\. Remove 1 character\./);
-  assert.match(context.problem('y'.repeat(75)), /Remove 15 characters\./);
+  assert.equal(context.problem('x'.repeat(14)), '');
+  assert.equal(context.problem('🐸'.repeat(14)), '');
+  assert.equal(context.problem('  ' + 'x'.repeat(14) + '  '), '', 'outer spaces are removed on save');
+  assert.match(context.problem('x'.repeat(15)), /Up to 14 characters, spaces included\. Remove 1 character\./);
+  assert.match(context.problem('y'.repeat(60)), /Remove 46 characters\./);
   for (const bad of ['two\nlines', 'tab\there', 'a b', 'a‮b']) assert.equal(context.problem(bad), 'Use plain text on one line.');
   assert.equal(context.problem(''), '', 'empty is allowed');
 });
@@ -39,4 +40,7 @@ test('screen message: rendered as escaped text inside the screen, arrow and link
   assert.match(layout, /\(pond \? screenMessage : ''\)/, 'both designs load the same rules');
   assert.doesNotMatch(css, /text-overflow|line-clamp/, 'the message is never cut');
   assert.match(css, /overflow-wrap:anywhere/);
+  assert.doesNotMatch(css, /@container/, 'the text never grows over the TV frame');
+  assert.match(css, /font-size:clamp\(10px, /, 'never smaller than 10px');
+  assert.match(app, /const SCREEN_MESSAGE_MAX=14;/);
 });
