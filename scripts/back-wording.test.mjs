@@ -10,8 +10,8 @@ import {wordingDefaults,wordingLimits,validateWording,resolveWording} from '../s
 import {prepareSiteContent} from '../src/data/site-content.js';
 const site=JSON.parse(await readFile(new URL('../src/data/site-content.json',import.meta.url)));
 const cases=JSON.parse(await readFile(new URL('../src/data/case-studies-public.json',import.meta.url)));
-test('wording: 66 original values, blank fallback and strict build-time text boundary',()=>{
- assert.equal(Object.keys(wordingDefaults).length,66);
+test('wording: 65 original values, blank fallback and strict build-time text boundary',()=>{
+ assert.equal(Object.keys(wordingDefaults).length,65);
  assert.equal(resolveWording({'home.title':'   '})['home.title'],'FROG POND BOYS');
  assert.equal(resolveWording({'home.title':' New & original '})['home.title'],'New & original');
  for(const bad of [null,[],{'unknown':'x'},JSON.parse('{"__proto__":"x"}'),{'home.title':12},{'home.title':'<b>hi</b>'},{'home.title':'a\nb'},{'home.title':'\u202ehi'},{'home.title':'x'.repeat(241)},{'join.fileHelp':'x'.repeat(601)}])

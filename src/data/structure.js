@@ -18,11 +18,11 @@ export function defaultStructure(home={}){
   let kind=['about','contact','join','legal','croak','case-studies'].includes(page.slug)?page.slug:page.slug==='events-shows'||page.slug==='events-launches'?'events':['press','media-relations','influencer-relations'].includes(page.slug)?'press':'works';
   const parentId=page.hidden?null:page.group==='Advertising'?'advertising':page.group==='Creative'?'creative':page.group==='PR'?'pr':null;
   const zone=page.hidden?'archive':parentId?'menus':['gram','croak'].includes(page.slug)?'screens':'stones';
-  add(page.slug,page.title,kind,zone,parentId,{visible:!page.hidden});
+  add(page.slug,page.title,kind,zone,parentId,{visible:!page.hidden&&page.slug!=='magazine'});
  }
  add('announcements','Announcements','anchor','screens',null,{href:'#news'});add('recents','Recents','anchor','screens',null,{href:'#latest'});
  for(const title of ['Instagram','LinkedIn','Vimeo','YouTube'])add('footer-'+title.toLowerCase(),title,'link','footer');
- add('footer-legal','Legal','link','footer',null,{href:'legal.html'});
+ add('footer-legal','Legal','link','footer',null,{href:'legal.html',visible:false});
  const ordered=[];const walk=n=>{ordered.push(n);nodes.filter(c=>c.parentId===n.id).forEach(walk);};
  for(const z of zones){const roots=nodes.filter(n=>n.parentId===null&&n.zone===z.id);roots.sort((a,b)=>z.id==='screens'?(['announcements','recents','gram','croak'].indexOf(a.id)-['announcements','recents','gram','croak'].indexOf(b.id)):0);roots.forEach(walk);}
  return {schemaVersion:1,nodes:ordered};

@@ -10,6 +10,7 @@ import {clone,uid,sections,sectionIds,group,fail,check,plain,text,email,address,
 import {validateWording,wordingDefaults,wordingLimits} from '../../src/data/wording.js';
 import {prepareStructure,collectionKinds,zones} from '../../src/data/structure.js';
 import {atomic,buildRelease,validateImages} from './publisher.mjs';
+import {validateTeamPublication} from './page-validation.mjs';
 import {upgradeContent,cleanPlaceholderLinks,cleanPublicSnapshot} from './content-upgrade.mjs';
 import {referencedFiles} from './file-references.mjs';
 import {prepareUpload} from './public-files.mjs';
@@ -103,7 +104,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
  async function publish(next,summary){
   activeOperation?.stage('content');
   const before=await diskSnapshot();check(hash(before)===state.sourceHash,'The site files changed outside Pond Desk. Ask the site manager to check them before publishing. Your drafts are saved.',409);
-  let pub;try{pub=snapshots(next);const checkRefs=x=>{if(!x||typeof x!=='object')return;for(const[k,v]of Object.entries(x)){if(['documentId','videoId'].includes(k)&&v){const f=next.files?.find(f=>f.id===v);check(f&&(k==='videoId'?f.kind==='video':f.kind==='pdf'),'Upload a checked file before publishing.',422,k);}else checkRefs(v);}};checkRefs(pub);await validateImages(pub);}catch(e){if(e.status)throw e;fail('Cannot publish. Check the required fields, dates, links, and photos. Your drafts are saved.',422);}
+  let pub;try{validateTeamPublication(next.pages.about?.live,next.media);pub=snapshots(next);const checkRefs=x=>{if(!x||typeof x!=='object')return;for(const[k,v]of Object.entries(x)){if(['documentId','videoId'].includes(k)&&v){const f=next.files?.find(f=>f.id===v);check(f&&(k==='videoId'?f.kind==='video':f.kind==='pdf'),'Upload a checked file before publishing.',422,k);}else checkRefs(v);}};checkRefs(pub);await validateImages(pub);}catch(e){if(e.status)throw e;fail('Cannot publish. Check the required fields, dates, links, and photos. Your drafts are saved.',422);}
   const id=uid('release');try{await builder(root,folder,id,pub,{files:next.files??[],onProgress:(id,counts)=>activeOperation?.stage(id,counts)});}catch(e){console.warn(JSON.stringify({event:'publication_failed',stage:'build',reason:/Sidecar|Missing page|Nonportable|file reference|checked metadata/.test(e.message)?'asset_reference':/anchor|routes/.test(e.message)?'page_links':/site check failed/.test(e.message)?'build_process':'validation'}));const failed=clone(state);log(failed,'publication_failed',now());failed.lastFailure={at:now(),message:'The site could not be built. The previous site is still available.'};(failed.failures??=[]).unshift({id:uid('failed'),at:now(),summary:'FAILED - previous site kept',status:'failed'});await save(failed);fail(failed.lastFailure.message,422);}
   activeOperation?.stage('install');
   next.release=id;next.sourceHash=hash(pub);next.publishes.unshift({id,at:now(),summary,snapshot:pub});next.lastFailure=null;log(next,'publish',now());

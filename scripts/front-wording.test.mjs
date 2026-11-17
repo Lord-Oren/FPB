@@ -1,4 +1,4 @@
-// Site wording (T8): every one of the 66 texts is read from site.wording in A and B, never written in the page,
+// Site wording (T8): every one of the 65 texts is read from site.wording in A and B, never written in the page,
 // and Pond Desk offers every key with its original text, an empty-means-original rule and the shared lock.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,8 +11,8 @@ const sources = Object.fromEntries(files.map(path => [path, readFileSync(path, '
 const all = Object.values(sources).join('\n');
 const app = readFileSync('editor/v2/app.js', 'utf8');
 
-test('each of the 66 texts is read from site.wording by the site', () => {
-  assert.equal(Object.keys(wordingDefaults).length, 66);
+test('each of the 65 texts is read from site.wording by the site', () => {
+  assert.equal(Object.keys(wordingDefaults).length, 65);
   // T13: the Contact page keeps only "Write to us" (client feedback of 17 Nov 2026), so the label above the email of the
   // removed column is no longer shown. Codex retires the key from src/data/wording.js in T14.
   const retired = ['contact.emailLabel'];

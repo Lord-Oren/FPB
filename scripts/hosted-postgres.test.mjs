@@ -80,7 +80,7 @@ test('hosted PostgreSQL: origin gate, sessions, publishing and restart durabilit
   assert.equal((await(await req(desk,'/api/v2/settings')).json()).signature,'Test signature');assert.deepEqual(await(await req(desk,'/api/v2/publishes')).json(),before);assert((await(await req(a,'/')).text()).includes('PostgreSQL publication'));
   await app.close();app=null;
   const sleeper=await store();const original=await sleeper.load();assert.equal(await sleeper.loadSession(createHash('sha256').update(JSON.stringify(token)).digest('hex'),Date.now()+8*86400000),undefined,'expired session rejected');
-  const disconnect=async()=>{const admin=new pg.Client({connectionString:database});await admin.connect();await admin.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name='fpb-pond-desk' AND pid<>pg_backend_pid()");await admin.end();await new Promise(resolve=>setTimeout(resolve,50));};
+  const disconnect=async()=>{const admin=new pg.Client({connectionString:database});await admin.connect();await admin.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name='fpb-pond-desk' AND datname=current_database() AND pid<>pg_backend_pid()");await admin.end();await new Promise(resolve=>setTimeout(resolve,50));};
   try{
    await disconnect();await sleeper.save({...original,testReconnect:'preserved'});assert.equal((await sleeper.load()).testReconnect,'preserved');
    await disconnect();const replacement=await store();try{const latest=await replacement.load();await replacement.save({...latest,testReconnect:'new writer'});}finally{await replacement.close();}

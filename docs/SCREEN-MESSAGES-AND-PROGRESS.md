@@ -1,6 +1,6 @@
 # Screen messages and operation progress
 
-Version 0.22.0, local integration. Not deployed.
+Version 0.23.0, local integration review. Not deployed.
 
 ## Screen messages
 
@@ -8,7 +8,7 @@ In Pond Desk, choose The site, then a section under Lily-pad screens. Screen mes
 
 `structure.nodes[].message` is plain text, trimmed at both ends, at most 14 grapheme clusters including internal spaces. Node 24 uses `Intl.Segmenter('en', {granularity: 'grapheme'})`; an emoji sequence or combining accent counts as one visible character. Validation rejects C0 controls, DEL, line separators U+2028/U+2029 and bidi controls U+202A..U+202E/U+2066..U+2069. Markup is displayed as text, never interpreted. Non-empty messages are allowed only in the inherited `screens` zone. Errors return HTTP 422 with `code: invalid_screen_message` and `diagnostics: [{field: 'message', message: ...}]`.
 
-Missing and empty messages normalize to an absent key. Existing snapshots and older drafts need no value migration. The 14-character limit is a data limit, not a guarantee of layout fit: the current A design clips long messages in a short desktop viewport (800 x 600). That display issue must be fixed before release.
+Missing and empty messages normalize to an absent key. Existing snapshots and older drafts need no value migration. The interface fitting fixes were checked with wide letters, emoji and family sequences in both designs, including the former 800 x 600 failure. This is measured viewport coverage, not a guarantee for every font or browser.
 
 ## Opt-in server progress
 
@@ -30,7 +30,7 @@ All mutations retain the existing single queue. A queued job is running with wai
 
 On a lost response, 404 after restart/expiry, interrupted poll, or malformed response, the outcome is unknown. Do not claim Done, do not claim nothing was added, and do not automatically retry a write. For publication, consult Settings / Site history; for uploads, inspect files before retrying. This is progress tracking, not an idempotency or durable task API.
 
-The current Desk continues to use synchronous requests and its existing stage display. Its next frontend revision must connect the opt-in polling contract, handle unknown outcomes honestly, and keep the shared Save/Publish/upload lock. This backend does not change that UI.
+The bundled Desk now requests asynchronous publications and PDF/video checks, follows the server steps and handles lost or unreadable replies as unknown. The shared Save/Publish/upload lock is retained. One remaining review issue: syntactically valid but incomplete success bodies (for example an empty object), and a done job missing its result, still need stricter interface validation before rollout.
 
 ## Deployment order and rollback
 

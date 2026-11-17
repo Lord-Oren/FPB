@@ -69,10 +69,36 @@ function upgradeContact(state){
 }
 
 // Add the editor page without publishing a draft or rewriting publication history.
-export function upgradeContent(state) {
+function upgradeWording(state) {
  const upgrade=upgradeContact(state), current=upgrade?.state??state;
  if(current.pages.wording)return upgrade;
  const next=upgrade?.state??structuredClone(state), fields=validateWording(next.base.wording);
  next.pages.wording={revision:1,fields,live:structuredClone(fields)};
  return {state:next,snapshot:snapshots(next),changed:!!upgrade?.changed};
+}
+
+// Client feedback, November 17. Change only the former default title and the
+// two canonical navigation entries. Draft/live versions are migrated separately.
+// Publication history remains immutable; the retired wording key stays readable.
+export function upgradeContent(state) {
+ const upgrade=upgradeWording(state),current=upgrade?.state??state,marker='client-feedback-20261117';
+ if(current.migrations?.includes(marker))return upgrade;
+ const next=structuredClone(current),before=snapshots(current);
+ const cleanAbout=about=>{if(about?.teamTitle==='Our Team')about.teamTitle='The Frogs';};
+ const cleanTree=tree=>{for(const n of tree?.nodes??[])if((n.id==='footer-legal'&&n.href==='legal.html')||(n.id==='magazine'&&n.slug==='magazine'&&n.kind==='works'))n.visible=false;};
+ cleanAbout(next.base.about);if(next.base.wording)next.base.wording=validateWording(next.base.wording);cleanTree(next.base.structure);
+ for(const [id,page]of Object.entries(next.pages)){
+  const original=JSON.stringify(page.fields);
+  for(const version of ['fields','live']){
+   if(id==='about')cleanAbout(page[version]);
+   if(id==='wording')page[version]=validateWording(page[version]);
+  }
+  if(JSON.stringify(page.fields)!==original)page.revision++;
+ }
+ const treeBefore=JSON.stringify(next.structure.fields);
+ for(const version of ['fields','live'])cleanTree(next.structure[version]);
+ if(JSON.stringify(next.structure.fields)!==treeBefore)next.structure.revision++;
+ next.migrations=[...(next.migrations??[]),marker];
+ const snapshot=snapshots(next);
+ return {state:next,snapshot,changed:!!upgrade?.changed||JSON.stringify(before)!==JSON.stringify(snapshot)};
 }

@@ -37,7 +37,6 @@ export const wordingDefaults = Object.freeze({
   "about.ctaText": "Got a project, or want to join the team?",
   "about.ctaProject": "Start a project",
   "about.ctaJoin": "Join the pond",
-  "contact.emailLabel": "Email",
   "form.required": "Fields marked * are required.",
   "form.name": "Your name",
   "form.email": "Email",
@@ -77,7 +76,13 @@ function invalid(field, message) {
 // A complete replacement: omitted keys reset to blank, just like an empty field.
 export function validateWording(input = {}) {
   if (!input || Object.getPrototypeOf(input) !== Object.prototype) invalid('wording', 'Site wording must be an object.');
-  for (const key of Object.keys(input)) if (!Object.hasOwn(wordingDefaults, key)) invalid(key, 'Unknown site wording field.');
+  // Retired field accepted only for legacy snapshots/older open editor tabs.
+  // It is validated but never returned or exposed as an editable field.
+  for (const key of Object.keys(input)) if (!Object.hasOwn(wordingDefaults, key)) {
+    if (key !== 'contact.emailLabel') invalid(key, 'Unknown site wording field.');
+    if (typeof input[key] !== 'string' || input[key].length > 240 || forbidden.test(input[key]))
+      invalid(key, 'Use plain text on one line, without HTML, up to 240 characters.');
+  }
   return Object.fromEntries(Object.keys(wordingDefaults).map(key => {
     const value = Object.hasOwn(input, key) ? input[key] : '';
     if (typeof value !== 'string' || value.length > wordingLimits[key] || forbidden.test(value))

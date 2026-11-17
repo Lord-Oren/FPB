@@ -7,6 +7,8 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {errors as joseErrors} from 'jose';
 import {accessVerifier} from './backend/access.mjs';
+import {openPublishedReader} from './backend/published-reader.mjs';
+import {startHostedHandover} from './backend/handover.mjs';
 import {openPostgres,hostedDatabaseTls} from './backend/postgres.mjs';
 import {formSecurity,sameSecret} from './backend/form-security.mjs';
 import {mailTransport} from './backend/mail.mjs';
@@ -15,11 +17,11 @@ import {buildRelease} from './backend/publisher.mjs';
 import {deploymentConfig,publicationVariants} from '../hosting/config.mjs';
 const favicon=await readFile(new URL('../hosting/favicon.ico',import.meta.url));
 const safeHeaders={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Permissions-Policy':'camera=(), microphone=(), geolocation=()','Strict-Transport-Security':'max-age=31536000'};
-export async function createHosted({root=fileURLToPath(new URL('../',import.meta.url)),port=Number(process.env.PORT),store,verify,testers,issuer,audience,server:existingServer,sessionSeconds=Number(process.env.POND_SESSION_SECONDS??28800),originHost=process.env.RENDER_EXTERNAL_HOSTNAME,config=deploymentConfig(process.env),forms={enabled:false},mail=mailTransport(),inboundSecret='',builder=(r,f,id,snapshot,options={})=>buildRelease(r,f,id,snapshot,{...options,hosted:true,publicSite:config.publicSite,variants:publicationVariants(config)})}={}){
+export async function createHosted({root=fileURLToPath(new URL('../',import.meta.url)),port=Number(process.env.PORT),store,verify,testers,issuer,audience,readOnly=null,server:existingServer,sessionSeconds=Number(process.env.POND_SESSION_SECONDS??28800),originHost=process.env.RENDER_EXTERNAL_HOSTNAME,config=deploymentConfig(process.env),forms={enabled:false},mail=mailTransport(),inboundSecret='',builder=(r,f,id,snapshot,options={})=>buildRelease(r,f,id,snapshot,{...options,hosted:true,publicSite:config.publicSite,variants:publicationVariants(config)})}={}){
  const {hosts,www,publicSite,publicB}=config;
  if(!Number.isInteger(port)||port<0||port>65535||!store||!testers?.length)throw Error('Hosted configuration incomplete.');
  const checkToken=verify??accessVerifier({issuer,audience,emails:testers});
- const v2=createV2({root,store,forms,mail,inboundSecret,maxStateBytes:16*1024*1024,sessionSeconds,hosted:true,testers,publicVariants:publicationVariants(config),publicUrls:{a:'https://'+hosts.a,b:'https://'+hosts.b},builder});
+ const v2=readOnly??createV2({root,store,forms,mail,inboundSecret,maxStateBytes:16*1024*1024,sessionSeconds,hosted:true,testers,publicVariants:publicationVariants(config),publicUrls:{a:'https://'+hosts.a,b:'https://'+hosts.b},builder});
  try{await v2.initialize();}catch(error){await v2.close();await store.close();throw error;}let ready=true;
  const reply=(res,status,message)=>{res.writeHead(status,{...safeHeaders,'Content-Type':'application/json','Content-Security-Policy':"default-src 'none'; frame-ancestors 'none'"});res.end(JSON.stringify({message}));};
  const handle=async(req,res)=>{
@@ -28,9 +30,9 @@ export async function createHosted({root=fileURLToPath(new URL('../',import.meta
   try{
    const transportHost=req.headers.host;
    const host=originHost&&transportHost===originHost?req.headers['x-pond-public-host']:transportHost;
-   // Provider probes never wake a suspended Neon database. No application data.
-   if(req.method==='GET'&&req.url==='/livez')return reply(res,200,'alive');
-   if(req.method==='GET'&&req.url==='/healthz')return reply(res,ready?200:503,ready?'ready':'starting');
+   // A rolling replacement is healthy only after a current public build exists.
+   if(req.method==='GET'&&req.url==='/livez'){const available=ready&&(!readOnly||await readOnly.current());return reply(res,available?200:503,available?'alive':'starting');}
+   if(req.method==='GET'&&req.url==='/healthz')return reply(res,ready&&!readOnly?200:503,ready&&!readOnly?'ready':'starting');
    if(publicSite&&host===www&&['GET','HEAD'].includes(req.method)){res.writeHead(308,{...safeHeaders,Location:'https://'+hosts.a+req.url});res.end();return;}
    const variant=Object.keys(hosts).find(k=>hosts[k]===host);if(!variant)return reply(res,403,'Access denied.');
    if(req.headers['x-forwarded-proto']!=='https')return reply(res,403,'A secure HTTPS connection is required.');
@@ -44,6 +46,10 @@ export async function createHosted({root=fileURLToPath(new URL('../',import.meta
    stage='access';
    if(!publicRequest)req.pondIdentity=await checkToken(req.headers['cf-access-jwt-assertion']);
    stage='application';
+   if(readOnly){
+    if(variant==='desk'||!['GET','HEAD'].includes(req.method)){res.setHeader('Retry-After','5');return reply(res,503,'The editor is restarting. Please try again shortly.');}
+    if(!await readOnly.current()){res.setHeader('Retry-After','5');return reply(res,503,'The latest publication is being prepared. Please try again shortly.');}
+   }
    const url=new URL(req.url,'https://'+host);
    const form=req.method==='POST'&&['/api/v2/forms/contact','/api/v2/forms/join'].includes(url.pathname);
    // Access returns users through a cross-site top-level GET navigation.
@@ -77,28 +83,28 @@ export async function createHosted({root=fileURLToPath(new URL('../',import.meta
  const server=tuneHttpServer(existingServer??createServer());server.removeAllListeners('request');server.on('request',handle);
  if(!server.listening)await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'0.0.0.0',resolve);});
  const timer=setInterval(()=>v2.purge(),60000);timer.unref();
- return {server,async close(){ready=false;clearInterval(timer);await new Promise(resolve=>server.close(resolve));await v2.close();await store.close();}};
+ let disposed;const dispose=()=>disposed??=(async()=>{ready=false;clearInterval(timer);await v2.close();await store.close();})();
+ return {server,readOnly,dispose,async close(){ready=false;clearInterval(timer);if(server.listening)await new Promise(resolve=>server.close(resolve));await dispose();}};
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)){
- let stage='configuration';const started=Date.now();
+ let stage='configuration';
  try{
   const env=process.env;const testers=(env.POND_TESTER_EMAILS??'').split(',').map(x=>x.trim()).filter(Boolean);
   if(!env.DATABASE_URL||!env.ACCESS_ISSUER||!env.ACCESS_AUDIENCE||!testers.length)throw Error('Missing configuration');
   const ssl=hostedDatabaseTls(env);
   const verify=accessVerifier({issuer:env.ACCESS_ISSUER,audience:env.ACCESS_AUDIENCE,emails:testers});
   const port=Number(env.PORT);if(!Number.isInteger(port)||port<1||port>65535)throw Error('Invalid port');
-  // The provider rolls containers before stopping the old writer. Accept TCP with a
-  // data-free 503 while waiting for its lock, then rebuild from PostgreSQL.
-  stage='listener';
-  const server=tuneHttpServer(createServer((req,res)=>{const live=req.method==='GET'&&req.url==='/livez';res.writeHead(live?200:503,{...safeHeaders,'Retry-After':'5','Content-Type':'text/plain'});res.end(live?'alive':'The site is starting. Please retry shortly.');}));
-  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'0.0.0.0',resolve);});
-  stage='database';let waiting=false;
-  let store;const deadline=Date.now()+120000;
-  while(!store){try{store=await openPostgres({connectionString:env.DATABASE_URL,ssl,onFailure:()=>process.exit(1)});}catch(error){if(error.code!=='POND_WRITER_BUSY'||Date.now()>deadline)throw error;if(!waiting){console.log(JSON.stringify({event:'pond_writer_wait',elapsedMs:Date.now()-started}));waiting=true;}await new Promise(resolve=>setTimeout(resolve,1000));}}
-  stage='application';
-  const app=await createHosted({store,testers,verify,server,forms:formSecurity(env),mail:mailTransport(env),inboundSecret:env.POND_INBOUND_SECRET||''});
-  console.log('Frog Pond Boys server ready.');
-  console.log(JSON.stringify({event:'pond_ready',elapsedMs:Date.now()-started}));
-  for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>app.close().then(()=>process.exit(0)));
+  const config=deploymentConfig(env),root=fileURLToPath(new URL('../',import.meta.url));
+  const builder=(r,f,id,snapshot,options={})=>buildRelease(r,f,id,snapshot,{...options,hosted:true,publicSite:config.publicSite,variants:publicationVariants(config)});
+  stage='handover';
+  const app=await startHostedHandover({root,port,builder,createApp:createHosted,
+   openWriter:()=>openPostgres({connectionString:env.DATABASE_URL,ssl,onFailure:()=>process.exit(1)}),
+   openReader:()=>openPublishedReader({connectionString:env.DATABASE_URL,ssl}),
+   hosted:{testers,verify,config,forms:formSecurity(env),mail:mailTransport(env),inboundSecret:env.POND_INBOUND_SECRET||''},
+   onEvent:event=>console.log(JSON.stringify(event))});
+  let stopping=false;
+  for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{if(stopping)return;stopping=true;app.close().then(()=>process.exit(0),()=>process.exit(1));});
+  await app.ready.catch(error=>{if(!stopping)throw error;});
+  if(!stopping)console.log('Frog Pond Boys server ready.');
  }catch(error){console.error(JSON.stringify(startupDiagnostic(error,stage)));process.exit(1);}
 }

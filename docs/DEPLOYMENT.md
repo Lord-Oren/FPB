@@ -47,7 +47,7 @@ The state record has a 16 MiB application limit; private attachments live in sep
 
 Local 0.19.0 sets HTTP keepAliveTimeout to 120 seconds and headersTimeout to 121 seconds, including the startup listener, following [Render's runtime guidance](https://render.com/tutorials/when-deploys-go-wrong/runtime-errors). Startup logs expose only stage, allowlisted error code and elapsed time. They do not include credentials or arbitrary provider error messages. The previous failure's cause remains unproven.
 
-Keep the existing /livez probe while the single writer lock is handed over: changing it blindly to /healthz can leave the new process waiting for a writer that the provider has not stopped. The startup listener returns 503 for site requests until initialization completes. A short maintenance interval is still possible. Review any future handover redesign separately.
+Keep the existing /livez probe while the single writer lock is handed over: changing it blindly to /healthz can leave the new process waiting for a writer that the provider has not stopped. In local 0.23.0, the listener stays unhealthy until a current public snapshot is built. It can then serve public pages while waiting for writer ownership; Desk stays closed until final reconciliation. See RENDER-HANDOVER.md for the tested sequence and remaining provider acceptance. A short maintenance interval is still possible.
 
 Provider reference: [Render PostgreSQL connections](https://render.com/docs/postgresql-creating-connecting).
 
