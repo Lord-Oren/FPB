@@ -20,9 +20,9 @@
   .home-page .screen:has(.has-message) .tv-art { width:100%; left:0 }
   .home-page .screen-content.has-message { position:absolute }
 }
-/* A on phones: the pixel TV keeps its title on the glass; the message sits under it. */
+/* A on phones: the TV keeps its title on the glass; the message sits under it (T13: same TV drawing as on a computer). */
 @media (max-width:600px) {
-  .home-page .pond-page[data-artwork-mode="original"] .screen-content.has-message { left:22px; top:66px; width:132px; height:48px; padding:0; background:none; box-shadow:none }
+  .home-page .pond-page[data-artwork-mode="original"] .screen-content.has-message { left:25px; top:81px; width:136px; height:39px; padding:0; background:none; box-shadow:none }
   .home-page .pond-page[data-artwork-mode="original"] .screen-content.has-message .screen-message { font-size:14px; line-height:1.1 }
 }
 /* A between 701 and 760px wide: four TVs share a narrow row and each pad's side margin left a 66px glass, too small

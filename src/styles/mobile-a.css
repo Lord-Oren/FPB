@@ -5,7 +5,7 @@
  .home-page .pond-page:has(.tongue:not([hidden]))::before{content:'';position:absolute;inset:0;z-index:11;background:#03161dcc;pointer-events:none}
  .home-page .tongue{width:min(300px,84vw);padding-top:22px;z-index:30}
  .home-page .f1 .tongue{--tongue-offset:78px}.home-page .f3 .tongue{--tongue-offset:-78px}
- .home-page .tongue::before,.home-page .tongue::after{display:none}
+ /* the tongue itself stays visible on phones too (client feedback of 17 Nov 2026): it joins the mouth to the panel */
  .home-page .menu-flies{max-height:none;gap:10px;padding:14px;background:#062a33;border:3px solid #0b1a2a;box-shadow:5px 5px 0 #0b1a2a;pointer-events:auto}
  .home-page .menu-flies::before{content:attr(aria-label);display:block;color:var(--dandelion);font-weight:900;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:2px 0 4px}
  .home-page .frog-wrap:has(.tongue:not([hidden])){z-index:31}
@@ -38,5 +38,5 @@
  footer .footer-socials a{min-height:44px;font-size:15px}
  footer .motion-toggle{min-height:44px;font-size:14px;padding-inline:16px}
  footer > span{font-size:13px;flex-basis:100%;text-align:center}
- footer .footer-logos{flex-basis:100%;justify-content:center}
+ footer .footer-logos{flex-basis:100%;justify-content:flex-start}
 }

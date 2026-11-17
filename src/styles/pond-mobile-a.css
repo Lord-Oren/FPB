@@ -30,20 +30,20 @@
  /* four screens, one under the other, alternating sides; the whole pad is the link */
  .home-page .pond-page[data-artwork-mode="original"] .pond-lower{position:relative;inset:auto;margin:30px auto 0;width:var(--stage);display:flex;flex-direction:column;gap:24px;height:auto;top:auto;bottom:auto}
  .home-page .pond-page[data-artwork-mode="original"] .lily-screens{display:flex;flex-direction:column;gap:18px;width:100%;height:auto;margin:0}
- .home-page .pond-page[data-artwork-mode="original"] .lily-screen{position:relative;flex:none;width:252px;height:252px;min-height:252px;max-width:none;padding:0;margin:0 0 0 12px;animation:none;translate:none}
+ .home-page .pond-page[data-artwork-mode="original"] .lily-screen{position:relative;flex:none;width:252px;height:252px;min-height:252px;max-width:none;padding:0;margin:0 0 0 12px;--drift-x:3px;--drift-y:6px;--drift-turn:1.2deg}
  .home-page .pond-page[data-artwork-mode="original"] .lily-screen:nth-child(even){margin:0 12px 0 auto}
- .home-page .pond-page[data-artwork-mode="original"] .pad-leaf{position:absolute;inset:0;width:252px;height:252px;transform:none;background:var(--pm-pad1) 0 0/261px 264px no-repeat;image-rendering:pixelated}
- .home-page .pond-page[data-artwork-mode="original"] .lily-screen:nth-child(4n+2) .pad-leaf{background-image:var(--pm-pad2)}
- .home-page .pond-page[data-artwork-mode="original"] .lily-screen:nth-child(4n+3) .pad-leaf{background-image:var(--pm-pad3)}
- .home-page .pond-page[data-artwork-mode="original"] .lily-screen:nth-child(4n) .pad-leaf{background-image:var(--pm-pad4)}
- .home-page .pond-page[data-artwork-mode="original"] :is(.pad-leaf,.tv-art,.stone-art) use{display:none}
+ /* Client feedback of 17 Nov 2026: the lily pads and TVs are the same drawings as on a computer (not phone sprites),
+    and the pads float again like on a computer (reduced motion still stops them). */
+ .home-page .pond-page[data-artwork-mode="original"] .pad-leaf{position:absolute;inset:0;width:252px;height:252px;transform:none}
+ .home-page .pond-page[data-artwork-mode="original"] .stone-art use{display:none}
+ /* the TV drawing (180 x 132) at 210 x 156: its glass is 23–163 x 57–122 of the screen box; title on top, arrow under it */
  .home-page .pond-page[data-artwork-mode="original"] .screen{position:absolute;left:21px;top:54px;width:210px;height:156px;margin:0;padding:0;background:none;border:0;box-shadow:none}
- .home-page .pond-page[data-artwork-mode="original"] .tv-art{position:absolute;inset:0;width:210px;height:156px;background:var(--pm-tv) 0 0/210px 156px no-repeat;image-rendering:pixelated;filter:drop-shadow(6px 6px 0 #0944224d)}
- .home-page .pond-page[data-artwork-mode="original"] .screen-content{position:absolute;left:15px;top:72px;width:144px;height:30px;inset-block-end:auto;display:flex;align-items:center;justify-content:center;background:none;font-size:20px;line-height:1}
+ .home-page .pond-page[data-artwork-mode="original"] .tv-art{position:absolute;inset:0;left:0;width:210px;height:156px}
+ .home-page .pond-page[data-artwork-mode="original"] .screen-content{position:absolute;left:23px;top:84px;width:140px;height:30px;inset-block-end:auto;display:flex;align-items:center;justify-content:center;background:none;font-size:20px;line-height:1}
  .home-page .pond-page[data-artwork-mode="original"] .screen-content .screen-link .screen-arrow{font-size:20px;color:#ffdb76}
- .home-page .pond-page[data-artwork-mode="original"] .lily-title{position:absolute;z-index:2;left:36px;top:99px;width:144px;margin:0;padding:0;background:none;border:0;box-shadow:none;text-align:center;font-size:14px;line-height:1.2;letter-spacing:.04em;color:#ffdb76}
+ .home-page .pond-page[data-artwork-mode="original"] .lily-title{position:absolute;z-index:2;left:44px;top:117px;width:140px;margin:0;padding:0;background:none;border:0;box-shadow:none;text-align:center;font-size:14px;line-height:1.2;letter-spacing:.04em;color:#ffdb76}
  .home-page .pond-page[data-artwork-mode="original"] .lily-title a{color:inherit;text-decoration:none}
- .home-page .pond-page[data-artwork-mode="original"] .lily-title a::after{content:'';position:absolute;z-index:3;left:-36px;top:-99px;width:252px;height:252px}
+ .home-page .pond-page[data-artwork-mode="original"] .lily-title a::after{content:'';position:absolute;z-index:3;left:-44px;top:-117px;width:252px;height:252px}
  .home-page .pond-page[data-artwork-mode="original"] .lily-title a:focus-visible{outline:3px solid #ffdb76;outline-offset:6px}
  /* stones: two by two, Ruben's stone at the same 3 px grid */
  .home-page .pond-page[data-artwork-mode="original"] .stones{display:grid;grid-template-columns:150px 150px;justify-content:center;gap:18px 24px;width:auto;margin:12px auto 0}
@@ -53,4 +53,6 @@
 }
 @media (max-width:600px) and (prefers-reduced-motion:no-preference){
  .home-page .pond-page[data-artwork-mode="original"] .frog{animation:hop-a 4.8s steps(3) infinite}
+ .home-page .pond-page[data-artwork-mode="original"] .lily-screen{animation:floatPadA 6.8s -1.7s ease-in-out infinite}
+ .home-page .pond-page[data-artwork-mode="original"] .lily-screen:nth-child(even){animation-name:floatPadB;animation-delay:-3.1s}
 }

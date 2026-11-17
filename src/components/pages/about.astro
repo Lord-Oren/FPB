@@ -14,7 +14,7 @@ const parts = [
   ['our-differentiator', a.differentiatorTitle || 'Our Differentiator', a.differentiator],
 ].filter(([, , body]) => body && body.trim());
 const teams = [
-  ['the-team', a.teamTitle || 'Our Team', a.teamText, a.team],
+  ['the-team', a.teamTitle || 'The Frogs', a.teamText, a.team],
   ['extended-team', a.extendedTeamTitle || 'Our Extended Team', a.extendedTeamText, a.extendedTeam],
 ].filter(([, , body, people]) => (body && body.trim()) || people.length > 0);
 ---

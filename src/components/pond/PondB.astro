@@ -1,6 +1,7 @@
 ---
 // Home page of our modern version (B): hero (title + tagline) beside the pond, which is the site's menu
 // (frogs → sections, stones → Contact / Join Us / About). The slot receives HomeSections (content under the pond).
+import {screenOrder} from './screen-order.js';
 import { site } from '../../data/public-site-content.js';
 import { zoneNodes,childNodes,nodeHref } from '../../data/public-pages.js';
 import Footer from '../Footer.astro';
@@ -39,7 +40,7 @@ const titleWords = titleText.split(/\s+/).filter(Boolean);
 <button class="frog-button" type="button" aria-label={`${node.title} menu`} aria-expanded="false" aria-controls={`menu-${node.id}`}></button>
 <div class="tongue" id={`menu-${node.id}`} hidden><ul class="menu-flies" aria-label={node.title}>{(childNodes(node.id).length?childNodes(node.id):[node]).map(child=><li><a class="fly" href={nodeHref(child)} target={child.newTab?'_blank':undefined} rel={child.newTab?'noopener noreferrer':undefined}>{child.title}</a></li>)}</ul></div></div>)}
     </div>
-    <div class="pads">{zoneNodes('screens').map((node,i)=><article class={`pad p${i+1}`} style={i>=4?`left:${5+(i%2)*47}%;top:${85+Math.floor((i-4)/2)*24}%`:undefined}><svg class="pad-art" viewBox="0 0 88.112 88.112" aria-hidden="true"><use href={`#art-lily-${i%3+1}`}/></svg><div class="pad-body"><h2><a href={screenHref(node,nodeHref)} target={screenNewTab(node)?'_blank':undefined} rel={screenNewTab(node)?'noopener noreferrer':undefined}>{node.title}</a></h2><div class="tv"><svg class="tv-art" viewBox="0 0 180 132" aria-hidden="true"><use href="#art-television"/></svg><ZoneScreen node={node}/></div></div></article>)}</div>
+    <div class="pads">{screenOrder(zoneNodes('screens')).map((node,i)=><article class={`pad p${i+1}`} style={i>=4?`left:${5+(i%2)*47}%;top:${85+Math.floor((i-4)/2)*24}%`:undefined}><svg class="pad-art" viewBox="0 0 88.112 88.112" aria-hidden="true"><use href={`#art-lily-${i%3+1}`}/></svg><div class="pad-body"><h2><a href={screenHref(node,nodeHref)} target={screenNewTab(node)?'_blank':undefined} rel={screenNewTab(node)?'noopener noreferrer':undefined}>{node.title}</a></h2><div class="tv"><svg class="tv-art" viewBox="0 0 180 132" aria-hidden="true"><use href="#art-television"/></svg><ZoneScreen node={node}/></div></div></article>)}</div>
     <ul class="stones" aria-label="About Frog Pond Boys">{zoneNodes('stones').map((node,i)=><li style={i>=4?`left:${(i-4)*22}%;bottom:-18%`:undefined}><a class="stone" href={nodeHref(node)} target={node.newTab?'_blank':undefined} rel={node.newTab?'noopener noreferrer':undefined}><svg viewBox="0 0 94.683 46.208" aria-hidden="true"><use href="#art-stone"/></svg><span>{node.title}</span></a></li>)}</ul>
   </section>
 </main>

@@ -1,17 +1,11 @@
 ---
-// Contact page: every text comes from Pond Desk (Contact). Social links without an address are not shown.
-import SocialIcon from "../SocialIcon.astro";
+// Contact page: every text comes from Pond Desk (Contact). Since the client feedback of 17 Nov 2026 the page keeps
+// only "Write to us" (the social channels column is gone; the networks stay in the blue bar and on the home page).
 import InquiryForm from '../forms/InquiryForm.astro';
 import { site } from '../../data/public-site-content.js';
-const { title, intro, email, socials, socialTitle, socialText } = site.contact;
-const channels = socials.filter(link => link.url);
+const { title, intro } = site.contact;
 ---
 <p class="page-intro">{intro}</p>
-<div class="contact-layout">
+<div class="contact-layout contact-single">
   <section aria-labelledby="write-us"><h2 id="write-us" class="section-title">{title || 'Write to us'}</h2><InquiryForm kind="contact" /></section>
-  {(email || channels.length > 0 || socialText) && <aside class="contact-channels" id="socials" aria-labelledby="elsewhere"><h2 id="elsewhere" class="section-title">{socialTitle || 'Social channels'}</h2>
-    {socialText && <p class="channel-text">{socialText}</p>}
-    {email && <><p class="channel-label">{site.wording['contact.emailLabel']}</p><a class="direct-email" href={`mailto:${email}`}>{email}</a></>}
-    {channels.length > 0 && <ul class="social-links">{channels.map(link => <li><a href={link.url} rel="noopener"><SocialIcon name={link.label}/> {link.label} <span aria-hidden="true">↗</span></a></li>)}</ul>}
-  </aside>}
 </div>

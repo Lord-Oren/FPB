@@ -4,6 +4,7 @@
 .content-page--operations .page-intro { margin-bottom:38px; color:var(--aero-blue) }
 .section-title { margin:0 0 24px; color:var(--dandelion); font-family:Boohong,sans-serif; font-size:clamp(1.6rem,3vw,2.3rem); font-weight:400; line-height:1.2 }
 .contact-layout { display:grid; grid-template-columns:minmax(0,2fr) minmax(190px,1fr); gap:clamp(30px,6vw,85px) }
+.contact-layout.contact-single { grid-template-columns:minmax(0,1fr); max-width:760px }
 .contact-channels { padding-left:28px; border-left:1px solid rgb(171 216 213 / .3) }
 .direct-email { display:inline-block; padding:8px 0; overflow-wrap:anywhere }
 .contact-example .channel-label { margin-top:0 }.contact-example .direct-email { margin:0 }.social-examples > p:not(.field-help) { padding:10px 0; margin:0; border-bottom:1px solid rgb(171 216 213 / .2); color:var(--aero-blue) }

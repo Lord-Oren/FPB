@@ -96,3 +96,10 @@ Presentations are gone from Case Studies and Pond Desk. Case studies are a thumb
 - **Progress card** (`progressCard` in `editor/v2/app.js`): steps turn done only on a real confirmation (bytes read and sent by the browser, then the server's own steps from `GET /api/v2/jobs/:id`, with real PDF page counts). Publications, restores and PDF/video checks are sent with `Prefer: respond-async` (`track`, `trackUpload`); a server without jobs answers directly, which also counts as confirmed. Contract: `docs/SCREEN-MESSAGES-AND-PROGRESS.md`.
 - **Unknown results**: a lost connection, a proxy error page, an unreadable reply, a lost job (404) or a lost sign-in after a write ends as "Result unknown" with where to check (Site history, the files, or reload). Never "Done", never "nothing was added", never an automatic resend (`scripts/front-progress-jobs.test.mjs`).
 - **Site wording**: "On the site now" is read again after a confirmed publication; only the published texts are taken from that read, so the T9 conflict check still protects a draft saved in another window.
+
+### T13 — Client feedback of 17 November 2026 (Nahano)
+
+- **Blue bar**: logos on the left (phones too): frog face, green badge with white letters, white circle (`src/assets/logos/face.webp`, `badge-green.webp`, from the client's files). A footer link's icon follows its address (`src/components/social-network.js`; X, LinkedIn, Facebook, TikTok, Threads, Bluesky… Simple Icons, CC0), so a slot can become X by giving it an x.com address in Pond Desk. Footer links have a "Show in the blue bar at the bottom" box (Legal can be hidden there).
+- **Lily pads** in alphabetical order of their names on A, B and in Pond Desk (`src/components/pond/screen-order.js`).
+- **Phone pond (A)**: the lily pads and TVs use the same drawings as on a computer and float again (reduced motion stops them); the frog's tongue is visible again under the menu panel.
+- **Contact** keeps only "Write to us". **About**: one photo per person (Pond Desk, The team / The extended team), "The Frogs" when the title is empty. **Photography** shows the Magazine below its own works.

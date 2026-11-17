@@ -64,7 +64,9 @@ footer .motion-toggle{display:inline-block!important;position:static;min-height:
 /* Footer logos (meeting of 13 November 2026): the logo variants on every page. */
 .footer-logos{display:flex;align-items:center;gap:.9rem;flex:none;line-height:0}.footer-logos img{height:40px;width:auto;display:block}
 .home-page > footer .footer-logos img{height:32px}
-@media (max-width:640px){footer .footer-logos{flex-basis:100%;justify-content:center}}
+/* Client feedback of 17 Nov 2026: the logos sit on the left of the blue bar (phones included). */
+footer .footer-logos{margin-right:auto}
+@media (max-width:640px){footer .footer-logos{flex-basis:100%;justify-content:flex-start}}
 /* Home blocks (meeting of 13 November 2026): the block title is the link; the TV only points the same way. */
 .lily-title a,.pad-body h2 a{color:inherit;text-decoration:none}.lily-title a:hover,.lily-title a:focus-visible,.pad-body h2 a:hover,.pad-body h2 a:focus-visible{text-decoration:underline;text-underline-offset:3px}
 .screen-content .screen-link{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-height:0;text-decoration:none}

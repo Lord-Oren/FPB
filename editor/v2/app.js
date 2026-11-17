@@ -266,18 +266,16 @@ const PAGES = {
     { name: 'differentiatorTitle', label: 'Title — What makes you different', max: 120, optional: true },
     { name: 'differentiator', label: 'What makes you different', max: 4000, optional: true, area: true },
     { name: 'photos', label: 'Photos', type: 'gallery', optional: true, hint: 'Up to 6 photos.', limit: 6 },
-    { name: 'teamTitle', label: 'Title — the team', max: 120, optional: true },
+    { name: 'teamTitle', label: 'Title — the team (for example: The Frogs)', max: 120, optional: true },
     { name: 'teamText', label: 'A few words about the team', max: 4000, optional: true, area: true },
-    { name: 'team', label: 'The team', type: 'rows', columns: [['name', 'Name', 90], ['role', 'Role', 90]], add: 'Add a person', limit: 24 },
+    { name: 'team', label: 'The team', type: 'rows', photo: true, columns: [['name', 'Name', 90], ['role', 'Role', 90]], add: 'Add a person', limit: 24, hint: 'Each person can have a photo, shown above their name. Without a photo, the site shows a frog.' },
     { name: 'extendedTeamTitle', label: 'Title — the extended team', max: 120, optional: true },
     { name: 'extendedTeamText', label: 'A few words about the extended team', max: 4000, optional: true, area: true },
-    { name: 'extendedTeam', label: 'The extended team', type: 'rows', columns: [['name', 'Name', 90], ['role', 'Role', 90]], add: 'Add a person', limit: 24 }] },
+    { name: 'extendedTeam', label: 'The extended team', type: 'rows', photo: true, columns: [['name', 'Name', 90], ['role', 'Role', 90]], add: 'Add a person', limit: 24 }] },
   contact: { title: 'Contact', small: 'Contact page', fields: [
     { name: 'title', label: 'Title of the form — Write to us', max: 120, optional: true },
     { name: 'intro', label: 'Welcome line', max: 600, required: true, area: true },
     { name: 'email', label: 'Email address shown', type: 'email', optional: true },
-    { name: 'socialTitle', label: 'Title — Social channels', max: 120, optional: true },
-    { name: 'socialText', label: 'A few words above your social links', max: 600, optional: true, area: true },
     { name: 'socials', label: 'Social links', type: 'rows', columns: [['label', 'Name (e.g. Instagram)', 40], ['url', 'Link', 300]], add: 'Add a link', limit: 6, hint: 'Instagram, LinkedIn, Vimeo and YouTube links also appear in the blue bar at the bottom of every page. A network without a link is not shown.' }] },
   legal: { title: 'Legal', small: 'Legal page', lead: ['One PDF holds your Privacy Policy and Terms of Service. Until you add it, the page only shows the short text.'], fields: [
     { name: 'intro', label: 'Short text', max: 600, optional: true, area: true },
@@ -450,6 +448,9 @@ const editableKinds={works:'work',events:'event',press:'press','case-studies':'c
 const nodeSection=node=>({slug:node.id,title:node.title,kind:editableKinds[node.kind]||'structure',node});
 const rootZones=[{id:'menus',title:'Frog menus'},{id:'screens',title:'Lily-pad screens'},{id:'stones',title:'Stone links'},{id:'footer',title:'Footer links'},{id:'archive',title:'Hidden sections'}];
 const treeChildren=id=>siteTree.fields.nodes.filter(n=>n.parentId===id);
+// Lily-pad screens are shown on the site in alphabetical order of their names (src/components/pond/screen-order.js).
+const screenCollator=new Intl.Collator('en',{sensitivity:'base',ignorePunctuation:true,numeric:true});
+const byScreenName=(a,b)=>screenCollator.compare(a.title,b.title)||String(a.id).localeCompare(String(b.id));
 async function saveTree(tree){siteTree=await call('PUT','/structure',{revision:siteTree.revision,structure:tree});state.dirty=false;await listSite(false);}
 async function publishTree(steps){try{await track('/structure/publish',{revision:siteTree.revision},steps);steps?steps.finish('Site layout published ✓'):toast('Site layout published ✓');siteTree=await call('GET','/structure');await listSite(false);}catch(e){toast(e.message);}}
 const publishTreeButton=event=>busy(event.currentTarget,publishTree,PLAN.publishOnly);
@@ -465,7 +466,7 @@ async function listSite(showWelcome=true){
    null);
   const wrap=h('div',{class:'tree-branch'},row,...treeChildren(node.id).map(child=>render(child,depth+1)));return wrap;
  };
- for(const zone of siteTree.zones??rootZones){const roots=treeChildren(null).filter(n=>n.zone===zone.id);body.append(h('section',{class:'tree-zone'},h('div',{class:'tree-zone-head'},h('h3',{text:zone.title})),...roots.map(n=>render(n)),!roots.length?h('p',{class:'hint',text:'No sections in this zone.'}):null));}
+ for(const zone of siteTree.zones??rootZones){const roots=treeChildren(null).filter(n=>n.zone===zone.id);if(zone.id==='screens')roots.sort(byScreenName);body.append(h('section',{class:'tree-zone'},h('div',{class:'tree-zone-head'},h('h3',{text:zone.title})),...roots.map(n=>render(n)),!roots.length?h('p',{class:'hint',text:'No sections in this zone.'}):null));}
  if(showWelcome)main(topBar({title:'Your site, zone by zone',small:'Choose an existing section to change its name or edit its content.',actions:[h('button',{class:'btn main',type:'button',onclick:publishTreeButton},'Publish layout')]}),h('div',{class:'body'},h('div',{class:'panel'},h('h3',{text:'Changes stay in draft until you publish'}),h('p',{text:'Your site structure is already set up. Change names and content without creating pages or changing their addresses.'})),...rootZones.filter(z=>z.id!=='archive').map(zone=>h('div',{class:'panel zone-card'},h('h3',{text:zone.title}),h('p',{text:({menus:'The frogs on the wooden raft and their existing menu links.',screens:'The lily pads and their screens on the pond.',stones:'The stone links around the pond.',footer:'Links at the bottom of the pages.'})[zone.id]})))));
  if(showWelcome&&matchMedia('(max-width:860px)').matches)setPane('list');
 }
@@ -477,6 +478,10 @@ function screenMessageProblem(value){
  const extra=screenChars(value.trim())-SCREEN_MESSAGE_MAX;
  return extra>0?`Up to ${SCREEN_MESSAGE_MAX} characters, spaces included. Remove ${extra} ${extra===1?'character':'characters'}.`:'';
 }
+// Footer links: the icon follows the address (same table as src/components/social-network.js; a test compares them).
+const NETWORK_HOSTS={instagram:['instagram.com'],linkedin:['linkedin.com'],x:['x.com','twitter.com'],facebook:['facebook.com','fb.com'],tiktok:['tiktok.com'],youtube:['youtube.com','youtu.be'],vimeo:['vimeo.com'],threads:['threads.net','threads.com'],bluesky:['bsky.app'],spotify:['spotify.com'],soundcloud:['soundcloud.com'],pinterest:['pinterest.com'],behance:['behance.net']};
+const NETWORK_NAMES={instagram:'Instagram',linkedin:'LinkedIn',x:'X',facebook:'Facebook',tiktok:'TikTok',youtube:'YouTube',vimeo:'Vimeo',threads:'Threads',bluesky:'Bluesky',spotify:'Spotify',soundcloud:'SoundCloud',pinterest:'Pinterest',behance:'Behance'};
+function networkOf(url,fallback=''){let host='';try{host=new URL(String(url)).hostname.toLowerCase().replace(/^www\./,'');}catch{host='';}for(const[network,hosts]of Object.entries(NETWORK_HOSTS))if(hosts.some(h=>host===h||host.endsWith('.'+h)))return network;const own=String(fallback).toLowerCase().replace(/^footer-/,'');return NETWORK_NAMES[own]?own:'';}
 function openNode(id){
  const node=siteTree.fields.nodes.find(n=>n.id===id);if(!node)return;
  const name=h('input',{class:'text',id:'section-title',maxlength:60});name.value=node.title;
@@ -484,6 +489,10 @@ function openNode(id){
  const href=h('input',{class:'text',id:'section-link',maxlength:300});href.value=node.href;
  const visible=h('input',{id:'section-visible',type:'checkbox'});visible.checked=node.visible;
  const newTab=h('input',{id:'section-new-tab',type:'checkbox'});newTab.checked=node.newTab;
+ // A footer link shows the icon of the network its address points to: give this slot an x.com address and it shows X.
+ const networkHint=node.zone==='footer'?h('p',{class:'hint',id:'section-network','aria-live':'polite'}):null;
+ const drawNetwork=()=>{if(!networkHint)return;const network=networkOf(href.value.trim(),node.id);networkHint.textContent=network?`Icon: ${NETWORK_NAMES[network]}, from the address. Instagram, LinkedIn, X, Facebook, TikTok, YouTube, Vimeo, Threads, Bluesky, Spotify, SoundCloud, Pinterest and Behance addresses get their own icon. Untick “Show in the blue bar” to hide this link.`:'No icon for this address: the link shows its name only. Untick “Show in the blue bar” to hide this link.';};
+ href.addEventListener('input',drawNetwork);drawNetwork();
  // Lily-pad screens only: an optional message inside the TV, the same on A and B. The counter and the check
  // count what a reader sees as characters (an emoji or an accented letter counts once), spaces included.
  const message=node.zone==='screens'?h('input',{class:'text',id:'section-message',maxlength:240,autocomplete:'off','aria-describedby':'section-message-count section-message-hint section-message-error'}):null;
@@ -495,9 +504,9 @@ function openNode(id){
  const fields=h('form',{class:'form',onsubmit:e=>e.preventDefault(),oninput:()=>{state.dirty=true;}},
  h('div',{class:'field'},h('label',{for:name.id,text:'Section name'}),name),
  message?h('div',{class:'field screen-message-field'},h('div',{class:'label-row'},h('label',{for:message.id},'Screen message ',h('span',{class:'opt',text:'(optional)'})),messageCount),message,h('p',{class:'hint',id:'section-message-hint',text:'Shown inside this TV screen on both designs (A and B). Leave it empty to show only the arrow.'}),messageError):null,
- h('label',{class:'check-label'},visible,' Show in navigation'),h('label',{class:'check-label'},newTab,' Open in a new tab'),
+ h('label',{class:'check-label'},visible,node.zone==='footer'?' Show in the blue bar at the bottom':' Show in navigation'),h('label',{class:'check-label'},newTab,' Open in a new tab'),
  ['menu','page'].includes(node.kind)?h('div',{class:'field'},h('label',{for:text.id,text:'Page text'}),text):null,
- ['link','anchor'].includes(node.kind)?h('div',{class:'field'},h('label',{for:href.id,text:'Link (HTTPS, page.html or #section)'}),href):null,
+ ['link','anchor'].includes(node.kind)?h('div',{class:'field'},h('label',{for:href.id,text:'Link (HTTPS, page.html or #section)'}),href,node.zone==='footer'?networkHint:null):null,
  h('p',{class:'hint',text:node.slug?'Address: '+node.slug+'.html — kept when you rename this section.':'A link has no page of its own.'}));
  const save=async(steps,publishing)=>{if(!messageOk()){message?.focus();return false;}try{const draft=structuredClone(siteTree.fields),edited=draft.nodes.find(n=>n.id===id);Object.assign(edited,{title:name.value.trim(),text:text.value,href:href.value.trim(),visible:visible.checked,newTab:newTab.checked});if(message&&(message.value.trim()||'message' in edited))edited.message=message.value.trim();await saveTree(draft);if(publishing)steps?.step(1);else steps?steps.finish('Layout draft saved ✓ Not on the site yet.'):toast('Layout draft saved ✓');if(!publishing)openNode(id);return true;}catch(e){toast(e.message);return false;}};
  const actions=[h('button',{class:'btn main',type:'button',onclick:writer(async(event,steps)=>{if(await save(steps,true)){await publishTree(steps);openNode(id);}},PLAN.publish)},'Save and publish')];
@@ -540,7 +549,7 @@ function buildField(spec, value, media) {
   let control;
   if (spec.type === 'image' || spec.type === 'gallery') control = imageControl(spec, value, media, id);
   else if (spec.type === 'file') control = fileControl(spec, value, id);
-  else if (spec.type === 'rows') control = rowsControl(spec, value, id);
+  else if (spec.type === 'rows') control = rowsControl(spec, value, id, media);
   else if (spec.type === 'page') {
     control = h('select', { class: 'text', id, name: spec.name }, h('option', { value: '' }, '— none —'), ...SECTIONS.flatMap(group => group.items).filter(item => item.slug !== 'home').map(item => h('option', { value: `${item.slug}.html` }, item.title)));
     control.value = value || '';
@@ -620,16 +629,40 @@ function fileControl(spec, value, id) {
   const box = h('div', { 'data-file': spec.name }, drop, info); box.read = () => current; draw();
   return box;
 }
-function rowsControl(spec, value, id) {
+// A row can carry one photo (spec.photo, e.g. a team member above their name). The photo is sent through the same
+// checked upload as every photo (/media, inside the shared lock) and stored as { mediaId, alt }; its description
+// is the person's name unless one is given. Removing it sends photo: null so the server does not keep the old one.
+function rowPhoto(data, media) {
+  let photo = data.photo && data.photo.mediaId ? { mediaId: data.photo.mediaId, alt: data.photo.alt || '' } : null;
+  const input = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', class: 'sr-only', tabindex: '-1', 'aria-hidden': 'true' });
+  const box = h('div', { class: 'row-photo' });
+  const draw = () => box.replaceChildren(input, ...(photo ? [
+    h('img', { src: media[photo.mediaId] || data.photo?.src || '', alt: '' }),
+    h('button', { class: 'btn soft', type: 'button', onclick: () => { photo = null; state.dirty = true; draw(); } }, 'Remove photo')] : [
+    h('button', { class: 'btn soft', type: 'button', onclick: () => input.click() }, 'Add a photo')]));
+  input.addEventListener('change', async () => {
+    const file = input.files[0]; input.value = ''; if (!file) return;
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast(`“${file.name}” is not a JPG, PNG or WebP photo.`); return; }
+    if (file.size > 5 * 1024 * 1024) { toast(`“${file.name}” is too large (5 MB max).`); return; }
+    const result = await busy(null, async steps => { const base64 = await readBase64(file, (read, size) => steps.measure(read, size)); steps.step(1); const added = await upload('/media', { name: file.name, base64 }, steps); steps.finish(`“${file.name}” added ✓ Publish to put it on the site.`); return added; }, PLAN.photo);
+    if (!result) return;
+    media[result.mediaId] = result.src; photo = { mediaId: result.mediaId, alt: '' }; state.dirty = true; draw();
+  });
+  box.read = name => photo ? { mediaId: photo.mediaId, alt: photo.alt || (name ? `Photo of ${name}` : '') } : null;
+  draw(); return box;
+}
+function rowsControl(spec, value, id, media = {}) {
   const rows = h('div', { class: 'rows', id, role: 'group', 'aria-labelledby': `${id}-label` });
   const addRow = (data = {}) => {
-    const row = h('div', { class: 'subrow' }, ...spec.columns.map(([name, label, max]) => { const input = h('input', { class: 'text', 'aria-label': label, placeholder: label, maxlength: String(max), 'data-col': name }); input.value = data[name] || ''; return input; }),
+    const photo = spec.photo ? rowPhoto(data, media) : null;
+    const row = h('div', { class: spec.photo ? 'subrow with-photo' : 'subrow' }, photo, ...spec.columns.map(([name, label, max]) => { const input = h('input', { class: 'text', 'aria-label': label, placeholder: label, maxlength: String(max), 'data-col': name }); input.value = data[name] || ''; return input; }),
       h('button', { class: 'x', type: 'button', 'aria-label': 'Remove this row', onclick: () => { row.remove(); state.dirty = true; plus.hidden = false; } }, '×'));
-    rows.append(row); plus.hidden = rows.children.length >= spec.limit;
+    row.photo = photo; rows.append(row); plus.hidden = rows.children.length >= spec.limit;
   };
   const plus = h('button', { class: 'plus', type: 'button', onclick: () => { addRow(); state.dirty = true; rows.lastChild.querySelector('input').focus(); } }, `+ ${spec.add}`);
   (value || []).forEach(addRow);
-  const box = h('div', {}, rows, plus); box.read = () => [...rows.children].map(row => Object.fromEntries([...row.querySelectorAll('[data-col]')].map(input => [input.dataset.col, input.value.trim()]))).filter(row => Object.values(row).some(Boolean));
+  const box = h('div', {}, rows, plus);
+  box.read = () => [...rows.children].map(row => { const values = Object.fromEntries([...row.querySelectorAll('[data-col]')].map(input => [input.dataset.col, input.value.trim()])); return Object.values(values).some(Boolean) ? (row.photo ? { ...values, photo: row.photo.read(values.name) } : values) : null; }).filter(Boolean);
   box.dataset.rows = spec.name; return box;
 }
 function readForm(form, specs) {

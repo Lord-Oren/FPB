@@ -13,7 +13,10 @@ const app = readFileSync('editor/v2/app.js', 'utf8');
 
 test('each of the 66 texts is read from site.wording by the site', () => {
   assert.equal(Object.keys(wordingDefaults).length, 66);
-  for (const key of Object.keys(wordingDefaults)) assert.ok(all.includes(`'${key}'`), `${key} is not used by any page`);
+  // T13: the Contact page keeps only "Write to us" (client feedback of 17 Nov 2026), so the label above the email of the
+  // removed column is no longer shown. Codex retires the key from src/data/wording.js in T14.
+  const retired = ['contact.emailLabel'];
+  for (const key of Object.keys(wordingDefaults)) if (!retired.includes(key)) assert.ok(all.includes(`'${key}'`), `${key} is not used by any page`);
 });
 
 test('the original texts are no longer written inside the pages', () => {

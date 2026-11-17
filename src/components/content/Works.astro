@@ -5,14 +5,20 @@
 // plays in the card and never starts by itself; YouTube, Vimeo and audio stay external links, never embeds.
 import { site } from '../../data/public-site-content.js';
 import Empty from './Empty.astro';
+import { tree } from '../../data/public-pages.js';
 const { rubric } = Astro.props;
 const w = site.wording;
 const items = site.works.filter(item => item.rubric === rubric);
+// Client feedback of 17 Nov 2026: the Magazine lives inside Photography, under its own title, not as a page apart.
+// (Its own page still exists for old links; untick "Show in navigation" on Magazine in Pond Desk to take it off the menu.)
+const magazineNode = tree.nodes.find(node => node.id === 'magazine');
+const magazine = rubric === 'photography' ? site.works.filter(item => item.rubric === 'magazine') : [];
+const groups = [[null, items], [magazineNode?.title || 'Magazine', magazine]].filter(([, list]) => list.length > 0);
 const month = value => new Date(value + '-01T12:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 const host = link => new URL(link).hostname.replace(/^www\./, '');
 ---
-{items.length === 0 ? <Empty /> : <ul class="work-grid">
-  {items.map(item => <li class="work-card" id={item.id}>
+{groups.length === 0 ? <Empty /> : groups.map(([heading, list]) => <>{heading && <h2 class="section-title work-group-title" id="magazine">{heading}</h2>}<ul class="work-grid">
+  {list.map(item => <li class="work-card" id={item.id}>
     <figure class="work-media">{item.videoId ? <video class="work-video" src={`files/${item.videoId}`} poster={item.image.src} controls preload="none" playsinline aria-label={`Video: ${item.title}`}></video> : <img src={item.image.src} alt={item.image.alt} loading="lazy" decoding="async" />}
       {item.video || item.videoId ? <span class="work-kind">{w['work.video']}</span> : item.audio ? <span class="work-kind">{w['work.audio']}</span> : item.gallery.length > 0 ? <span class="work-kind">Gallery · {item.gallery.length + 1}</span> : null}
     </figure>
@@ -28,4 +34,4 @@ const host = link => new URL(link).hostname.replace(/^www\./, '');
       </p>
     </div>
   </li>)}
-</ul>}
+</ul></>)}

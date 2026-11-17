@@ -251,3 +251,9 @@ input.text[aria-invalid="true"] { border-color:var(--bad) }
 /* Phones: the card takes its own place under the header, so Save, Publish and the tabs stay reachable. */
 @media (max-width:860px) { .progress { position:static; flex:none; width:auto; margin:8px 8px 0; padding:10px 12px; font-size:.92rem; box-shadow:4px 4px 0 var(--ink) } .progress-steps { gap:2px } .progress-track { margin:8px 0 } .progress-close { margin-top:8px } .toast.above { top:auto; bottom:96px } }
 @media (prefers-reduced-motion:reduce) { .progress-pending { animation:none } }
+
+/* T13: a photo per person (About → The team), shown above the name on the site. */
+.subrow.with-photo { grid-template-columns:auto 1fr 1fr auto }
+.row-photo { display:flex; align-items:center; gap:8px }
+.row-photo img { width:56px; height:56px; object-fit:cover; border:3px solid var(--ink) }
+@media (max-width:860px) { .subrow.with-photo { grid-template-columns:1fr auto } .subrow.with-photo .row-photo { grid-column:1 / -1 } .subrow.with-photo input { grid-column:1 } }
