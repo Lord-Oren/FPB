@@ -1,9 +1,15 @@
 ---
-// Inside a TV screen: no subtitle any more, only a pointer to the same place as the block title above it.
-// The title is the accessible link; this duplicate target is hidden from assistive technologies.
+// Inside a TV screen: an optional short message (Pond Desk → Lily-pad screens → "Screen message"),
+// then a pointer to the same place as the block title above it.
+// The message is plain text (Astro escapes it) and is read by assistive technologies.
+// The title is the accessible link; the duplicate arrow target stays hidden from them.
+// A structure published before the message existed has no "message" field: it shows the arrow only.
 import {nodeHref} from '../../data/public-pages.js';
 import {screenHref,screenNewTab} from './screen-href.js';
 const {node}=Astro.props;
 const newTab=screenNewTab(node);
+const message=typeof node.message==='string'?node.message.trim():'';
+const href=screenHref(node,nodeHref);
+const arrow=newTab?'↗':href.startsWith('#')?'↓':'→';
 ---
-<div class="screen-content"><a class="screen-link" href={screenHref(node,nodeHref)} tabindex="-1" aria-hidden="true" target={newTab?'_blank':undefined} rel={newTab?'noopener noreferrer':undefined}><span class="screen-arrow">{newTab?'↗':screenHref(node,nodeHref).startsWith('#')?'↓':'→'}</span></a></div>
+<div class={message?'screen-content has-message':'screen-content'}><a class="screen-link" href={href} tabindex="-1" aria-hidden="true" target={newTab?'_blank':undefined} rel={newTab?'noopener noreferrer':undefined}><span class="screen-arrow">{arrow}</span></a>{message&&<p class="screen-message">{message}<span class="screen-message-arrow" aria-hidden="true">{' '+arrow}</span></p>}</div>

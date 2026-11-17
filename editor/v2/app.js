@@ -22,14 +22,82 @@ function h(tag, attrs = {}, ...children) {
   return el;
 }
 function toast(text, { stay = false } = {}) {
-  const box = $('#toast'); box.textContent = text; box.hidden = false; toast.staying = stay;
+  if (progressCard.take(text)) return;
+  const box = $('#toast'); box.textContent = text; box.hidden = false; box.classList.toggle('above', progressCard.visible()); toast.staying = stay;
   clearTimeout(toast.timer); if (!stay) toast.timer = setTimeout(() => { box.hidden = true; }, 3200);
 }
+// ---------- Progress of an action, step by step ----------
+// progress:start
+// A step only turns done when the server (or the browser, for reading and sending bytes) has confirmed it.
+// Never a timer, never an invented percentage: a step whose length is unknown shows "In progress" and a moving
+// stripe (still when the visitor asks for reduced motion). "Done" only comes from finish(), after real success.
+// If the action ends without finish(), the card shows the step that stopped and the last message, or simply closes
+// when nothing was sent (a cancelled confirmation, a form with problems shown in red).
+const progressCard = (() => {
+  let run = null, hideTimer = 0, card = null;
+  // The card lives in the content pane, right under its header: on a computer it floats in the corner, on a phone it
+  // takes its own place between the header and the form, so it never covers a button. A new screen keeps it.
+  const attach = box => { const pane = $('#main'); if (!pane || box.parentElement === pane && box.previousElementSibling?.classList.contains('top')) return; const top = pane.querySelector(':scope > .top'); if (top) top.after(box); else pane.prepend(box); };
+  const hide = () => { run = null; if (card) card.hidden = true; };
+  const percent = (sent, total) => Math.max(0, Math.min(100, Math.floor(sent / total * 100)));
+  const draw = () => {
+    if (!run) return;
+    const box = card ??= h('section', { class: 'progress', id: 'progress', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'false' });
+    attach(box);
+    const total = run.steps.length, doneCount = run.state === 'done' ? total : run.current;
+    const measured = run.state === 'running' && run.bytes ? run.bytes.sent / run.bytes.total : 0;
+    const fill = run.state === 'done' ? 100 : Math.floor((doneCount + measured) / total * 100);
+    const label = run.state === 'done' ? 'Done' : run.state === 'failed' ? 'Stopped at step ' + (run.current + 1) + ' of ' + total : 'Step ' + (run.current + 1) + ' of ' + total;
+    const stepState = index => run.state === 'done' || index < run.current ? 'done' : index > run.current ? 'todo' : run.state === 'failed' ? 'failed' : 'current';
+    const mark = { done: '✓', current: '●', todo: '○', failed: '✕' };
+    const note = { done: 'done', current: 'in progress', todo: 'to do', failed: 'stopped here' };
+    box.dataset.state = run.state; box.hidden = false;
+    box.replaceChildren(...[
+      h('div', { class: 'progress-head' }, h('b', { text: run.title }), h('span', { class: 'progress-count', text: label })),
+      h('div', { class: 'progress-track', role: 'progressbar', 'aria-label': run.title, 'aria-valuemin': '0', 'aria-valuemax': String(total), 'aria-valuenow': String(doneCount), 'aria-valuetext': label + ': ' + (run.steps[Math.min(run.current, total - 1)] || '') },
+        h('span', { class: 'progress-fill', style: `width:${fill}%` }),
+        run.state === 'running' && !run.bytes ? h('span', { class: 'progress-pending', style: `left:${doneCount / total * 100}%;width:${100 / total}%` }) : null),
+      h('ol', { class: 'progress-steps' }, ...run.steps.map((step, index) => { const s = stepState(index); return h('li', { 'data-state': s },
+        h('span', { class: 'progress-mark', 'aria-hidden': 'true', text: mark[s] }), h('span', { text: step }),
+        h('small', { class: 'sr-only', text: ' — ' + note[s] }),
+        s === 'current' && run.bytes ? h('small', { class: 'progress-bytes', 'aria-hidden': 'true', text: `${percent(run.bytes.sent, run.bytes.total)}%` }) : s === 'current' ? h('small', { class: 'progress-bytes', 'aria-hidden': 'true', text: 'In progress…' }) : null); })),
+      run.message ? h('p', { class: 'progress-message', text: run.message }) : null,
+      run.state !== 'running' ? h('button', { class: 'btn soft progress-close', type: 'button', onclick: () => hide() }, 'Close') : null].filter(Boolean));
+  };
+  const end = (state, message) => {
+    if (!run || run.state !== 'running') return;
+    run.state = state; run.bytes = null; if (message) run.message = message; draw();
+    clearTimeout(hideTimer); if (state === 'done') { const ended = run; hideTimer = setTimeout(() => { if (run === ended) hide(); }, 5000); }
+  };
+  return {
+    start(plan) {
+      clearTimeout(hideTimer);
+      run = { title: plan.title, steps: plan.steps, current: 0, state: 'running', bytes: null, message: '', said: false };
+      $('#toast').hidden = true; draw();
+      return {
+        step(index) { if (run?.state === 'running' && index > run.current && index < run.steps.length) { run.current = index; run.bytes = null; run.message = ''; draw(); } },
+        measure(sent, total) { if (run?.state === 'running' && total > 0) { run.bytes = { sent: Math.min(sent, total), total }; draw(); } },
+        finish(message) { end('done', message); },
+        fail(message) { end('failed', message); },
+        settle() { if (run?.state === 'running') { if (run.said) end('failed', run.message); else hide(); } },
+      };
+    },
+    // While an action runs, its messages go into its card. Other messages show above a card that stays open.
+    take(text) {
+      if (!run || text === WAIT_TEXT) return false;
+      if (run.state === 'done') { hide(); return false; }
+      if (run.state !== 'running') return false;
+      run.message = text; run.said = true; draw(); return true;
+    },
+    visible() { return Boolean(run); },
+    keep() { if (run && card) attach(card); },
+  };
+})();
+// progress:end
 // AUD-C09: one lock for every action that writes (save, publish, upload, restore, reply).
 // While one runs, every other writing control of the screen is disabled and a second action is refused,
 // so Publish and Save on the same form, or an upload during a publish, can never send two requests.
 // lock:start
-const PUBLISHING = 'Publishing… this can take about a minute';
 const WAIT_TEXT = 'Please wait: the previous action is still running.';
 const WRITING_CONTROLS = '.bar button, .bar-inline button, .top .btn, .top .menu > button, .compose button, .drop input, .file-actions button, .person button, label.check input';
 const lock = { active: false };
@@ -40,20 +108,33 @@ async function busy(control, work, waitText = '') {
   const frozen = [...new Set([control, ...(scope ? scope.querySelectorAll(WRITING_CONTROLS) : [])])].filter(el => el && !el.disabled);
   for (const el of frozen) el.disabled = true;
   control?.setAttribute('aria-busy', 'true'); scope?.setAttribute('aria-busy', 'true');
-  if (waitText) toast(waitText, { stay: true });
-  try { return await work(); }
-  catch (error) { toast(error.message || 'The server could not do that. Please try again.'); return undefined; }
+  // A plan ({ title, steps }) shows a step-by-step card; a plain text keeps the simple waiting message.
+  const steps = waitText && typeof waitText === 'object' ? progressCard.start(waitText) : null;
+  if (waitText && !steps) toast(waitText, { stay: true });
+  try { return await work(steps); }
+  catch (error) { const text = error.message || 'The server could not do that. Please try again.'; if (steps) steps.fail(text); else toast(text); return undefined; }
   finally {
+    steps?.settle();
     lock.active = false;
     for (const el of frozen) el.disabled = false;
     control?.removeAttribute('aria-busy'); scope?.removeAttribute('aria-busy');
-    if (waitText && toast.staying) { toast.staying = false; $('#toast').hidden = true; }
+    if (waitText && !steps && toast.staying) { toast.staying = false; $('#toast').hidden = true; }
   }
 }
 // lock:end
-const writer = (work, waitText) => event => busy(event.currentTarget, () => work(event), waitText);
+const writer = (work, waitText) => event => busy(event.currentTarget, steps => work(event, steps), waitText);
+// Step plans. Each step name says what is being confirmed; the server confirms each one before the next starts.
+const PLAN = {
+  save: { title: 'Saving', steps: ['Saving the draft'] },
+  publish: { title: 'Publishing', steps: ['Saving the draft', 'Building and publishing the site (A and B)'] },
+  publishOnly: { title: 'Publishing', steps: ['Building and publishing the site (A and B)'] },
+  restore: { title: 'Going back to this version', steps: ['Restoring and publishing the site (A and B)'] },
+  file: { title: 'Adding the file', steps: ['Reading the file', 'Uploading', 'Checking the file on the server'] },
+  photo: { title: 'Adding the photo', steps: ['Reading the photo', 'Uploading', 'Preparing the photo on the server'] },
+};
 // Reading the chosen file happens inside the lock too, so a publish cannot start between choosing and sending it.
-const readBase64 = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(file); });
+// onProgress receives the bytes the browser has really read (FileReader progress events).
+const readBase64 = (file, onProgress) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = () => reject(new Error('This file could not be read. Please choose it again.')); if (onProgress) reader.onprogress = event => { if (event.lengthComputable) onProgress(event.loaded, event.total); }; reader.readAsDataURL(file); });
 const when = iso => { const d = new Date(iso); const today = new Date(); return d.toDateString() === today.toDateString() ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
 const initials = name => { const words = name.trim().split(/\s+/).filter(Boolean); return ((words[0]?.[0] || '') + (words.length > 1 ? words.at(-1)[0] : '')).toUpperCase(); };
 
@@ -187,10 +268,30 @@ const PAGES = {
 PAGES.home.fields=PAGES.home.fields.filter(field=>!field.name.startsWith('navigation_'));
 // ---------- API client ----------
 async function call(method, path, body) {
-  const response = await fetch(API + path, { method, headers: { 'X-Editor-Token': state.token, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin' });
+  let response;
+  try { response = await fetch(API + path, { method, headers: { 'X-Editor-Token': state.token, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin' }); }
+  catch { throw Object.assign(new Error('The connection was lost before the server answered. Check your connection, then try again.'), { status: 0, diagnostics: [] }); }
   let data = null; try { data = await response.json(); } catch { data = null; }
   if (!response.ok) { const error = new Error(data?.message || 'The server could not do that. Please try again.'); error.status = response.status; error.code = data?.code || ''; error.diagnostics = data?.diagnostics || []; throw error; }
   return data;
+}
+// Same as call(), for uploads: the browser reports the bytes really sent. When the last byte has left,
+// the next step (the server's own check) starts; its length is unknown until the server answers.
+function upload(path, body, steps) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open('POST', API + path); request.withCredentials = true;
+    request.setRequestHeader('X-Editor-Token', state.token); request.setRequestHeader('Content-Type', 'application/json');
+    request.upload.onprogress = event => { if (event.lengthComputable) steps?.measure(event.loaded, event.total); };
+    request.upload.onload = () => steps?.step(2);
+    request.onerror = () => reject(Object.assign(new Error('The connection was lost before the server answered. Nothing was added: please try again.'), { status: 0 }));
+    request.onload = () => {
+      let data = null; try { data = JSON.parse(request.responseText); } catch { data = null; }
+      if (request.status >= 200 && request.status < 300) return resolve(data);
+      reject(Object.assign(new Error(data?.message || 'The server could not do that. Please try again.'), { status: request.status, code: data?.code || '', diagnostics: data?.diagnostics || [] }));
+    };
+    request.send(JSON.stringify(body));
+  });
 }
 // AUD-C07: when the server does not answer (restart, deployment), say so and retry every 10 seconds. Never show invented content.
 const RETRY_SECONDS = 10;
@@ -248,7 +349,7 @@ function topBar({ title, small, actions = [] }) {
   return h('div', { class: 'top' }, h('button', { class: 'back', type: 'button', 'aria-label': 'Back', onclick: () => { if (guardLeave()) { state.dirty = false; setPane('list'); } } }, '←'),
     h('div', { class: 'grow' }, h('h2', { text: title }), small ? h('small', { text: small }) : null), ...actions);
 }
-function main(...children) { const box = $('#main'); box.replaceChildren(...children.filter(child => child !== null && child !== undefined && child !== false)); setPane('main'); box.focus({ preventScroll: true }); }
+function main(...children) { const box = $('#main'); box.replaceChildren(...children.filter(child => child !== null && child !== undefined && child !== false)); progressCard.keep(); setPane('main'); box.focus({ preventScroll: true }); }
 function welcome(text) { $('#main').replaceChildren(h('div', { class: 'welcome' }, h('div', {}, h('p', { class: 'frog', 'aria-hidden': 'true' }, '🐸'), h('p', { text })))); }
 function markCurrent(list, current) { list.querySelectorAll('.row').forEach(row => row.setAttribute('aria-current', String(row === current))); }
 
@@ -259,8 +360,8 @@ const nodeSection=node=>({slug:node.id,title:node.title,kind:editableKinds[node.
 const rootZones=[{id:'menus',title:'Frog menus'},{id:'screens',title:'Lily-pad screens'},{id:'stones',title:'Stone links'},{id:'footer',title:'Footer links'},{id:'archive',title:'Hidden sections'}];
 const treeChildren=id=>siteTree.fields.nodes.filter(n=>n.parentId===id);
 async function saveTree(tree){siteTree=await call('PUT','/structure',{revision:siteTree.revision,structure:tree});state.dirty=false;await listSite(false);}
-async function publishTree(){try{await call('POST','/structure/publish',{revision:siteTree.revision});siteTree=await call('GET','/structure');toast('Site layout published ✓');await listSite(false);}catch(e){toast(e.message);}}
-const publishTreeButton=event=>busy(event.currentTarget,publishTree,PUBLISHING);
+async function publishTree(steps){try{await call('POST','/structure/publish',{revision:siteTree.revision});steps?steps.finish('Site layout published ✓'):toast('Site layout published ✓');siteTree=await call('GET','/structure');await listSite(false);}catch(e){toast(e.message);}}
+const publishTreeButton=event=>busy(event.currentTarget,publishTree,PLAN.publishOnly);
 async function listSite(showWelcome=true){
  $('#list-title').textContent='Site zones';$('#search').placeholder='Search sections';
  try{siteTree=await call('GET','/structure');}catch(e){toast(e.message);return;}
@@ -277,6 +378,14 @@ async function listSite(showWelcome=true){
  if(showWelcome)main(topBar({title:'Your site, zone by zone',small:'Choose an existing section to change its name or edit its content.',actions:[h('button',{class:'btn main',type:'button',onclick:publishTreeButton},'Publish layout')]}),h('div',{class:'body'},h('div',{class:'panel'},h('h3',{text:'Changes stay in draft until you publish'}),h('p',{text:'Your site structure is already set up. Change names and content without creating pages or changing their addresses.'})),...rootZones.filter(z=>z.id!=='archive').map(zone=>h('div',{class:'panel zone-card'},h('h3',{text:zone.title}),h('p',{text:({menus:'The frogs on the wooden raft and their existing menu links.',screens:'The lily pads and their screens on the pond.',stones:'The stone links around the pond.',footer:'Links at the bottom of the pages.'})[zone.id]})))));
  if(showWelcome&&matchMedia('(max-width:860px)').matches)setPane('list');
 }
+const SCREEN_MESSAGE_MAX=60;
+const graphemes=typeof Intl==='object'&&Intl.Segmenter?new Intl.Segmenter('en',{granularity:'grapheme'}):null;
+const screenChars=text=>graphemes?[...graphemes.segment(text)].length:[...text].length;
+function screenMessageProblem(value){
+ if(/[\u0000-\u001f\u007f\u2028\u2029\u202a-\u202e\u2066-\u2069]/u.test(value))return 'Use plain text on one line.';
+ const extra=screenChars(value.trim())-SCREEN_MESSAGE_MAX;
+ return extra>0?`Up to ${SCREEN_MESSAGE_MAX} characters, spaces included. Remove ${extra} ${extra===1?'character':'characters'}.`:'';
+}
 function openNode(id){
  const node=siteTree.fields.nodes.find(n=>n.id===id);if(!node)return;
  const name=h('input',{class:'text',id:'section-title',maxlength:60});name.value=node.title;
@@ -284,16 +393,25 @@ function openNode(id){
  const href=h('input',{class:'text',id:'section-link',maxlength:300});href.value=node.href;
  const visible=h('input',{id:'section-visible',type:'checkbox'});visible.checked=node.visible;
  const newTab=h('input',{id:'section-new-tab',type:'checkbox'});newTab.checked=node.newTab;
+ // Lily-pad screens only: an optional message inside the TV, the same on A and B. The counter and the check
+ // count what a reader sees as characters (an emoji or an accented letter counts once), spaces included.
+ const message=node.zone==='screens'?h('input',{class:'text',id:'section-message',maxlength:240,autocomplete:'off','aria-describedby':'section-message-count section-message-hint section-message-error'}):null;
+ const messageCount=h('span',{class:'counter',id:'section-message-count'}),messageError=h('p',{class:'error',id:'section-message-error','aria-live':'polite',hidden:true});
+ const messageOk=()=>{if(!message)return true;const problem=screenMessageProblem(message.value);const length=screenChars(message.value.trim());
+  messageCount.textContent=length+'/'+SCREEN_MESSAGE_MAX;messageCount.classList.toggle('over',length>SCREEN_MESSAGE_MAX);
+  message.setAttribute('aria-invalid',problem?'true':'false');messageError.textContent=problem;messageError.hidden=!problem;return !problem;};
+ if(message){message.value=node.message??'';message.addEventListener('input',messageOk);messageOk();}
  const fields=h('form',{class:'form',onsubmit:e=>e.preventDefault(),oninput:()=>{state.dirty=true;}},
  h('div',{class:'field'},h('label',{for:name.id,text:'Section name'}),name),
+ message?h('div',{class:'field screen-message-field'},h('div',{class:'label-row'},h('label',{for:message.id},'Screen message ',h('span',{class:'opt',text:'(optional)'})),messageCount),message,h('p',{class:'hint',id:'section-message-hint',text:'Shown inside this TV screen on both designs (A and B). Leave it empty to show only the arrow.'}),messageError):null,
  h('label',{class:'check-label'},visible,' Show in navigation'),h('label',{class:'check-label'},newTab,' Open in a new tab'),
  ['menu','page'].includes(node.kind)?h('div',{class:'field'},h('label',{for:text.id,text:'Page text'}),text):null,
  ['link','anchor'].includes(node.kind)?h('div',{class:'field'},h('label',{for:href.id,text:'Link (HTTPS, page.html or #section)'}),href):null,
  h('p',{class:'hint',text:node.slug?'Address: '+node.slug+'.html — kept when you rename this section.':'A link has no page of its own.'}));
- const save=async()=>{try{const draft=structuredClone(siteTree.fields),edited=draft.nodes.find(n=>n.id===id);Object.assign(edited,{title:name.value.trim(),text:text.value,href:href.value.trim(),visible:visible.checked,newTab:newTab.checked});await saveTree(draft);toast('Layout draft saved ✓');openNode(id);return true;}catch(e){toast(e.message);return false;}};
- const actions=[h('button',{class:'btn main',type:'button',onclick:writer(async()=>{if(await save())await publishTree();},PUBLISHING)},'Save and publish')];
+ const save=async(steps,publishing)=>{if(!messageOk()){message?.focus();return false;}try{const draft=structuredClone(siteTree.fields),edited=draft.nodes.find(n=>n.id===id);Object.assign(edited,{title:name.value.trim(),text:text.value,href:href.value.trim(),visible:visible.checked,newTab:newTab.checked});if(message&&(message.value.trim()||'message' in edited))edited.message=message.value.trim();await saveTree(draft);if(publishing)steps?.step(1);else steps?steps.finish('Layout draft saved ✓ Not on the site yet.'):toast('Layout draft saved ✓');if(!publishing)openNode(id);return true;}catch(e){toast(e.message);return false;}};
+ const actions=[h('button',{class:'btn main',type:'button',onclick:writer(async(event,steps)=>{if(await save(steps,true)){await publishTree(steps);openNode(id);}},PLAN.publish)},'Save and publish')];
  const content=editableKinds[node.kind]?h('button',{class:'btn soft',type:'button',onclick:()=>{if(guardLeave()){state.dirty=false;openSection(node.id);}}},'Edit content'):node.kind==='croak'?h('button',{class:'btn soft',type:'button',onclick:()=>{if(guardLeave())openPage('home');}},'Edit text'):null;
- main(topBar({title:node.title,small:'Section settings — '+(rootZones.find(z=>z.id===node.zone)?.title??node.zone),actions}),h('div',{class:'body'},fields,h('div',{class:'bar-inline'},h('button',{class:'btn soft',type:'button',onclick:writer(save)},'Save draft'),content),
+ main(topBar({title:node.title,small:'Section settings — '+(rootZones.find(z=>z.id===node.zone)?.title??node.zone),actions}),h('div',{class:'body'},fields,h('div',{class:'bar-inline'},h('button',{class:'btn soft',type:'button',onclick:writer((event,steps)=>save(steps,false),PLAN.save)},'Save draft'),content),
  node.kind==='menu'&&node.zone==='menus'?h('section',{class:'panel'},h('h3',{text:'Subsections'}),...treeChildren(id).map(child=>h('button',{class:'row',type:'button',onclick:()=>{if(guardLeave())openNode(child.id);}},child.title))):null));
 }
 
@@ -303,9 +421,9 @@ async function openSection(slug) {
   if(section.kind === 'structure')return openNode(slug);
   const [items, intros] = await Promise.all([call('GET', `/items?section=${slug}`), call('GET', '/pages/intros').catch(() => ({ fields: {} }))]);
   const intro = h('textarea', { class: 'text', id: 'intro', maxlength: '240', rows: '2' }); intro.value = intros.fields?.[slug] || '';
-  const saveIntro = h('button', { class: 'btn soft', type: 'button', onclick: writer(async () => {
-    try { const fields = { ...(intros.fields || {}), [slug]: intro.value.trim() }; const saved = await call('PUT', '/pages/intros', { revision: intros.revision, fields }); intros.revision = saved.revision; intros.fields = fields; await call('POST', '/pages/intros/publish', { }); toast('Line published ✓'); } catch (error) { toast(error.message); }
-  }, PUBLISHING) }, 'Publish the line');
+  const saveIntro = h('button', { class: 'btn soft', type: 'button', onclick: writer(async (event, steps) => {
+    try { const fields = { ...(intros.fields || {}), [slug]: intro.value.trim() }; const saved = await call('PUT', '/pages/intros', { revision: intros.revision, fields }); intros.revision = saved.revision; intros.fields = fields; steps?.step(1); await call('POST', '/pages/intros/publish', { }); steps ? steps.finish('Line published ✓') : toast('Line published ✓'); } catch (error) { toast(error.message); }
+  }, PLAN.publish) }, 'Publish the line');
   const grid = h('div', { class: 'items' }, h('button', { class: 'add', type: 'button', onclick: () => openItem(null) }, h('div', {}, h('span', { 'aria-hidden': 'true' }, '+'), `Add a ${NOUN[section.kind]}`)),
     ...items.map(item => h('button', { class: 'item', type: 'button', onclick: () => openItem(item.id) },
       h('span', { class: 'thumb' }, item.thumb ? h('img', { src: item.thumb, alt: '' }) : null),
@@ -360,9 +478,9 @@ function imageControl(spec, value, media, id) {
     for (const file of [...files].slice(0, many ? limit - list.length : 1)) {
       if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast(`“${file.name}” is not a JPG, PNG or WebP photo.`); continue; }
       if (file.size > 5 * 1024 * 1024) { toast(`“${file.name}” is too large (5 MB max).`); continue; }
-      const result = await busy(null, async () => call('POST', '/media', { name: file.name, base64: await readBase64(file) }), 'Preparing the photo…');
+      const result = await busy(null, async steps => { const base64 = await readBase64(file, (read, size) => steps.measure(read, size)); steps.step(1); const added = await upload('/media', { name: file.name, base64 }, steps); steps.finish(`“${file.name}” added ✓`); return added; }, PLAN.photo);
       if (!result) continue;
-      media[result.mediaId] = result.src; const picture = { mediaId: result.mediaId, alt: '' }; if (many) list.push(picture); else list = [picture]; state.dirty = true; draw(); toast('Photo added ✓');
+      media[result.mediaId] = result.src; const picture = { mediaId: result.mediaId, alt: '' }; if (many) list.push(picture); else list = [picture]; state.dirty = true; draw();
     }
   };
   input.addEventListener('change', () => { add(input.files); input.value = ''; });
@@ -400,9 +518,9 @@ function fileControl(spec, value, id) {
     if (!file) return;
     if (!type.name.test(file.name)) { toast(`“${file.name}” ${type.wrong}`); return; }
     if (file.size > FILE_MAX_BYTES) { toast(FILE_TOO_LARGE); return; }
-    const result = await busy(null, async () => call('POST', '/files', { name: file.name, base64: await readBase64(file) }), 'Checking the file… this can take up to a minute');
+    const result = await busy(null, async steps => { const base64 = await readBase64(file, (read, size) => steps.measure(read, size)); steps.step(1); const added = await upload('/files', { name: file.name, base64 }, steps); steps.finish('File checked and added ✓ Publish to put it on the site.'); return added; }, PLAN.file);
     if (!result) return;
-    current = result.id; name = result.name; state.dirty = true; draw(); toast('File checked and added ✓ Publish to put it on the site.');
+    current = result.id; name = result.name; state.dirty = true; draw();
   };
   input.addEventListener('change', () => { add(input.files[0]); input.value = ''; });
   drop.addEventListener('dragover', event => { event.preventDefault(); drop.classList.add('over'); });
@@ -473,14 +591,15 @@ async function openItem(id) {
   const item = id ? await call('GET', `/items/${id}`) : { id: null, revision: 0, status: 'draft', fields: {}, media: {} };
   const media = item.media || {};
   const form = h('form', { class: 'form', novalidate: true, onsubmit: event => event.preventDefault(), oninput: () => { state.dirty = true; } }, ...specs.map(spec => buildField(spec, item.fields[spec.name], media)));
-  const save = async publish => {
+  const save = async (publish, steps) => {
     const fields = readForm(form, specs); const problems = publish ? check(form, specs, fields) : check(form, specs.filter(spec => spec.name === 'title'), fields);
     showProblems(form, problems); if (problems.length) return;
     try {
       let saved = item.id ? await call('PUT', `/items/${item.id}`, { revision: item.revision, fields }) : await call('POST', '/items', { section: section.slug, fields });
-      Object.assign(item, saved);
-      if (publish) { const result = await call('POST', `/items/${item.id}/publish`, { revision: item.revision }); Object.assign(item, result.item || {}); toast(result.message || 'Published ✓ Live on the site in a minute or two.'); }
-      else toast('Saved ✓ Not on the site yet.');
+      Object.assign(item, saved); steps?.step(1);
+      const said = text => steps ? steps.finish(text) : toast(text);
+      if (publish) { const result = await call('POST', `/items/${item.id}/publish`, { revision: item.revision }); Object.assign(item, result.item || {}); said(result.message || 'Published ✓ Live on the site in a minute or two.'); }
+      else said('Saved ✓ Not on the site yet.');
       state.dirty = false; openSection(section.slug).then(() => openItem(item.id));
     } catch (error) {
       if (error.status === 409) toast('Someone else edited this at the same time. Copy your text, then reopen it.');
@@ -494,8 +613,8 @@ async function openItem(id) {
   ])] : [];
   main(topBar({ title: item.id ? item.fields.title || 'Untitled' : `New ${NOUN[section.kind]}`, small: section.title, actions: [item.id ? statusBadge(item.status) : null, ...actions].filter(Boolean) }),
     h('div', { class: 'body' }, form, h('div', { class: 'bar' },
-      h('button', { class: 'btn main', type: 'button', onclick: writer(() => save(true), PUBLISHING) }, item.status === 'live' ? 'Publish changes' : 'Publish to the site'),
-      h('button', { class: 'btn soft', type: 'button', onclick: writer(() => save(false)) }, 'Save without publishing'))));
+      h('button', { class: 'btn main', type: 'button', onclick: writer((event, steps) => save(true, steps), PLAN.publish) }, item.status === 'live' ? 'Publish changes' : 'Publish to the site'),
+      h('button', { class: 'btn soft', type: 'button', onclick: writer((event, steps) => save(false, steps), PLAN.save) }, 'Save without publishing'))));
   state.dirty = false; form.querySelector('input, textarea')?.focus();
 }
 
@@ -507,13 +626,13 @@ async function openPage(slug) {
   const form = h('form', { class: 'form', novalidate: true, onsubmit: event => event.preventDefault(), oninput: () => { state.dirty = true; } },
     page.lead ? h('div', { class: 'form-lead' }, ...page.lead.map(text => h('p', { text }))) : null,
     ...page.fields.map(spec => buildField(spec, data.fields[spec.name], media)));
-  const publish = async () => {
+  const publish = async (event, steps) => {
     const fields = readForm(form, page.fields); const problems = check(form, page.fields, fields); showProblems(form, problems); if (problems.length) return;
-    try { const saved = await call('PUT', `/pages/${slug}`, { revision: data.revision, fields }); data.revision = saved.revision; const result = await call('POST', `/pages/${slug}/publish`, {}); state.dirty = false; toast(result.message || 'Published ✓ Live on the site in a minute or two.'); }
+    try { const saved = await call('PUT', `/pages/${slug}`, { revision: data.revision, fields }); data.revision = saved.revision; steps?.step(1); const result = await call('POST', `/pages/${slug}/publish`, {}); state.dirty = false; const text = result.message || 'Published ✓ Live on the site in a minute or two.'; if (steps) steps.finish(text); else toast(text); }
     catch (error) { const problems = serverProblems(error, page.fields); if (problems.length) showProblems(form, problems); else toast(error.message); }
   };
   main(topBar({ title: page.title, small: page.small, actions: [viewOnSite(slug)] }),
-    h('div', { class: 'body' }, form, h('div', { class: 'bar' }, h('button', { class: 'btn main', type: 'button', onclick: writer(publish, PUBLISHING) }, 'Publish to the site'))));
+    h('div', { class: 'body' }, form, h('div', { class: 'bar' }, h('button', { class: 'btn main', type: 'button', onclick: writer(publish, PLAN.publish) }, 'Publish to the site'))));
 }
 
 // ---------- Site wording: every small text of the site (buttons, labels, short messages) ----------
@@ -571,16 +690,18 @@ async function openWording() {
       return false;
     }
   };
-  const saveOnly = async () => { if (await save()) toast('Saved ✓ Not on the site yet.'); };
-  const publish = async () => {
+  const said = (steps, text) => steps ? steps.finish(text) : toast(text);
+  const saveOnly = async (event, steps) => { if (await save()) said(steps, 'Saved ✓ Not on the site yet.'); };
+  const publish = async (event, steps) => {
     if (!await save()) return;
-    try { const result = await call('POST', '/pages/wording/publish', {}); toast(result?.message || 'Published ✓ Live on the site in a minute or two.'); }
+    steps?.step(1);
+    try { const result = await call('POST', '/pages/wording/publish', {}); said(steps, result?.message || 'Published ✓ Live on the site in a minute or two.'); }
     catch (error) { toast(error.status === 409 ? 'Someone changed these texts in another window. Your changes are saved; reload this screen before publishing.' : error.message); }
   };
   main(topBar({ title: 'Site wording', small: 'Buttons, labels and short messages on every page', actions: [viewOnSite('home')] }),
     h('div', { class: 'body' }, form, h('div', { class: 'bar' },
-      h('button', { class: 'btn soft', type: 'button', onclick: writer(saveOnly) }, 'Save without publishing'),
-      h('button', { class: 'btn main', type: 'button', onclick: writer(publish, PUBLISHING) }, 'Publish to the site'))));
+      h('button', { class: 'btn soft', type: 'button', onclick: writer(saveOnly, PLAN.save) }, 'Save without publishing'),
+      h('button', { class: 'btn main', type: 'button', onclick: writer(publish, PLAN.publish) }, 'Publish to the site'))));
 }
 
 // ---------- Space: applications and messages (one conversation per person) ----------
@@ -685,7 +806,7 @@ async function openSetting(key, quiet = false) {
       ...[['cv', 'Tell me about a new application'], ['msg', 'Tell me about a new message']].map(([name, label]) => { const box = h('input', { type: 'checkbox' }); box.checked = settings.notifications?.[name] !== false; box.addEventListener('change', () => busy(box, async () => { Object.assign(settings, await call('PUT', '/settings', { ...settings, notifications: { ...settings.notifications, [name]: box.checked } })); toast('Saved ✓'); })); return h('label', { class: 'check' }, box, label); }))],
     signature: async () => { const area = h('textarea', { class: 'text', 'aria-label': 'Signature', maxlength: '300' }); area.value = settings.signature || ''; return [h('div', { class: 'panel' }, h('h3', { text: 'Reply signature' }), area, h('div', { class: 'bar-inline' }, h('button', { class: 'btn main', type: 'button', onclick: writer(async () => { Object.assign(settings, await call('PUT', '/settings', { ...settings, signature: area.value.trim() })); toast('Saved ✓'); }) }, 'Save')))]; },
     history: async () => { const list = await call('GET', '/publishes'); return [h('div', { class: 'panel' }, h('h3', { text: 'Site history' }), h('p', { text: 'Each publish keeps a version of the site. You can go back to an earlier one.' }),
-      ...list.map((entry, index) => h('div', { class: 'person' }, h('span', { text: `${new Date(entry.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} — ${entry.summary}` }), index === 0 ? h('b', { text: 'Current version' }) : h('button', { class: 'btn soft', type: 'button', onclick: writer(async () => { if (!confirm('Put the site back to this version?')) return; const result = await call('POST', `/publishes/${entry.id}/restore`, {}); toast(result.message || 'Site restored to this version ✓'); openSetting('history'); }, PUBLISHING) }, 'Go back to this version'))))]; },
+      ...list.map((entry, index) => h('div', { class: 'person' }, h('span', { text: `${new Date(entry.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} — ${entry.summary}` }), index === 0 ? h('b', { text: 'Current version' }) : h('button', { class: 'btn soft', type: 'button', onclick: writer(async (event, steps) => { if (!confirm('Put the site back to this version?')) return; const result = await call('POST', `/publishes/${entry.id}/restore`, {}); const text = result.message || 'Site restored to this version ✓'; if (steps) steps.finish(text); else toast(text); openSetting('history'); }, PLAN.restore) }, 'Go back to this version'))))]; },
     archive: async () => { const deleted = await call('GET', '/archive'); return [h('div', { class: 'panel' }, h('h3', { text: 'Deleted items' }), h('p', { text: 'A deleted item comes back as a draft: publish it again to show it on the site.' }),
       ...(deleted.items.length ? deleted.items.map(item => h('div', { class: 'person' }, h('span', { text: `${item.title || 'Untitled'} — deleted ${new Date(item.deletedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}` }), h('button', { class: 'btn soft', type: 'button', onclick: writer(async () => { await call('POST', `/archive/${encodeURIComponent(item.id)}/restore`, {}); toast('Brought back as a draft ✓'); openSetting('archive'); }) }, 'Bring back'))) : [h('p', { class: 'hint', text: 'Nothing has been deleted.' })])),
       deleted.conversations.length ? h('div', { class: 'panel' }, h('h3', { text: 'Deleted conversations' }), h('p', { text: 'They are kept until the end of the usual period, then removed for good. Ask the site manager if one must come back.' }), ...deleted.conversations.map(talk => h('div', { class: 'person' }, h('span', { text: `${talk.name} — deleted ${new Date(talk.deletedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}` })))) : null]; },

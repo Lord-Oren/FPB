@@ -8,12 +8,13 @@ const app = await readFile(new URL('../editor/v2/app.js', import.meta.url), 'utf
 
 test('Desk reads files only through readBase64, and only inside busy()', () => {
   assert.equal(app.match(/new FileReader\(/g)?.length, 1);
-  assert.match(app, /const readBase64 = file => new Promise\(\(resolve, reject\) => \{ const reader = new FileReader\(\)/);
-  const calls = [...app.matchAll(/readBase64\(file\)/g)];
+  assert.match(app, /const readBase64 = \(file, onProgress\) => new Promise\(\(resolve, reject\) => \{ const reader = new FileReader\(\)/);
+  const calls = [...app.matchAll(/readBase64\(file, \(read, size\) => steps\.measure\(read, size\)\)/g)];
   assert.equal(calls.length, 2);
   for (const call of calls) {
     const line = app.slice(app.lastIndexOf('\n', call.index), app.indexOf('\n', call.index));
-    assert.match(line, /await busy\(null, async \(\) => call\('POST', '\/(media|files)'/);
+    // Reading, then sending (with real byte progress), both inside the shared lock.
+    assert.match(line, /await busy\(null, async steps => \{ const base64 = await readBase64\(file, .*upload\('\/(media|files)', \{ name: file\.name, base64 \}, steps\)/);
   }
 });
 

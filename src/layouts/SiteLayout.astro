@@ -29,6 +29,7 @@ import flyCursor from '../scripts/fly-cursor.js?raw';
 import pondMotion from '../scripts/pond-motion.js?raw';
 import mobileA from '../styles/mobile-a.css?raw';
 import pondMobileA from '../styles/pond-mobile-a.css?raw';
+import screenMessage from '../styles/screen-message.css?raw';
 import pmPad1 from '../assets/pond-mobile/pad1.png?inline';
 import pmPad2 from '../assets/pond-mobile/pad2.png?inline';
 import pmPad3 from '../assets/pond-mobile/pad3.png?inline';
@@ -52,7 +53,7 @@ const { title = 'Frog Pond Boys — Creative Agency', pond = false, operations =
   <meta name="referrer" content="no-referrer" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>{title}</title>
-  <style is:inline set:html={fonts + flyStyles + motionStyles + (pond && look === 'modern' ? variantB + homeSections : styles) + (operations ? infoStyles : '') + (cases ? caseStyles : '') + (pond && artworkMode === 'original' ? originalArtwork + homeRetroA + `:root{--px-pond:${svgUrl(pixelPond)}}` : '') + (!pond ? contentStyles + interiorStyles + (look === 'pixel' ? lilyStyle + retroA : '') : '') + (look === 'modern' ? neoB : '') + clientMeeting + (pond && look === 'pixel' ? pondExpansionA : '') + (look === 'pixel' ? mobileA : '') + (pond && look === 'pixel' && artworkMode === 'original' ? pondMobileVars + pondMobileA : '')}></style>
+  <style is:inline set:html={fonts + flyStyles + motionStyles + (pond && look === 'modern' ? variantB + homeSections : styles) + (operations ? infoStyles : '') + (cases ? caseStyles : '') + (pond && artworkMode === 'original' ? originalArtwork + homeRetroA + `:root{--px-pond:${svgUrl(pixelPond)}}` : '') + (!pond ? contentStyles + interiorStyles + (look === 'pixel' ? lilyStyle + retroA : '') : '') + (look === 'modern' ? neoB : '') + clientMeeting + (pond && look === 'pixel' ? pondExpansionA : '') + (look === 'pixel' ? mobileA : '') + (pond && look === 'pixel' && artworkMode === 'original' ? pondMobileVars + pondMobileA : '') + (pond ? screenMessage : '')}></style>
 </head>
 <body class:list={{ 'interior-page': !pond, 'home-page': pond && look !== 'modern', 'variant-b': pond && look === 'modern' }}>
   <a class="skip-link" href="#main">Skip to content</a>

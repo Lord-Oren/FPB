@@ -42,8 +42,8 @@ test('Pond Desk lists every key, keeps empty as original and saves through the s
   for (const key of Object.keys(wordingDefaults)) assert.ok(screen.includes(`'${key}'`), `${key} missing from the Desk screen`);
   assert.match(screen, /'Back to the original'/);
   assert.match(screen, /input\.value = ''/);
-  assert.match(screen, /writer\(saveOnly\)/);
-  assert.match(screen, /writer\(publish, PUBLISHING\)/);
+  assert.match(screen, /writer\(saveOnly, PLAN\.save\)/);
+  assert.match(screen, /writer\(publish, PLAN\.publish\)/);
   assert.match(screen, /call\('PUT', '\/pages\/wording', \{ revision: data\.revision, fields: values\(\) \}\)/);
   assert.match(screen, /error\.status === 409/);
 });

@@ -1,0 +1,31 @@
+/* T10 — optional message inside a lily-pad TV (Pond Desk → Lily-pad screens → Screen message), A and B.
+   Without a message nothing here applies: the screen keeps its arrow only.
+   With one, the whole screen stays a link (the hidden arrow link covers it) and the text shows in full:
+   it wraps, never cuts, and its size follows the TV. The arrow follows the text. */
+.screen:has(.has-message), .tv:has(.has-message) { container-type:inline-size }
+.screen-content.has-message { overflow:hidden; display:flex; justify-content:center; align-items:center; padding:2px 3px }
+.screen-content.has-message .screen-link { position:absolute; inset:0; z-index:1; min-height:0 }
+.screen-content.has-message .screen-link .screen-arrow { display:none }
+.screen-message { position:relative; margin:0; max-width:100%; pointer-events:none; color:var(--cream, #eee8d7); font-weight:700; font-size:clamp(9px, 6.3cqw, 13px); line-height:1.12; letter-spacing:0; text-transform:none; text-align:center; overflow-wrap:anywhere; text-wrap:balance }
+.screen-message-arrow { color:var(--dandelion, #ffdb76); white-space:nowrap }
+/* Small TVs (tablets in A, phones in B): the screen grows over its own frame, knobs kept, so the text stays legible. */
+@container (max-width:150px) {
+  .screen-content.has-message { left:4.5%; top:27.5%; width:77%; height:60%; background:#05353a; border-radius:3px; box-shadow:0 0 0 2px #191833 }
+  .variant-b .screen-content.has-message { left:5.5%; top:29%; width:72.5%; height:56.5%; border-radius:8px }
+  .screen-message { font-size:clamp(9px, 7.6cqw, 12px); line-height:1.08 }
+}
+/* A on short desktop windows (height 780px or less): the TV is drawn at 75% of its block and the arrow sits under it.
+   A message stays on the glass instead, sized to the drawn TV. */
+@media (max-height:780px) and (min-width:601px) {
+  .home-page .screen-content.has-message { position:absolute; left:20.8%; top:35.7%; width:50%; height:41.7% }
+  .home-page .screen-message { font-size:clamp(9px, 4.7cqw, 13px) }
+  @container (max-width:200px) {
+    .home-page .screen-content.has-message { left:15.8%; top:26.8%; width:58.3%; height:59.5% }
+    .home-page .screen-message { font-size:clamp(9px, 5.7cqw, 12px) }
+  }
+}
+/* A on phones: the pixel TV keeps its title on the glass; the message sits under it. */
+@media (max-width:600px) {
+  .home-page .pond-page[data-artwork-mode="original"] .screen-content.has-message { left:22px; top:66px; width:132px; height:48px; padding:0; background:none; box-shadow:none }
+  .home-page .pond-page[data-artwork-mode="original"] .screen-content.has-message .screen-message { font-size:12px; line-height:1.1 }
+}

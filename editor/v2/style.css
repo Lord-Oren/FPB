@@ -212,3 +212,38 @@ input::placeholder,textarea::placeholder { color:var(--muted); opacity:1 }
 .wording-group > legend { font-weight:900; padding:0 8px; color:var(--dandelion) }
 .wording-group .field .hint { overflow-wrap:anywhere }
 .wording-group .bar-inline { margin-top:6px }
+
+/* T10: screen message with its counter, and the step-by-step progress card. Existing tokens only. */
+.label-row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:6px }
+.label-row label { margin:0 }
+.counter { font-variant-numeric:tabular-nums; color:var(--muted); font-weight:700; white-space:nowrap }
+.counter.over { color:var(--bad) }
+input.text[aria-invalid="true"] { border-color:var(--bad) }
+.sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0 }
+.progress { position:fixed; right:24px; bottom:24px; width:min(420px, calc(100vw - 32px)); background:var(--bg2); color:var(--cream); border:4px solid var(--ink); box-shadow:7px 7px 0 var(--ink); padding:14px 16px; z-index:21 }
+.progress[hidden] { display:none }
+.progress-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px }
+.progress-head b { color:var(--dandelion) }
+.progress-count { color:var(--muted); font-size:.85rem; font-weight:700; white-space:nowrap; font-variant-numeric:tabular-nums }
+.progress-track { position:relative; height:12px; margin:10px 0; background:var(--ink); border:2px solid var(--ink); overflow:hidden }
+.progress-fill { position:absolute; left:0; top:0; bottom:0; background:var(--aero); transition:width .25s ease-out }
+.progress[data-state="done"] .progress-fill { background:var(--ok) }
+.progress[data-state="failed"] .progress-fill { background:var(--bad) }
+.progress-pending { position:absolute; top:0; bottom:0; background:repeating-linear-gradient(-45deg, #ffffff2e 0 6px, transparent 6px 12px); background-size:17px 100%; animation:progress-stripe 1s linear infinite }
+@keyframes progress-stripe { to { background-position:17px 0 } }
+.progress-steps { list-style:none; margin:0; padding:0; display:grid; gap:4px; font-size:.92rem }
+.progress-steps li { display:flex; gap:8px; align-items:baseline; color:var(--muted) }
+.progress-steps li[data-state="done"] { color:var(--cream) }
+.progress-steps li[data-state="current"] { color:var(--cream); font-weight:700 }
+.progress-steps li[data-state="failed"] { color:var(--bad); font-weight:700 }
+.progress-mark { width:1.1em; flex:none; text-align:center }
+.progress-steps li[data-state="done"] .progress-mark { color:var(--ok) }
+.progress-steps li[data-state="current"] .progress-mark { color:var(--dandelion) }
+.progress-bytes { margin-left:auto; color:var(--muted); font-weight:400; white-space:nowrap; font-variant-numeric:tabular-nums }
+.progress-message { margin:10px 0 0; font-weight:700; overflow-wrap:anywhere }
+.progress[data-state="failed"] .progress-message { color:var(--bad) }
+.progress-close { margin-top:10px }
+.toast.above { bottom:auto; top:18px }
+/* Phones: the card takes its own place under the header, so Save, Publish and the tabs stay reachable. */
+@media (max-width:860px) { .progress { position:static; flex:none; width:auto; margin:8px 8px 0; padding:10px 12px; font-size:.92rem; box-shadow:4px 4px 0 var(--ink) } .progress-steps { gap:2px } .progress-track { margin:8px 0 } .progress-close { margin-top:8px } .toast.above { top:auto; bottom:96px } }
+@media (prefers-reduced-motion:reduce) { .progress-pending { animation:none } }
