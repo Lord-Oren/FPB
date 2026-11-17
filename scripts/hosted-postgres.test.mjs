@@ -54,6 +54,12 @@ test('hosted PostgreSQL: origin gate, sessions, publishing and restart durabilit
   assert.equal(details.deployment,'hosted');
   assert.equal((await req(desk,'/api/v2/forms/contact','POST',{})).status,404);
   await req(desk,'/api/v2/settings','PUT',{notifications:{cv:false,msg:false},signature:'Test signature'});
+  const screenTree=await(await req(desk,'/api/v2/structure')).json();screenTree.fields.nodes.find(n=>n.id==='recents').message='NEW WORK';
+  const screenSave=await req(desk,'/api/v2/structure','PUT',{revision:screenTree.revision,structure:screenTree.fields});assert.equal(screenSave.status,200);const savedScreen=await screenSave.json();
+  const screenPublish=await req(desk,'/api/v2/structure/publish','POST',{revision:savedScreen.revision},{Prefer:'respond-async'});assert.equal(screenPublish.status,202);const screenJob=(await screenPublish.json()).job.id;
+  let screenResult;for(let i=0;i<100;i++){screenResult=await(await req(desk,'/api/v2/jobs/'+screenJob)).json();if(screenResult.state!=='running')break;await new Promise(r=>setTimeout(r,10));}assert.equal(screenResult.state,'done');
+  assert.equal((await req(desk,'/api/v2/jobs/'+screenJob,'GET',null,bobHeaders)).status,404,'another team member cannot read a session-bound operation');
+  assert.equal((await req(a,'/api/v2/jobs/'+screenJob)).status,404,'public site never exposes operation progress');
   const icon=await req(a,'/favicon.ico');assert.equal(icon.status,200);assert.equal(icon.headers.get('content-type'),'image/x-icon');const bytes=Buffer.from(await icon.arrayBuffer());assert.equal(bytes.readUInt16LE(2),1);assert(bytes.length>22);assert.equal((await req(a,'/favicon.ico','HEAD')).status,200);
   const page=await(await req(desk,'/api/v2/pages/home')).json();await req(desk,'/api/v2/pages/home','PUT',{revision:page.revision,fields:{...page.fields,announcementTitle:'PostgreSQL publication'}});assert.equal((await req(desk,'/api/v2/pages/home/publish','POST',{})).status,200);
   assert((await(await req(a,'/')).text()).includes('PostgreSQL publication'));assert((await(await req(b,'/')).text()).includes('PostgreSQL publication'));
@@ -62,6 +68,8 @@ test('hosted PostgreSQL: origin gate, sessions, publishing and restart durabilit
   const cvResult=await req(b,'/api/v2/forms/join','POST',{name:'Fictional applicant',email:'applicant@example.test',message:'Fictional CV only',website:'',cv:{name:'fictional.pdf',base64:Buffer.from(file).toString('base64')}});assert.equal(cvResult.status,201);const cvId=(await cvResult.json()).id;const attachment=(await(await req(desk,'/api/v2/conversations/'+cvId)).json()).messages[0].attachments[0];assert.equal((await req(desk,'/api/v2/attachments/'+attachment.id)).status,200);
   const before=await(await req(desk,'/api/v2/publishes')).json();await app.close();app=null;await rm(root,{recursive:true,force:true});root=await mkdtemp(path.join(os.tmpdir(),'fpb-hosted-restart-'));await seed();await start();
   assert.equal((await req(desk,'/api/v2/settings')).status,200,'session survives restart');
+  assert.equal((await req(desk,'/api/v2/jobs/'+screenJob)).status,404,'session persists but ephemeral progress does not');
+  const restoredScreens=await(await req(desk,'/api/v2/structure')).json();assert.equal(restoredScreens.fields.nodes.find(n=>n.id==='recents').message,'NEW WORK');assert.equal(restoredScreens.live.nodes.find(n=>n.id==='recents').message,'NEW WORK','published message survives database-backed restart');
   assert.deepEqual(Buffer.from(await(await req(desk,'/api/v2/files/'+checkedFile.id)).arrayBuffer()),checkedBytes,'checked binary survives process and filesystem replacement');
   assert.equal((await req(desk,'/api/v2/settings','GET',null,{'Cf-Access-Jwt-Assertion':'bob-test-fixture'})).status,403,'session is tied to its Access identity');
   const sessionProbe=new pg.Client({connectionString:database});await sessionProbe.connect();const rows=(await sessionProbe.query('SELECT digest,payload FROM pond_sessions')).rows;await sessionProbe.end();assert(rows.length>0);assert(!JSON.stringify(rows).includes(token));

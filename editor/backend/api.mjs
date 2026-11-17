@@ -21,6 +21,7 @@ import {validatePortfolioUrl} from './attachment-policy.mjs';
 import {image,pdf} from './files.mjs';
 import {compactHistory,hydrateSnapshot,preserveRestoredMedia} from './history.mjs';
 import {historyLabel,conversationView} from './messages.mjs';
+import {createOperations,operationPlan} from './operations.mjs';
 const hash=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
 const read=async p=>JSON.parse(await readFile(p,'utf8'));
 const headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; img-src 'self' data:; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"};
@@ -44,6 +45,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
  const saveFile=async(id,bytes)=>store?.saveFile?store.saveFile(id,bytes):writeFile(path.join(fileFolder,id),bytes,{mode:0o600,flag:'wx'});
  const deleteFile=async id=>store?.deleteFile?store.deleteFile(id):rm(path.join(fileFolder,id),{force:true});
  const fileBytes=async id=>store?.loadFile?store.loadFile(id):readFile(path.join(fileFolder,id));
+ const operations=createOperations({now:()=>clock().getTime()});let activeOperation=null;
  let state,init,queue=Promise.resolve(),locked=false;const rates=new Map(), sessions=new Map();
  let actor='local',intakeInFlight=0,mailPump=null,closing=false;const attempts=new Map();
  const log=(next,action,at)=>modelLog(next,action,at,actor);
@@ -99,9 +101,11 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
   })();try{await init}catch(e){state=undefined;init=undefined;if(locked){await rm(lock,{force:true});locked=false;}throw e;}
  }
  async function publish(next,summary){
+  activeOperation?.stage('content');
   const before=await diskSnapshot();check(hash(before)===state.sourceHash,'The site files changed outside Pond Desk. Ask the site manager to check them before publishing. Your drafts are saved.',409);
   let pub;try{pub=snapshots(next);const checkRefs=x=>{if(!x||typeof x!=='object')return;for(const[k,v]of Object.entries(x)){if(['documentId','videoId'].includes(k)&&v){const f=next.files?.find(f=>f.id===v);check(f&&(k==='videoId'?f.kind==='video':f.kind==='pdf'),'Upload a checked file before publishing.',422,k);}else checkRefs(v);}};checkRefs(pub);await validateImages(pub);}catch(e){if(e.status)throw e;fail('Cannot publish. Check the required fields, dates, links, and photos. Your drafts are saved.',422);}
-  const id=uid('release');try{await builder(root,folder,id,pub,{files:next.files??[]});}catch(e){console.warn(JSON.stringify({event:'publication_failed',stage:'build',reason:/Sidecar|Missing page|Nonportable|file reference|checked metadata/.test(e.message)?'asset_reference':/anchor|routes/.test(e.message)?'page_links':/site check failed/.test(e.message)?'build_process':'validation'}));const failed=clone(state);log(failed,'publication_failed',now());failed.lastFailure={at:now(),message:'The site could not be built. The previous site is still available.'};(failed.failures??=[]).unshift({id:uid('failed'),at:now(),summary:'FAILED - previous site kept',status:'failed'});await save(failed);fail(failed.lastFailure.message,422);}
+  const id=uid('release');try{await builder(root,folder,id,pub,{files:next.files??[],onProgress:(id,counts)=>activeOperation?.stage(id,counts)});}catch(e){console.warn(JSON.stringify({event:'publication_failed',stage:'build',reason:/Sidecar|Missing page|Nonportable|file reference|checked metadata/.test(e.message)?'asset_reference':/anchor|routes/.test(e.message)?'page_links':/site check failed/.test(e.message)?'build_process':'validation'}));const failed=clone(state);log(failed,'publication_failed',now());failed.lastFailure={at:now(),message:'The site could not be built. The previous site is still available.'};(failed.failures??=[]).unshift({id:uid('failed'),at:now(),summary:'FAILED - previous site kept',status:'failed'});await save(failed);fail(failed.lastFailure.message,422);}
+  activeOperation?.stage('install');
   next.release=id;next.sourceHash=hash(pub);next.publishes.unshift({id,at:now(),summary,snapshot:pub});next.lastFailure=null;log(next,'publish',now());
   await atomic(pending,{id,before,next:pub});
   try{await atomic(siteFile,pub.site);await atomic(caseFile,pub.cases);await save(next);}catch(e){await atomic(siteFile,before.site);await atomic(caseFile,before.cases);await rm(pending,{force:true});throw e;}
@@ -141,7 +145,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
    if(method==='POST'&&id==='publish'){revision(tree,body.revision);tree.live=clone(tree.fields);return publish(next,'Site structure updated');}
    if(method==='POST'&&!id)fail('The site sections are fixed. You can rename them and edit their content.');
    if(method==='PUT'&&!id){
-    revision(tree,body.revision);let candidate;try{candidate=prepareStructure(body.structure);}catch(e){fail(e.message);}
+    revision(tree,body.revision);let candidate;try{candidate=prepareStructure(body.structure);}catch(e){if(e.status)throw e;fail(e.message);}
     check(candidate.nodes.length===tree.fields.nodes.length,'The site sections are fixed. You can rename them and edit their content.');
     for(const old of tree.fields.nodes){const node=candidate.nodes.find(n=>n.id===old.id);check(node&&node.slug===old.slug&&node.kind===old.kind&&node.parentId===old.parentId&&node.zone===old.zone,'Page addresses and content types stay fixed to protect existing links and content.');}
     tree.fields=candidate;tree.revision++;result={...clone(tree),zones:clone(zones)};changed=true;
@@ -168,7 +172,7 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
    }
    if(method==='POST'&&action==='publish'){check(sessionState.pages[id]===p.revision,'This page changed in another window. Save it again before publishing.',409);p.live=clone(p.fields);return publish(next,'Page updated');}
   }else if(resource==='files'){
-   if(method==='POST'&&!id){check((next.files??[]).length<100,'The limit of 100 uploaded documents and videos has been reached.',413);const upload=await prepareUpload(body,folder);const {bytes,...metadata}=upload;fileBudget(bytes.length);if(store){check(store.saveFile,'File storage is not available.',503);await store.saveFile(upload.id,bytes);}else await writeFile(path.join(fileFolder,upload.id),bytes,{mode:0o600,flag:'wx'});(next.files??=[]).push(metadata);result={...metadata,url:'/files/'+upload.id};changed=true;}
+   if(method==='POST'&&!id){check((next.files??[]).length<100,'The limit of 100 uploaded documents and videos has been reached.',413);const upload=await prepareUpload(body,folder,{onProgress:(id,counts)=>activeOperation?.stage(id,counts)});activeOperation?.stage('saving');const {bytes,...metadata}=upload;fileBudget(bytes.length);if(store){check(store.saveFile,'File storage is not available.',503);await store.saveFile(upload.id,bytes);}else await writeFile(path.join(fileFolder,upload.id),bytes,{mode:0o600,flag:'wx'});(next.files??=[]).push(metadata);result={...metadata,url:'/files/'+upload.id};changed=true;}
    if(method==='GET'&&id){const file=next.files?.find(f=>f.id===id);check(file,'File not found.',404);send(res,200,await fileBytes(id),file.mime,{'Content-Disposition':file.kind==='pdf'?'inline; filename="document.pdf"':'inline'});return null;}
   }else if(resource==='media'){
    if(method==='POST'&&!id){const a=await image(body);check(next.media.length<500,'The limit of 500 media files has been reached.',413);next.media.push(a);result={mediaId:a.id,src:`/api/v2/media/${a.id}`};changed=true;}
@@ -295,6 +299,13 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
    }
    const body=['POST','PUT','DELETE'].includes(req.method)?(req.method==='DELETE'?{}:await bodyOf(req,form)):{};
    if(form&&req.pondPublicForm){check(!body.website,'Submission rejected.',422);check(forms.enabled,'Online sending is not open yet.',503);await forms.verify(body.turnstileToken,req.pondPublicForm,url.pathname.endsWith('/join')?'join':'contact');}
+   // These reads must stay outside the mutation queue so a build can report progress.
+   if(req.method==='GET'&&/^\/api\/v2\/jobs\/[^/]+$/.test(url.pathname)){
+    const job=operations.get(url.pathname.split('/').at(-1),hash(sessionKey));check(job,'Operation not found. Check the site history before trying again.',404);send(res,200,job);return true;
+   }
+   const plan=operationPlan(req.method,url.pathname.slice('/api/v2'.length),publicVariants);
+   const asynchronous=plan&&String(req.headers.prefer??'').split(',').some(p=>p.trim().toLowerCase()==='respond-async');
+   const job=asynchronous?operations.create(hash(sessionKey),plan):null;
    // Only audited, side-effect-free reads bypass the mutation queue. They observe
    // the last committed state while a new release is being built. Authentication
    // is still checked above, and reads never persist or extend a session.
@@ -309,9 +320,10 @@ export function createV2({root,token,clock=()=>new Date(),builder=buildRelease,s
     const previousContext=auth?JSON.stringify(auth.pages):null;
     const result=inbound?await execute('POST',new URL('/api/v2/mail-inbound',url),{raw:req.pondRawBody,headers:req.headers,value:body},res,auth):await execute(req.method,url,body,res,auth);
     if(auth&&hosted&&store?.saveSession&&previousContext!==JSON.stringify(auth.pages))await store.saveSession(hash(sessionKey),auth,clock().getTime());
-    if(result!==null)send(res,form?201:200,result);
+    if(job)job.succeed(result);else if(result!==null)send(res,form?201:200,result);
    };
-   const task=queue.then(operation);queue=task.catch(()=>{});await task;sendPending();
+   const task=queue.then(async()=>{activeOperation=job;try{if(job)job.stage(plan[0][0]);await operation();}catch(error){if(!job)throw error;job.fail(error);}finally{activeOperation=null;}});queue=task.catch(()=>{});
+   if(job){send(res,202,{job:{id:job.id}},'application/json',{'Preference-Applied':'respond-async'});void task.then(sendPending,()=>{});}else{await task;sendPending();}
   }catch(error){if(res.headersSent){res.end();return true;}if(error.status===413)res.setHeader('Connection','close');send(res,error.status??400,{...(error.code?{code:error.code}:{}),message:error.status?error.message:'Could not process this data. Check the fields and try again.',...(error.diagnostics?{diagnostics:error.diagnostics}:{})});}
   finally{if(counted)intakeInFlight--;}
   return true;

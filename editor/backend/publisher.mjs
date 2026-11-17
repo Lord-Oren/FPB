@@ -11,7 +11,7 @@ export function run(command,args,options={}){return new Promise((resolve,reject)
 export async function atomic(file,value){const temp=file+'.tmp';await writeFile(temp,JSON.stringify(value,null,2)+'\n',{mode:0o600});await rename(temp,file);}
 export async function validateImages(snapshot){await validatePublicMedia(snapshot.cases);await validatePublicMedia({schemaVersion:1,cases:[],media:snapshot.site.media.map(({id,mime,base64})=>({id,mime,base64}))});}
 // Build isolated sources; no candidate is installed before all selected variants pass.
-export async function buildRelease(root,folder,id,snapshot,{hosted=false,variants=['a','b'],publicSite=false,files=[]}={}){
+export async function buildRelease(root,folder,id,snapshot,{hosted=false,variants=['a','b'],publicSite=false,files=[],onProgress=()=>{}}={}){
  if(!Array.isArray(variants)||!variants.length||variants.some(v=>!['a','b'].includes(v))||new Set(variants).size!==variants.length)throw Error('Invalid publication variants.');
  const publishedFiles=approvedFiles(snapshot,files);
  await validateImages(snapshot);const stage=await mkdtemp(path.join(folder,'build-'));const project=path.join(stage,'astro');
@@ -23,7 +23,9 @@ export async function buildRelease(root,folder,id,snapshot,{hosted=false,variant
   await atomic(path.join(project,'src/data/site-content.json'),snapshot.site);await atomic(path.join(project,'src/data/case-studies-public.json'),snapshot.cases);
   const expectedRoutes=['index.html',...structurePages(prepareStructure(snapshot.site.structure,snapshot.site.home)).map(p=>p.slug+'.html'),...snapshot.cases.cases.map(c=>'case-study-'+c.slug+'.html')];
   for(const variant of variants){
+   onProgress('build-'+variant);
    await run(process.execPath,[path.join(root,'node_modules/astro/bin/astro.mjs'),'build'],{cwd:project,env:{...process.env,FPB_VARIANT:variant,POND_HOSTED_BUILD:hosted&&!publicSite?'1':'',...(hosted?{NODE_OPTIONS:'--max-old-space-size=128'}:{}),ASTRO_TELEMETRY_DISABLED:'1'}});
+   onProgress('check-'+variant);
    await checkExport(path.join(project,'dist'),{expectedRoutes,hostedForms:hosted&&!publicSite,publishedFiles});await checkOriginalArtwork(path.join(project,'dist'));await cp(path.join(project,'dist'),path.join(stage,variant),{recursive:true});
   }
   await rm(project,{recursive:true,force:true});await atomic(path.join(stage,'snapshot.json'),snapshot);

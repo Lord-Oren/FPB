@@ -4,7 +4,8 @@ import {run} from '../editor/backend/publisher.mjs';import {createEditor} from '
 function blankPdf(){const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R] /Count 1 >>','<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>'];let f='%PDF-1.4\n';const offsets=[];for(let i=0;i<objects.length;i++){offsets.push(Buffer.byteLength(f));f+=`${i+1} 0 obj\n${objects[i]}\nendobj\n`;}const n=Buffer.byteLength(f);return Buffer.from(f+'xref\n0 4\n0000000000 65535 f \n'+offsets.map(x=>String(x).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n${n}\n%%EOF\n`);}
 test('PDF is rebuilt as images; active and forged documents fail closed',async()=>{
  const dir=await mkdtemp(path.join(os.tmpdir(),'fpb-pdf-'));try{
- const result=await prepareUpload({name:'legal.pdf',base64:blankPdf().toString('base64')},dir);
+ const progress=[];const result=await prepareUpload({name:'legal.pdf',base64:blankPdf().toString('base64')},dir,{onProgress:(step,count)=>progress.push({step,...count})});
+ assert.deepEqual(progress,[{step:'format'},{step:'processing'},{step:'processing',done:1,total:1}]);
  assert.equal(result.mime,'application/pdf');assert.match(result.bytes.toString('latin1'),/\/Subtype \/Image/);assert.doesNotMatch(result.bytes.toString('latin1'),/\/JavaScript|\/OpenAction/);
  await writeFile(path.join(dir,'checked.pdf'),result.bytes);assert.match(await run('pdfinfo',[path.join(dir,'checked.pdf')]),/Pages:\s+1/);
  await assert.rejects(prepareUpload({name:'bad.pdf',base64:Buffer.from('%PDF-invalid').toString('base64')},dir));

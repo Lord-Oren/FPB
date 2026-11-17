@@ -5,6 +5,10 @@ export const collectionKinds=['works','events','press'];
 export const kinds=['menu','page','link','anchor',...collectionKinds,'case-studies','about','contact','join','legal','croak'];
 const internal=/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const clean=s=>typeof s==='string'&&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u202a-\u202e\u2066-\u2069]/u.test(s);
+export const SCREEN_MESSAGE_MAX=14;
+const screenSegments=new Intl.Segmenter('en',{granularity:'grapheme'});
+export function screenMessageLength(value){let length=0;for(const ignored of screenSegments.segment(value)){length++;}return length;}
+function requireMessage(ok,message){if(!ok)throw Object.assign(new Error(message),{status:422,code:'invalid_screen_message',diagnostics:[{field:'message',message}]});}
 function require(ok,message){if(!ok)throw new Error(message);}
 export function defaultStructure(home={}){
  const names={...navigationDefaults,...home.navigation};const nodes=[];
@@ -28,7 +32,13 @@ export function prepareStructure(value,home={}){
  require(Object.keys(tree).every(k=>['schemaVersion','nodes'].includes(k)),'Unknown structure field.');
  const ids=new Set(),slugs=new Set(['index']);
  for(const n of tree.nodes){
-  require(n&&Object.keys(n).every(k=>['id','title','kind','zone','parentId','slug','visible','newTab','text','href'].includes(k)),'Unknown section field.');
+  require(n&&Object.keys(n).every(k=>['id','title','kind','zone','parentId','slug','visible','newTab','text','href','message'].includes(k)),'Unknown section field.');
+  if('message' in n){
+   requireMessage(typeof n.message==='string'&&!/[\u0000-\u001f\u007f\u2028\u2029\u202a-\u202e\u2066-\u2069]/u.test(n.message),'Screen message: use plain text on one line.');
+   n.message=n.message.trim();requireMessage(screenMessageLength(n.message)<=SCREEN_MESSAGE_MAX,'Screen message: up to 14 characters, spaces included.');
+   // An absent or empty message retains the legacy shape. Existing publications need no rewrite.
+   if(!n.message)delete n.message;
+  }
   require(typeof n.id==='string'&&internal.test(n.id)&&n.id.length<=100&&!ids.has(n.id),'Invalid or duplicate section ID.');ids.add(n.id);
   require(clean(n.title)&&n.title.trim()&&n.title.length<=60,'Section name: use 1–60 characters.');n.title=n.title.trim();
   require(kinds.includes(n.kind),'Unknown content type.');require(zones.some(z=>z.id===n.zone),'Unknown site zone.');
@@ -38,7 +48,7 @@ export function prepareStructure(value,home={}){
   else{require(internal.test(n.slug)&&n.slug.length<=100&&!slugs.has(n.slug)&&!n.slug.startsWith('case-study-'),'Invalid or duplicate page address.');slugs.add(n.slug);}
  }
  const map=new Map(tree.nodes.map(n=>[n.id,n]));
- for(const n of tree.nodes){let p=n,seen=new Set([n.id]),depth=0;while(p.parentId){const parent=map.get(p.parentId);require(parent&&!seen.has(parent.id),'A section cannot contain itself, and its parent must exist.');require(parent.kind==='menu'&&parent.zone==='menus','Only frog menus can contain subsections.');seen.add(parent.id);p=parent;require(++depth<=12,'Use no more than 12 nested levels.');}n.zone=p.zone;require(n.kind!=='menu'||n.zone==='menus','Menus belong in the frog menu zone.');}
+ for(const n of tree.nodes){let p=n,seen=new Set([n.id]),depth=0;while(p.parentId){const parent=map.get(p.parentId);require(parent&&!seen.has(parent.id),'A section cannot contain itself, and its parent must exist.');require(parent.kind==='menu'&&parent.zone==='menus','Only frog menus can contain subsections.');seen.add(parent.id);p=parent;require(++depth<=12,'Use no more than 12 nested levels.');}n.zone=p.zone;require(n.kind!=='menu'||n.zone==='menus','Menus belong in the frog menu zone.');requireMessage(!n.message||n.zone==='screens','Only lily-pad screens can show a message.');}
  return tree;
 }
 export function children(tree,id=null,zone){return tree.nodes.filter(n=>n.parentId===id&&(!zone||n.zone===zone));}
