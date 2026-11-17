@@ -12,14 +12,29 @@
 .variant-b .tv .screen-content.has-message { left:12.2%; top:36.4%; width:62.8%; height:43.2% }
 .screen-message { position:relative; margin:0; max-width:100%; pointer-events:none; color:var(--cream, #eee8d7); font-weight:700; font-size:clamp(10px, 7.5cqw, 16px); line-height:1.12; letter-spacing:0; text-transform:none; text-align:center; overflow-wrap:anywhere; text-wrap:balance }
 .screen-message-arrow { color:var(--dandelion, #ffdb76); white-space:nowrap }
-/* A on short desktop windows (height 780px or less): the TV is drawn at 75% of its block and the arrow sits under it.
-   A message stays on the glass instead, sized to the drawn TV. */
+/* A on short desktop windows (height 780px or less): without a message the TV is drawn at 75% of its block so the
+   arrow fits under it. A message carries its own arrow, so its TV keeps the full drawing and the text keeps the
+   full glass: at 75%, 14 wide characters did not fit at 800 x 600 (T11-F01). The block grows by the freed space only. */
 @media (max-height:780px) and (min-width:601px) {
-  .home-page .screen-content.has-message { position:absolute; left:20.8%; top:35.7%; width:50%; height:41.7% }
-  .home-page .screen-message { font-size:clamp(10px, 5.6cqw, 16px) }
+  .home-page .screen:has(.has-message) { padding-top:73.3% }
+  .home-page .screen:has(.has-message) .tv-art { width:100%; left:0 }
+  .home-page .screen-content.has-message { position:absolute }
 }
 /* A on phones: the pixel TV keeps its title on the glass; the message sits under it. */
 @media (max-width:600px) {
   .home-page .pond-page[data-artwork-mode="original"] .screen-content.has-message { left:22px; top:66px; width:132px; height:48px; padding:0; background:none; box-shadow:none }
   .home-page .pond-page[data-artwork-mode="original"] .screen-content.has-message .screen-message { font-size:14px; line-height:1.1 }
 }
+/* A between 701 and 760px wide: four TVs share a narrow row and each pad's side margin left a 66px glass, too small
+   for 14 wide characters at 10px. With a message on the row, the four pads use thinner side margins (all four alike). */
+@media (min-width:701px) and (max-width:760px) {
+  .home-page .lily-screens:has(.has-message) .lily-screen { padding-inline:9px }
+}
+/* B when the pond is drawn small (very narrow phones, or a short desktop window where the pond follows the height):
+   the TV of a pad is 84% of the pad and its glass fell to 63px. With a message, that pad's TV takes the pad's full
+   width (only in these small ponds, so larger ponds keep their look). Measured on the pond, which is a size container. */
+@media (min-width:701px) { @container (max-width:620px) { .variant-b .pad:has(.has-message) .pad-body { width:100% } } }
+@media (max-width:700px) { @container (max-width:330px) { .variant-b .pad:has(.has-message) .pad-body { width:100% } } }
+/* B on a very short wide window (430px tall or less): the pond follows the height and fell to 518px or less. With a
+   message it keeps at least 600px (the page scrolls a little more), so the glass stays at 14 characters' size. */
+@media (min-width:701px) { .variant-b .pond:has(.has-message) { min-width:min(600px, 92vw) } }

@@ -242,6 +242,10 @@ input.text[aria-invalid="true"] { border-color:var(--bad) }
 .progress-bytes { margin-left:auto; color:var(--muted); font-weight:400; white-space:nowrap; font-variant-numeric:tabular-nums }
 .progress-message { margin:10px 0 0; font-weight:700; overflow-wrap:anywhere }
 .progress[data-state="failed"] .progress-message { color:var(--bad) }
+/* T12: result unknown (the server's answer was lost): neither green nor red, the dandelion of "check this". */
+.progress[data-state="unknown"] .progress-fill { background:var(--dandelion) }
+.progress-steps li[data-state="unknown"] { color:var(--dandelion); font-weight:700 }
+.progress[data-state="unknown"] .progress-message { color:var(--dandelion) }
 .progress-close { margin-top:10px }
 .toast.above { bottom:auto; top:18px }
 /* Phones: the card takes its own place under the header, so Save, Publish and the tabs stay reachable. */

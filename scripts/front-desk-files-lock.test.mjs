@@ -14,7 +14,7 @@ test('Desk reads files only through readBase64, and only inside busy()', () => {
   for (const call of calls) {
     const line = app.slice(app.lastIndexOf('\n', call.index), app.indexOf('\n', call.index));
     // Reading, then sending (with real byte progress), both inside the shared lock.
-    assert.match(line, /await busy\(null, async steps => \{ const base64 = await readBase64\(file, .*upload\('\/(media|files)', \{ name: file\.name, base64 \}, steps\)/);
+    assert.match(line, /await busy\(null, async steps => \{ const base64 = await readBase64\(file, .*(?:upload|trackUpload)\('\/(media|files)', \{ name: file\.name, base64 \}, steps\)/);
   }
 });
 

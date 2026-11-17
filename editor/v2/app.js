@@ -33,6 +33,10 @@ function toast(text, { stay = false } = {}) {
 // stripe (still when the visitor asks for reduced motion). "Done" only comes from finish(), after real success.
 // If the action ends without finish(), the card shows the step that stopped and the last message, or simply closes
 // when nothing was sent (a cancelled confirmation, a form with problems shown in red).
+// When the server's answer was lost or could not be read, nobody knows whether the action happened: the card then
+// ends as "Result unknown" (never "Done", never "Stopped") and its message says where to check.
+// For long server operations (publishing, checking a PDF or a video), the server reports its own steps: server()
+// replaces the card's last step with them, and a step turns done only when the server says so.
 const progressCard = (() => {
   let run = null, hideTimer = 0, card = null;
   // The card lives in the content pane, right under its header: on a computer it floats in the corner, on a phone it
@@ -40,43 +44,57 @@ const progressCard = (() => {
   const attach = box => { const pane = $('#main'); if (!pane || box.parentElement === pane && box.previousElementSibling?.classList.contains('top')) return; const top = pane.querySelector(':scope > .top'); if (top) top.after(box); else pane.prepend(box); };
   const hide = () => { run = null; if (card) card.hidden = true; };
   const percent = (sent, total) => Math.max(0, Math.min(100, Math.floor(sent / total * 100)));
+  const COUNT_UNITS = { processing: 'pages' };
   const draw = () => {
     if (!run) return;
     const box = card ??= h('section', { class: 'progress', id: 'progress', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'false' });
     attach(box);
     const total = run.steps.length, doneCount = run.state === 'done' ? total : run.current;
-    const measured = run.state === 'running' && run.bytes ? run.bytes.sent / run.bytes.total : 0;
+    const measured = run.state !== 'running' ? 0 : run.bytes ? run.bytes.sent / run.bytes.total : run.count ? run.count.done / run.count.total : 0;
     const fill = run.state === 'done' ? 100 : Math.floor((doneCount + measured) / total * 100);
-    const label = run.state === 'done' ? 'Done' : run.state === 'failed' ? 'Stopped at step ' + (run.current + 1) + ' of ' + total : 'Step ' + (run.current + 1) + ' of ' + total;
-    const stepState = index => run.state === 'done' || index < run.current ? 'done' : index > run.current ? 'todo' : run.state === 'failed' ? 'failed' : 'current';
-    const mark = { done: '✓', current: '●', todo: '○', failed: '✕' };
-    const note = { done: 'done', current: 'in progress', todo: 'to do', failed: 'stopped here' };
+    const label = run.state === 'done' ? 'Done' : run.state === 'failed' ? 'Stopped at step ' + (run.current + 1) + ' of ' + total : run.state === 'unknown' ? 'Result unknown' : 'Step ' + (run.current + 1) + ' of ' + total;
+    const stepState = index => run.state === 'done' || index < run.current ? 'done' : index > run.current ? 'todo' : run.state === 'failed' ? 'failed' : run.state === 'unknown' ? 'unknown' : 'current';
+    const mark = { done: '✓', current: '●', todo: '○', failed: '✕', unknown: '?' };
+    const note = { done: 'done', current: 'in progress', todo: 'to do', failed: 'stopped here', unknown: 'result unknown' };
+    const detail = () => run.bytes ? `${percent(run.bytes.sent, run.bytes.total)}%` : run.count ? `${run.count.done} of ${run.count.total}${run.count.unit ? ' ' + run.count.unit : ''}` : run.waiting ? 'Waiting…' : 'In progress…';
     box.dataset.state = run.state; box.hidden = false;
     box.replaceChildren(...[
       h('div', { class: 'progress-head' }, h('b', { text: run.title }), h('span', { class: 'progress-count', text: label })),
       h('div', { class: 'progress-track', role: 'progressbar', 'aria-label': run.title, 'aria-valuemin': '0', 'aria-valuemax': String(total), 'aria-valuenow': String(doneCount), 'aria-valuetext': label + ': ' + (run.steps[Math.min(run.current, total - 1)] || '') },
         h('span', { class: 'progress-fill', style: `width:${fill}%` }),
-        run.state === 'running' && !run.bytes ? h('span', { class: 'progress-pending', style: `left:${doneCount / total * 100}%;width:${100 / total}%` }) : null),
+        run.state === 'running' && !run.bytes && !run.count ? h('span', { class: 'progress-pending', style: `left:${doneCount / total * 100}%;width:${100 / total}%` }) : null),
       h('ol', { class: 'progress-steps' }, ...run.steps.map((step, index) => { const s = stepState(index); return h('li', { 'data-state': s },
         h('span', { class: 'progress-mark', 'aria-hidden': 'true', text: mark[s] }), h('span', { text: step }),
         h('small', { class: 'sr-only', text: ' — ' + note[s] }),
-        s === 'current' && run.bytes ? h('small', { class: 'progress-bytes', 'aria-hidden': 'true', text: `${percent(run.bytes.sent, run.bytes.total)}%` }) : s === 'current' ? h('small', { class: 'progress-bytes', 'aria-hidden': 'true', text: 'In progress…' }) : null); })),
+        s === 'current' ? h('small', { class: 'progress-bytes', 'aria-hidden': 'true', text: detail() }) : null); })),
       run.message ? h('p', { class: 'progress-message', text: run.message }) : null,
       run.state !== 'running' ? h('button', { class: 'btn soft progress-close', type: 'button', onclick: () => hide() }, 'Close') : null].filter(Boolean));
   };
   const end = (state, message) => {
     if (!run || run.state !== 'running') return;
-    run.state = state; run.bytes = null; if (message) run.message = message; draw();
+    if (state === 'failed' && run.unknown) state = 'unknown';
+    run.state = state; run.bytes = null; run.count = null; if (message) run.message = message; draw();
     clearTimeout(hideTimer); if (state === 'done') { const ended = run; hideTimer = setTimeout(() => { if (run === ended) hide(); }, 5000); }
   };
   return {
     start(plan) {
       clearTimeout(hideTimer);
-      run = { title: plan.title, steps: plan.steps, current: 0, state: 'running', bytes: null, message: '', said: false };
+      run = { title: plan.title, steps: [...plan.steps], current: 0, state: 'running', bytes: null, count: null, waiting: false, message: '', said: false, unknown: false, base: -1 };
       $('#toast').hidden = true; draw();
       return {
-        step(index) { if (run?.state === 'running' && index > run.current && index < run.steps.length) { run.current = index; run.bytes = null; run.message = ''; draw(); } },
+        step(index) { if (run?.state === 'running' && index > run.current && index < run.steps.length) { run.current = index; run.bytes = null; run.count = null; run.message = ''; draw(); } },
         measure(sent, total) { if (run?.state === 'running' && total > 0) { run.bytes = { sent: Math.min(sent, total), total }; draw(); } },
+        // The server's own steps ({ id, label, state, done?, total? }), from GET /jobs/:id. The first report replaces
+        // the card's current step and the ones after it; the current step is the first one the server has not finished.
+        server(list) {
+          if (run?.state !== 'running' || !Array.isArray(list) || !list.length) return;
+          if (run.base < 0) { run.base = run.current; run.steps = [...run.steps.slice(0, run.base), ...list.map(item => String(item.label))]; }
+          let index = list.findIndex(item => item.state !== 'done'); if (index < 0) index = list.length - 1;
+          const item = list[index], counted = Number.isInteger(item.done) && Number.isInteger(item.total) && item.total > 0 && item.done >= 0 && item.done <= item.total;
+          if (run.base + index !== run.current) run.message = '';
+          run.current = run.base + index; run.bytes = null; run.count = counted ? { done: item.done, total: item.total, unit: COUNT_UNITS[item.id] || '' } : null;
+          run.waiting = item.state === 'waiting'; draw();
+        },
         finish(message) { end('done', message); },
         fail(message) { end('failed', message); },
         settle() { if (run?.state === 'running') { if (run.said) end('failed', run.message); else hide(); } },
@@ -90,6 +108,8 @@ const progressCard = (() => {
       run.message = text; run.said = true; draw(); return true;
     },
     visible() { return Boolean(run); },
+    // The server's answer was lost or unreadable: whatever message follows, the card cannot end as a plain failure.
+    uncertain() { if (run?.state === 'running') run.unknown = true; },
     keep() { if (run && card) attach(card); },
   };
 })();
@@ -112,7 +132,7 @@ async function busy(control, work, waitText = '') {
   const steps = waitText && typeof waitText === 'object' ? progressCard.start(waitText) : null;
   if (waitText && !steps) toast(waitText, { stay: true });
   try { return await work(steps); }
-  catch (error) { const text = error.message || 'The server could not do that. Please try again.'; if (steps) steps.fail(text); else toast(text); return undefined; }
+  catch (error) { const text = error.message || 'The server could not do that. Please try again.'; if (steps) steps.fail(text); else toast(text, { stay: Boolean(error.unknown) }); return undefined; }
   finally {
     steps?.settle();
     lock.active = false;
@@ -124,11 +144,13 @@ async function busy(control, work, waitText = '') {
 // lock:end
 const writer = (work, waitText) => event => busy(event.currentTarget, steps => work(event, steps), waitText);
 // Step plans. Each step name says what is being confirmed; the server confirms each one before the next starts.
+// The last step of a publication, a restore or a file check is replaced by the server's own steps when it reports
+// them (content check, build and check of each version, then install; or format, pages, saving for a file).
 const PLAN = {
   save: { title: 'Saving', steps: ['Saving the draft'] },
-  publish: { title: 'Publishing', steps: ['Saving the draft', 'Building and publishing the site (A and B)'] },
-  publishOnly: { title: 'Publishing', steps: ['Building and publishing the site (A and B)'] },
-  restore: { title: 'Going back to this version', steps: ['Restoring and publishing the site (A and B)'] },
+  publish: { title: 'Publishing', steps: ['Saving the draft', 'Publishing the site'] },
+  publishOnly: { title: 'Publishing', steps: ['Publishing the site'] },
+  restore: { title: 'Going back to this version', steps: ['Restoring and publishing the site'] },
   file: { title: 'Adding the file', steps: ['Reading the file', 'Uploading', 'Checking the file on the server'] },
   photo: { title: 'Adding the photo', steps: ['Reading the photo', 'Uploading', 'Preparing the photo on the server'] },
 };
@@ -267,32 +289,101 @@ const PAGES = {
 
 PAGES.home.fields=PAGES.home.fields.filter(field=>!field.name.startsWith('navigation_'));
 // ---------- API client ----------
-async function call(method, path, body) {
-  let response;
-  try { response = await fetch(API + path, { method, headers: { 'X-Editor-Token': state.token, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin' }); }
-  catch { throw Object.assign(new Error('The connection was lost before the server answered. Check your connection, then try again.'), { status: 0, diagnostics: [] }); }
-  let data = null; try { data = await response.json(); } catch { data = null; }
-  if (!response.ok) { const error = new Error(data?.message || 'The server could not do that. Please try again.'); error.status = response.status; error.code = data?.code || ''; error.diagnostics = data?.diagnostics || []; throw error; }
-  return data;
+// api:start
+// A write whose answer was lost (connection cut, proxy error page, unreadable reply) may still have happened on the
+// server. Pond Desk then says the result is unknown and where to check; it never says "Done" or "nothing changed",
+// and it never sends the write again on its own.
+const UNKNOWN = {
+  publish: 'Pond Desk lost the server’s answer, so the result is unknown: the site may or may not have been updated. Check Settings → Site history before publishing again.',
+  file: 'Pond Desk lost the server’s answer, so the result is unknown: the file may have been added. Reload this screen and look at the files before adding it again.',
+  save: 'Pond Desk lost the server’s answer, so the result is unknown: your change may have been saved. Copy what you need, then reload this screen to check before saving again.',
+};
+const unknownKind = path => /\/(publish|restore)$/.test(path) ? 'publish' : /^\/(files|media)$/.test(path) ? 'file' : 'save';
+function uncertain(path, extra = '') {
+  progressCard.uncertain();
+  return Object.assign(new Error(UNKNOWN[unknownKind(path)] + extra), { status: 0, unknown: true, code: '', diagnostics: [] });
+}
+// An answer 202 to a request sent with Prefer: respond-async: the server accepted a job (see followJob).
+const ACCEPTED = Symbol('accepted');
+const readJson = text => { if (typeof text !== 'string' || !text.trim()) return undefined; try { return JSON.parse(text); } catch { return undefined; } };
+// One reading of every answer (fetch or upload). A success needs a readable JSON body; an error needs the server's own
+// JSON message to count as a known failure. Anything else after a write is an unknown result.
+function settleAnswer(method, path, status, text) {
+  const data = readJson(text), write = method !== 'GET';
+  if (status >= 200 && status < 300) {
+    if (data !== undefined) return data;
+    if (write) throw uncertain(path);
+    throw Object.assign(new Error('The server sent an answer Pond Desk could not read. Reload the page, then try again.'), { status: 0, code: 'protocol', diagnostics: [] });
+  }
+  if (write && !(data && typeof data.message === 'string')) throw uncertain(path);
+  const error = new Error(data?.message || 'The server could not do that. Please try again.'); error.status = status; error.code = data?.code || ''; error.diagnostics = data?.diagnostics || []; throw error;
+}
+async function call(method, path, body, { prefer = '' } = {}) {
+  let response, text;
+  try {
+    response = await fetch(API + path, { method, headers: { 'X-Editor-Token': state.token, ...(body ? { 'Content-Type': 'application/json' } : {}), ...(prefer ? { Prefer: prefer } : {}) }, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin' });
+    text = await response.text();
+  } catch {
+    if (method !== 'GET') throw uncertain(path);
+    throw Object.assign(new Error('The connection was lost before the server answered. Check your connection, then try again.'), { status: 0, diagnostics: [] });
+  }
+  if (prefer && response.status === 202) return { [ACCEPTED]: readJson(text) };
+  return settleAnswer(method, path, response.status, text);
 }
 // Same as call(), for uploads: the browser reports the bytes really sent. When the last byte has left,
-// the next step (the server's own check) starts; its length is unknown until the server answers.
-function upload(path, body, steps) {
+// the next step (the server's own check) starts; its length is unknown until the server answers or reports it.
+function upload(path, body, steps, { prefer = '' } = {}) {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open('POST', API + path); request.withCredentials = true;
     request.setRequestHeader('X-Editor-Token', state.token); request.setRequestHeader('Content-Type', 'application/json');
+    if (prefer) request.setRequestHeader('Prefer', prefer);
     request.upload.onprogress = event => { if (event.lengthComputable) steps?.measure(event.loaded, event.total); };
     request.upload.onload = () => steps?.step(2);
-    request.onerror = () => reject(Object.assign(new Error('The connection was lost before the server answered. Nothing was added: please try again.'), { status: 0 }));
-    request.onload = () => {
-      let data = null; try { data = JSON.parse(request.responseText); } catch { data = null; }
-      if (request.status >= 200 && request.status < 300) return resolve(data);
-      reject(Object.assign(new Error(data?.message || 'The server could not do that. Please try again.'), { status: request.status, code: data?.code || '', diagnostics: data?.diagnostics || [] }));
-    };
+    request.onerror = request.onabort = request.ontimeout = () => reject(uncertain(path));
+    request.onload = () => { try { resolve(prefer && request.status === 202 ? { [ACCEPTED]: readJson(request.responseText) } : settleAnswer('POST', path, request.status, request.responseText)); } catch (error) { reject(error); } };
     request.send(JSON.stringify(body));
   });
 }
+// Long operations (publishing, restoring, checking a PDF or a video) ask the server to answer at once with a job
+// (HTTP 202) and report its real steps at GET /jobs/:id. 202 only means "accepted"; a poll answered 200 only means
+// "still known": success is state "done", and its result is exactly what the direct request would have returned.
+// A server without jobs answers the request directly, which is a confirmed result too.
+// Polling: every second, then every 3 seconds. A short network cut is retried (reading is safe); a lost job (404 after
+// a restart or expiry), a lost sign-in, an unreadable reply or a longer cut ends with an unknown result.
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const POLL_FAST = 1000, POLL_SLOW = 3000, POLL_FAST_COUNT = 10, POLL_CUTS = 3;
+async function followJob(path, accepted, steps) {
+  const id = accepted && typeof accepted === 'object' && accepted.job && typeof accepted.job.id === 'string' && /^[\w-]{1,100}$/.test(accepted.job.id) ? accepted.job.id : '';
+  if (!id) throw uncertain(path);
+  for (let poll = 0, cuts = 0; ; poll++) {
+    await pause(poll < POLL_FAST_COUNT ? POLL_FAST : POLL_SLOW);
+    let response, text;
+    try { response = await fetch(`${API}/jobs/${id}`, { headers: { 'X-Editor-Token': state.token }, credentials: 'same-origin' }); text = await response.text(); }
+    catch { if (++cuts < POLL_CUTS) continue; throw uncertain(path); }
+    cuts = 0;
+    if (response.status === 401 || response.status === 403) throw uncertain(path, ' Your sign-in may have expired: reload the page to sign in again.');
+    const job = response.ok ? readJson(text) : undefined;
+    if (!job || typeof job !== 'object' || !['running', 'done', 'failed'].includes(job.state) || !Array.isArray(job.steps)) throw uncertain(path);
+    steps?.server(job.steps);
+    if (job.state === 'done') return job.result ?? {};
+    if (job.state === 'failed') {
+      const failure = job.error && typeof job.error === 'object' ? job.error : {};
+      throw Object.assign(new Error(typeof failure.message === 'string' && failure.message ? failure.message : 'The server could not finish. Check Settings → Site history before trying again.'), { status: Number(failure.status) || 500, code: failure.code || '', diagnostics: Array.isArray(failure.diagnostics) ? failure.diagnostics : [] });
+    }
+  }
+}
+// A long write: one request, then its job. Same answer as call() when it succeeds.
+async function track(path, body, steps) {
+  if (!steps) return call('POST', path, body);
+  const answer = await call('POST', path, body, { prefer: 'respond-async' });
+  return answer && typeof answer === 'object' && ACCEPTED in answer ? followJob(path, answer[ACCEPTED], steps) : answer;
+}
+async function trackUpload(path, body, steps) {
+  const answer = await upload(path, body, steps, { prefer: 'respond-async' });
+  return answer && typeof answer === 'object' && ACCEPTED in answer ? followJob(path, answer[ACCEPTED], steps) : answer;
+}
+// api:end
 // AUD-C07: when the server does not answer (restart, deployment), say so and retry every 10 seconds. Never show invented content.
 const RETRY_SECONDS = 10;
 function waitingScreen(status) {
@@ -360,7 +451,7 @@ const nodeSection=node=>({slug:node.id,title:node.title,kind:editableKinds[node.
 const rootZones=[{id:'menus',title:'Frog menus'},{id:'screens',title:'Lily-pad screens'},{id:'stones',title:'Stone links'},{id:'footer',title:'Footer links'},{id:'archive',title:'Hidden sections'}];
 const treeChildren=id=>siteTree.fields.nodes.filter(n=>n.parentId===id);
 async function saveTree(tree){siteTree=await call('PUT','/structure',{revision:siteTree.revision,structure:tree});state.dirty=false;await listSite(false);}
-async function publishTree(steps){try{await call('POST','/structure/publish',{revision:siteTree.revision});steps?steps.finish('Site layout published ✓'):toast('Site layout published ✓');siteTree=await call('GET','/structure');await listSite(false);}catch(e){toast(e.message);}}
+async function publishTree(steps){try{await track('/structure/publish',{revision:siteTree.revision},steps);steps?steps.finish('Site layout published ✓'):toast('Site layout published ✓');siteTree=await call('GET','/structure');await listSite(false);}catch(e){toast(e.message);}}
 const publishTreeButton=event=>busy(event.currentTarget,publishTree,PLAN.publishOnly);
 async function listSite(showWelcome=true){
  $('#list-title').textContent='Site zones';$('#search').placeholder='Search sections';
@@ -422,7 +513,7 @@ async function openSection(slug) {
   const [items, intros] = await Promise.all([call('GET', `/items?section=${slug}`), call('GET', '/pages/intros').catch(() => ({ fields: {} }))]);
   const intro = h('textarea', { class: 'text', id: 'intro', maxlength: '240', rows: '2' }); intro.value = intros.fields?.[slug] || '';
   const saveIntro = h('button', { class: 'btn soft', type: 'button', onclick: writer(async (event, steps) => {
-    try { const fields = { ...(intros.fields || {}), [slug]: intro.value.trim() }; const saved = await call('PUT', '/pages/intros', { revision: intros.revision, fields }); intros.revision = saved.revision; intros.fields = fields; steps?.step(1); await call('POST', '/pages/intros/publish', { }); steps ? steps.finish('Line published ✓') : toast('Line published ✓'); } catch (error) { toast(error.message); }
+    try { const fields = { ...(intros.fields || {}), [slug]: intro.value.trim() }; const saved = await call('PUT', '/pages/intros', { revision: intros.revision, fields }); intros.revision = saved.revision; intros.fields = fields; steps?.step(1); await track('/pages/intros/publish', {}, steps); steps ? steps.finish('Line published ✓') : toast('Line published ✓'); } catch (error) { toast(error.message); }
   }, PLAN.publish) }, 'Publish the line');
   const grid = h('div', { class: 'items' }, h('button', { class: 'add', type: 'button', onclick: () => openItem(null) }, h('div', {}, h('span', { 'aria-hidden': 'true' }, '+'), `Add a ${NOUN[section.kind]}`)),
     ...items.map(item => h('button', { class: 'item', type: 'button', onclick: () => openItem(item.id) },
@@ -518,7 +609,7 @@ function fileControl(spec, value, id) {
     if (!file) return;
     if (!type.name.test(file.name)) { toast(`“${file.name}” ${type.wrong}`); return; }
     if (file.size > FILE_MAX_BYTES) { toast(FILE_TOO_LARGE); return; }
-    const result = await busy(null, async steps => { const base64 = await readBase64(file, (read, size) => steps.measure(read, size)); steps.step(1); const added = await upload('/files', { name: file.name, base64 }, steps); steps.finish('File checked and added ✓ Publish to put it on the site.'); return added; }, PLAN.file);
+    const result = await busy(null, async steps => { const base64 = await readBase64(file, (read, size) => steps.measure(read, size)); steps.step(1); const added = await trackUpload('/files', { name: file.name, base64 }, steps); steps.finish('File checked and added ✓ Publish to put it on the site.'); return added; }, PLAN.file);
     if (!result) return;
     current = result.id; name = result.name; state.dirty = true; draw();
   };
@@ -598,7 +689,7 @@ async function openItem(id) {
       let saved = item.id ? await call('PUT', `/items/${item.id}`, { revision: item.revision, fields }) : await call('POST', '/items', { section: section.slug, fields });
       Object.assign(item, saved); steps?.step(1);
       const said = text => steps ? steps.finish(text) : toast(text);
-      if (publish) { const result = await call('POST', `/items/${item.id}/publish`, { revision: item.revision }); Object.assign(item, result.item || {}); said(result.message || 'Published ✓ Live on the site in a minute or two.'); }
+      if (publish) { const result = await track(`/items/${item.id}/publish`, { revision: item.revision }, steps); Object.assign(item, result.item || {}); said(result.message || 'Published ✓ Live on the site in a minute or two.'); }
       else said('Saved ✓ Not on the site yet.');
       state.dirty = false; openSection(section.slug).then(() => openItem(item.id));
     } catch (error) {
@@ -628,7 +719,7 @@ async function openPage(slug) {
     ...page.fields.map(spec => buildField(spec, data.fields[spec.name], media)));
   const publish = async (event, steps) => {
     const fields = readForm(form, page.fields); const problems = check(form, page.fields, fields); showProblems(form, problems); if (problems.length) return;
-    try { const saved = await call('PUT', `/pages/${slug}`, { revision: data.revision, fields }); data.revision = saved.revision; steps?.step(1); const result = await call('POST', `/pages/${slug}/publish`, {}); state.dirty = false; const text = result.message || 'Published ✓ Live on the site in a minute or two.'; if (steps) steps.finish(text); else toast(text); }
+    try { const saved = await call('PUT', `/pages/${slug}`, { revision: data.revision, fields }); data.revision = saved.revision; steps?.step(1); const result = await track(`/pages/${slug}/publish`, {}, steps); state.dirty = false; const text = result.message || 'Published ✓ Live on the site in a minute or two.'; if (steps) steps.finish(text); else toast(text); }
     catch (error) { const problems = serverProblems(error, page.fields); if (problems.length) showProblems(form, problems); else toast(error.message); }
   };
   main(topBar({ title: page.title, small: page.small, actions: [viewOnSite(slug)] }),
@@ -657,17 +748,22 @@ async function openWording() {
   // A key the server knows but this screen does not list still gets a field, so nothing is ever out of reach.
   const extra = keys.filter(key => !listed.includes(key)).map(key => [key, key]);
   const groups = extra.length ? [...WORDING, ['Other', extra]] : WORDING;
-  const inputs = {};
+  const inputs = {}, hints = {};
+  // "On the site now" shows the published text when it differs from what is in the field.
+  const hintText = key => { const live = data.live?.[key] || '', field = inputs[key]?.value ?? data.fields?.[key] ?? ''; return `Original: ${data.defaults[key]}${live && live !== field ? ` · On the site now: ${live}` : ''}`; };
+  // T11-F04: after a confirmed publication, read the published texts again. Only "live" is taken from that read:
+  // the draft revision and the fields stay the ones this screen saved, so a draft saved meanwhile in another window
+  // is never adopted silently, and the next save still meets the T9 conflict check.
+  const refreshLive = async () => { try { const fresh = await call('GET', '/pages/wording'); if (fresh && typeof fresh.live === 'object' && fresh.live) { data.live = fresh.live; for (const key of Object.keys(hints)) hints[key].textContent = hintText(key); } } catch { /* the hint simply stays as it was */ } };
   const row = ([key, label]) => {
     if (!keys.includes(key)) return null;
     const id = `w-${key.replace(/\W/g, '-')}`, limit = data.limits?.[key] || 240, original = data.defaults[key];
     const input = h(limit > 240 ? 'textarea' : 'input', { class: 'text', id, name: key, maxlength: String(limit), placeholder: original, 'aria-describedby': `${id}-hint ${id}-error`, ...(limit > 240 ? { rows: '2' } : { type: 'text' }) });
     input.value = data.fields?.[key] || ''; inputs[key] = input;
-    const live = data.live?.[key] || '';
     const reset = h('button', { class: 'btn soft', type: 'button', onclick: () => { input.value = ''; state.dirty = true; input.focus(); } }, 'Back to the original');
     return h('div', { class: 'field', 'data-field': key },
       h('label', { for: id, text: label }), input,
-      h('p', { class: 'hint', id: `${id}-hint`, text: `Original: ${original}${live && live !== (data.fields?.[key] || '') ? ` · On the site now: ${live}` : ''}` }),
+      hints[key] = h('p', { class: 'hint', id: `${id}-hint`, text: hintText(key) }),
       h('div', { class: 'bar-inline' }, reset),
       h('p', { class: 'error', id: `${id}-error`, hidden: true }));
   };
@@ -695,7 +791,7 @@ async function openWording() {
   const publish = async (event, steps) => {
     if (!await save()) return;
     steps?.step(1);
-    try { const result = await call('POST', '/pages/wording/publish', {}); said(steps, result?.message || 'Published ✓ Live on the site in a minute or two.'); }
+    try { const result = await track('/pages/wording/publish', {}, steps); said(steps, result?.message || 'Published ✓ Live on the site in a minute or two.'); await refreshLive(); }
     catch (error) { toast(error.status === 409 ? 'Someone changed these texts in another window. Your changes are saved; reload this screen before publishing.' : error.message); }
   };
   main(topBar({ title: 'Site wording', small: 'Buttons, labels and short messages on every page', actions: [viewOnSite('home')] }),
@@ -806,7 +902,7 @@ async function openSetting(key, quiet = false) {
       ...[['cv', 'Tell me about a new application'], ['msg', 'Tell me about a new message']].map(([name, label]) => { const box = h('input', { type: 'checkbox' }); box.checked = settings.notifications?.[name] !== false; box.addEventListener('change', () => busy(box, async () => { Object.assign(settings, await call('PUT', '/settings', { ...settings, notifications: { ...settings.notifications, [name]: box.checked } })); toast('Saved ✓'); })); return h('label', { class: 'check' }, box, label); }))],
     signature: async () => { const area = h('textarea', { class: 'text', 'aria-label': 'Signature', maxlength: '300' }); area.value = settings.signature || ''; return [h('div', { class: 'panel' }, h('h3', { text: 'Reply signature' }), area, h('div', { class: 'bar-inline' }, h('button', { class: 'btn main', type: 'button', onclick: writer(async () => { Object.assign(settings, await call('PUT', '/settings', { ...settings, signature: area.value.trim() })); toast('Saved ✓'); }) }, 'Save')))]; },
     history: async () => { const list = await call('GET', '/publishes'); return [h('div', { class: 'panel' }, h('h3', { text: 'Site history' }), h('p', { text: 'Each publish keeps a version of the site. You can go back to an earlier one.' }),
-      ...list.map((entry, index) => h('div', { class: 'person' }, h('span', { text: `${new Date(entry.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} — ${entry.summary}` }), index === 0 ? h('b', { text: 'Current version' }) : h('button', { class: 'btn soft', type: 'button', onclick: writer(async (event, steps) => { if (!confirm('Put the site back to this version?')) return; const result = await call('POST', `/publishes/${entry.id}/restore`, {}); const text = result.message || 'Site restored to this version ✓'; if (steps) steps.finish(text); else toast(text); openSetting('history'); }, PLAN.restore) }, 'Go back to this version'))))]; },
+      ...list.map((entry, index) => h('div', { class: 'person' }, h('span', { text: `${new Date(entry.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} — ${entry.summary}` }), index === 0 ? h('b', { text: 'Current version' }) : h('button', { class: 'btn soft', type: 'button', onclick: writer(async (event, steps) => { if (!confirm('Put the site back to this version?')) return; const result = await track(`/publishes/${entry.id}/restore`, {}, steps); const text = result.message || 'Site restored to this version ✓'; if (steps) steps.finish(text); else toast(text); openSetting('history'); }, PLAN.restore) }, 'Go back to this version'))))]; },
     archive: async () => { const deleted = await call('GET', '/archive'); return [h('div', { class: 'panel' }, h('h3', { text: 'Deleted items' }), h('p', { text: 'A deleted item comes back as a draft: publish it again to show it on the site.' }),
       ...(deleted.items.length ? deleted.items.map(item => h('div', { class: 'person' }, h('span', { text: `${item.title || 'Untitled'} — deleted ${new Date(item.deletedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}` }), h('button', { class: 'btn soft', type: 'button', onclick: writer(async () => { await call('POST', `/archive/${encodeURIComponent(item.id)}/restore`, {}); toast('Brought back as a draft ✓'); openSetting('archive'); }) }, 'Bring back'))) : [h('p', { class: 'hint', text: 'Nothing has been deleted.' })])),
       deleted.conversations.length ? h('div', { class: 'panel' }, h('h3', { text: 'Deleted conversations' }), h('p', { text: 'They are kept until the end of the usual period, then removed for good. Ask the site manager if one must come back.' }), ...deleted.conversations.map(talk => h('div', { class: 'person' }, h('span', { text: `${talk.name} — deleted ${new Date(talk.deletedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}` })))) : null]; },

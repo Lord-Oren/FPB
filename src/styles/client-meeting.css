@@ -11,7 +11,6 @@ footer{padding-block:2rem}.legal-section p{white-space:pre-line;max-width:75ch}.
 @media(max-width:600px){
  .home-page .lily-screens{grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem .5rem}
  .home-page .screen-content{font-size:clamp(.7rem,2.6vw,.9rem)}
- .variant-b .pads{grid-template-columns:repeat(2,minmax(0,1fr))}
  .page-header nav{flex-wrap:wrap;gap:.7rem}.footer-socials{gap:.7rem}
 }
 
@@ -20,9 +19,14 @@ footer{padding-block:2rem}.legal-section p{white-space:pre-line;max-width:75ch}.
 .variant-b .pad.p1{left:3%;top:34%;--size:23cqw}.variant-b .pad.p2{left:27%;top:53%;--size:23cqw}.variant-b .pad.p3{left:51%;top:32%;--size:23cqw}.variant-b .pad.p4{left:74%;top:53%;--size:23cqw}
 .variant-b .stones li:nth-child(4){right:-5%;top:40%}
 footer{flex-wrap:wrap;justify-content:center}
-@media(max-width:600px){
+/* B keeps its phone pond (two pads per row) up to 700px, the width where neo-b.css narrows the pond to 420px.
+   Between 601 and 700px the four-across desktop row used to shrink each pad to 100px, under its own TV (T12). */
+@media(max-width:700px){
+ .variant-b .pads{grid-template-columns:repeat(2,minmax(0,1fr))}
  .variant-b .pad.p1{left:5%;top:22%;--size:43cqw}.variant-b .pad.p2{left:52%;top:39%;--size:43cqw}.variant-b .pad.p3{left:5%;top:58%;--size:43cqw}.variant-b .pad.p4{left:52%;top:75%;--size:43cqw}
  .variant-b .stones li:nth-child(4){right:-4%;top:12%}
+}
+@media(max-width:600px){
  .home-page .grand-central{top:13%;font-size:1.3rem}
  .home-page .lily-screen{max-width:none}
 }

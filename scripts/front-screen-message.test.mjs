@@ -40,7 +40,9 @@ test('screen message: rendered as escaped text inside the screen, arrow and link
   assert.match(layout, /\(pond \? screenMessage : ''\)/, 'both designs load the same rules');
   assert.doesNotMatch(css, /text-overflow|line-clamp/, 'the message is never cut');
   assert.match(css, /overflow-wrap:anywhere/);
-  assert.doesNotMatch(css, /@container/, 'the text never grows over the TV frame');
+  // Container queries only widen a small B pad's TV (T12); none moves the text box past the glass onto the frame.
+  for (const [, body] of css.matchAll(/@container[^{]*\{([^{}]*\{[^}]*\})\s*\}/g)) assert.match(body, /^\s*\.variant-b \.pad:has\(\.has-message\) \.pad-body \{ width:100% \}\s*$/, 'the text never grows over the TV frame');
+  assert.equal((css.match(/@container/g) || []).length, 2);
   assert.match(css, /font-size:clamp\(10px, /, 'never smaller than 10px');
   assert.match(app, /const SCREEN_MESSAGE_MAX=14;/);
 });
