@@ -10,6 +10,16 @@ export function deploymentConfig(env = {}) {
   if (names.some(name => !/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(name)) || new Set(names).size !== names.length) {
     throw new Error('Configure distinct, lowercase domain names without schemes or paths.');
   }
-  if (env.POND_PUBLIC_SITE && !['true', 'false'].includes(env.POND_PUBLIC_SITE)) throw new Error('POND_PUBLIC_SITE must be true or false.');
-  return { hosts, www, publicSite: env.POND_PUBLIC_SITE === 'true' };
+  for (const key of ['POND_PUBLIC_SITE', 'POND_PUBLIC_B']) {
+    if (env[key] && !['true', 'false'].includes(env[key])) throw new Error(key + ' must be true or false.');
+  }
+  const publicSite = env.POND_PUBLIC_SITE === 'true';
+  const publicB = env.POND_PUBLIC_B === 'true';
+  if (publicB && !publicSite) throw new Error('Public B requires public site mode.');
+  return { hosts, www, publicSite, publicB };
+}
+
+// Private previews build both designs; public B requires its own explicit opt-in.
+export function publicationVariants({publicSite, publicB}) {
+  return publicSite && !publicB ? ['a'] : ['a', 'b'];
 }

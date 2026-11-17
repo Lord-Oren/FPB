@@ -27,6 +27,8 @@ services:
         sync: false
       - key: POND_PUBLIC_SITE
         value: "true"
+      - key: POND_PUBLIC_B
+        value: "true"
       - key: POND_PUBLIC_HOST
         value: frogpondboys.com
       - key: POND_WWW_HOST
@@ -34,4 +36,4 @@ services:
       - key: POND_DESK_HOST
         value: desk.frogpondboys.com
       - key: POND_PREVIEW_HOST
-        value: preview.frogpondboys.com
+        value: b.frogpondboys.com

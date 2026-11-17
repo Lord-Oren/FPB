@@ -1,3 +1,9 @@
+# Current routing — 0.21.0
+
+The owner approved public A on https://frogpondboys.com, public B on https://b.frogpondboys.com, and the existing private Pond Desk on https://desk.frogpondboys.com. Version 0.21.0 implements this configuration using the existing Render Starter service and Basic-256mb database. Published content is shared; drafts and private inbox data remain protected. Forms and notifications stay closed. Earlier status entries below are historical; consult the deployment receipt for the completed rollout.
+
+---
+
 # Hosting status - November 16, 2026
 
 ## Live addresses

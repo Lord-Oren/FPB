@@ -8,12 +8,12 @@ function waking(busy=false){
 }
 export async function proxy(request,env,forward=fetch){
  const source=new URL(request.url);
- const {hosts,www,publicSite}=deploymentConfig(env);
+ const {hosts,www,publicSite,publicB}=deploymentConfig(env);
  const allowed=new Set([...Object.values(hosts),www]);
- const publicRequest=publicSite&&(source.hostname===hosts.a||source.hostname===www);
+ const publicRequest=publicSite&&(source.hostname===hosts.a||source.hostname===www||(publicB&&source.hostname===hosts.b));
  const form=publicRequest&&source.hostname===hosts.a&&request.method==='POST'&&['/api/v2/forms/contact','/api/v2/forms/join'].includes(source.pathname)&&env.POND_FORMS_ENABLED==='true'&&env.POND_FORM_PROXY_SECRET?.length>=32;
  if(publicRequest&&!form&&( !['GET','HEAD'].includes(request.method)||source.pathname.startsWith('/api/')))return new Response('Not found',{status:404});
- if(publicSite&&source.hostname===hosts.b)return new Response('Not found',{status:404});
+ if(publicSite&&source.hostname===hosts.b&&!publicB)return new Response('Not found',{status:404});
  if(source.protocol!=='https:'||!allowed.has(source.hostname))return new Response('Forbidden',{status:403});
  if(!publicRequest&&!request.headers.get('Cf-Access-Jwt-Assertion'))return new Response('Access session required',{status:403});
  if(!/^[a-z0-9-]+\.onrender\.com$/.test(env.RENDER_ORIGIN_HOST??''))return new Response('Not configured',{status:503});

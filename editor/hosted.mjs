@@ -12,14 +12,14 @@ import {formSecurity,sameSecret} from './backend/form-security.mjs';
 import {mailTransport} from './backend/mail.mjs';
 import {createV2} from './backend/api.mjs';
 import {buildRelease} from './backend/publisher.mjs';
-import {deploymentConfig} from '../hosting/config.mjs';
+import {deploymentConfig,publicationVariants} from '../hosting/config.mjs';
 const favicon=await readFile(new URL('../hosting/favicon.ico',import.meta.url));
 const safeHeaders={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Permissions-Policy':'camera=(), microphone=(), geolocation=()','Strict-Transport-Security':'max-age=31536000'};
-export async function createHosted({root=fileURLToPath(new URL('../',import.meta.url)),port=Number(process.env.PORT),store,verify,testers,issuer,audience,server:existingServer,sessionSeconds=Number(process.env.POND_SESSION_SECONDS??28800),originHost=process.env.RENDER_EXTERNAL_HOSTNAME,config=deploymentConfig(process.env),forms={enabled:false},mail=mailTransport(),inboundSecret='',builder=(r,f,id,snapshot,options={})=>buildRelease(r,f,id,snapshot,{...options,hosted:true,publicSite:config.publicSite,variants:config.publicSite?['a']:['a','b']})}={}){
- const {hosts,www,publicSite}=config;
+export async function createHosted({root=fileURLToPath(new URL('../',import.meta.url)),port=Number(process.env.PORT),store,verify,testers,issuer,audience,server:existingServer,sessionSeconds=Number(process.env.POND_SESSION_SECONDS??28800),originHost=process.env.RENDER_EXTERNAL_HOSTNAME,config=deploymentConfig(process.env),forms={enabled:false},mail=mailTransport(),inboundSecret='',builder=(r,f,id,snapshot,options={})=>buildRelease(r,f,id,snapshot,{...options,hosted:true,publicSite:config.publicSite,variants:publicationVariants(config)})}={}){
+ const {hosts,www,publicSite,publicB}=config;
  if(!Number.isInteger(port)||port<0||port>65535||!store||!testers?.length)throw Error('Hosted configuration incomplete.');
  const checkToken=verify??accessVerifier({issuer,audience,emails:testers});
- const v2=createV2({root,store,forms,mail,inboundSecret,maxStateBytes:16*1024*1024,sessionSeconds,hosted:true,testers,publicVariants:publicSite?['a']:['a','b'],publicUrls:{a:'https://'+hosts.a,b:'https://'+hosts.b},builder});
+ const v2=createV2({root,store,forms,mail,inboundSecret,maxStateBytes:16*1024*1024,sessionSeconds,hosted:true,testers,publicVariants:publicationVariants(config),publicUrls:{a:'https://'+hosts.a,b:'https://'+hosts.b},builder});
  try{await v2.initialize();}catch(error){await v2.close();await store.close();throw error;}let ready=true;
  const reply=(res,status,message)=>{res.writeHead(status,{...safeHeaders,'Content-Type':'application/json','Content-Security-Policy':"default-src 'none'; frame-ancestors 'none'"});res.end(JSON.stringify({message}));};
  const handle=async(req,res)=>{
@@ -34,11 +34,11 @@ export async function createHosted({root=fileURLToPath(new URL('../',import.meta
    if(publicSite&&host===www&&['GET','HEAD'].includes(req.method)){res.writeHead(308,{...safeHeaders,Location:'https://'+hosts.a+req.url});res.end();return;}
    const variant=Object.keys(hosts).find(k=>hosts[k]===host);if(!variant)return reply(res,403,'Access denied.');
    if(req.headers['x-forwarded-proto']!=='https')return reply(res,403,'A secure HTTPS connection is required.');
-   if(publicSite&&variant==='b')return reply(res,404,'Page not found.');
-   const publicRequest=publicSite&&variant==='a';
+   if(publicSite&&variant==='b'&&!publicB)return reply(res,404,'Page not found.');
+   const publicRequest=publicSite&&(variant==='a'||(publicB&&variant==='b'));
    const incomingPath=new URL(req.url,'https://'+host).pathname;
-   const publicForm=publicRequest&&req.method==='POST'&&['/api/v2/forms/contact','/api/v2/forms/join'].includes(incomingPath)&&forms.enabled;
-   const inbound=publicRequest&&req.method==='POST'&&incomingPath==='/api/v2/mail/inbound'&&inboundSecret.length>=32&&mail.mode==='resend';
+   const publicForm=publicRequest&&variant==='a'&&req.method==='POST'&&['/api/v2/forms/contact','/api/v2/forms/join'].includes(incomingPath)&&forms.enabled;
+   const inbound=publicRequest&&variant==='a'&&req.method==='POST'&&incomingPath==='/api/v2/mail/inbound'&&inboundSecret.length>=32&&mail.mode==='resend';
    if(publicRequest&&!publicForm&&!inbound&&(!['GET','HEAD'].includes(req.method)||req.url.startsWith('/api/')))return reply(res,404,'This action is not available.');
    if(publicForm){if(!sameSecret(req.headers['x-pond-form-proxy'],forms.proxySecret))return reply(res,403,'Access denied.');req.pondPublicForm=host;req.pondClientIp=req.headers['x-pond-client-ip'];if(typeof req.pondClientIp!=='string'||req.pondClientIp.length>64)return reply(res,403,'Access denied.');}
    stage='access';
