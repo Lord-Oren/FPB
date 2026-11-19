@@ -8,7 +8,7 @@ const screen=app.slice(app.indexOf('async function openWording()'),app.indexOf('
 async function fixture(concurrent,start={}){
  let revision=1,fields={'home.title':''},live={...start},published=false;
  const nodes=[],messages=[],statuses=[];
- const context={WORDING:[['Home',[['home.title','Title']]]],state:{dirty:false},PLAN:{save:{},publish:{}},main:()=>{},topBar:x=>x,viewOnSite:()=>null,writer:work=>work,track:(route,body)=>context.call('POST',route,body),showProblems:()=>{},serverProblems:()=>[],toast:message=>messages.push(message),
+ const context={WORDING:[['Home',[['home.title','Title']]]],state:{dirty:false},PLAN:{save:{},publish:{}},main:()=>{},topBar:x=>x,viewOnSite:()=>null,writer:work=>work,track:(route,body)=>context.call('POST',route,body),screenMark:()=>()=>true,showProblems:()=>{},serverProblems:()=>[],toast:message=>messages.push(message),
   h:(tag,attributes,...children)=>{const node={tag,...attributes,children};nodes.push(node);return node;},
   call:async(method,route,body)=>{
    if(method==='GET')return {revision,fields:{...fields},live:{...live},defaults:{'home.title':'Original'},limits:{'home.title':240}};

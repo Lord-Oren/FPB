@@ -23,7 +23,7 @@ function client(script) {
 }
 const running = [{ id: 'content', label: 'Checking the content', state: 'done' }, { id: 'build-a', label: 'Building version A', state: 'running' }];
 test('jobs: 202 is only accepted; the result comes from state done, after real steps', async () => {
-  const c = client([[202, { job: { id: 'job-1' } }], [200, { id: 'job-1', state: 'running', steps: running }], [200, { id: 'job-1', state: 'done', steps: running.map(s => ({ ...s, state: 'done' })), result: { message: 'Published ✓', item: { id: 'x' } } }]]);
+  const c = client([[202, { job: { id: 'job-1' } }], [200, { id: 'job-1', state: 'running', steps: running }], [200, { id: 'job-1', state: 'done', steps: running.map(s => ({ ...s, state: 'done' })), result: { message: 'Published ✓', item: { id: 'x', revision: 3 } } }]]);
   const result = await c.track('/items/x/publish', { revision: 2 }, c.steps);
   assert.equal(result.message, 'Published ✓'); assert.equal(result.item.id, 'x');
   assert.equal(c.sent.filter(r => r.method === 'POST').length, 1, 'the write is sent once');

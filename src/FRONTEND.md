@@ -103,3 +103,9 @@ Presentations are gone from Case Studies and Pond Desk. Case studies are a thumb
 - **Lily pads** in alphabetical order of their names on A, B and in Pond Desk (`src/components/pond/screen-order.js`).
 - **Phone pond (A)**: the lily pads and TVs use the same drawings as on a computer and float again (reduced motion stops them); the frog's tongue is visible again under the menu panel.
 - **Contact** keeps only "Write to us". **About**: one photo per person (Pond Desk, The team / The extended team), "The Frogs" when the title is empty. **Photography** shows the Magazine below its own works.
+
+## T15 — complete answers only, and screens that stay put
+
+- A write is confirmed only by its complete answer (`CONFIRMATIONS` in `editor/v2/app.js`, `api:start` block): revision and tree for the layout, revision for a page, id and revision for an item, `message` (and `item`) for a publication, file id and url, photo `mediaId` and `src`, settings with notifications, reply status and message. `{}`, `null`, `[]`, a missing field, or a job `done` without its result is "Result unknown": nothing is sent again, the form and its typing stay as they were. Writes whose real answer is `{}` (conversation state, people, deleting a draft) still accept an object only.
+- `screenMark()`: an action that ends after the person opened another screen no longer re-opens its old screen over the new one, and no longer clears the new screen's unsaved-changes warning.
+- Tests: `scripts/front-answer-shapes.test.mjs`.

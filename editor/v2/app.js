@@ -304,13 +304,37 @@ function uncertain(path, extra = '') {
 // An answer 202 to a request sent with Prefer: respond-async: the server accepted a job (see followJob).
 const ACCEPTED = Symbol('accepted');
 const readJson = text => { if (typeof text !== 'string' || !text.trim()) return undefined; try { return JSON.parse(text); } catch { return undefined; } };
-// One reading of every answer (fetch or upload). A success needs a readable JSON body; an error needs the server's own
-// JSON message to count as a known failure. Anything else after a write is an unknown result.
+// What a write answers when it really succeeded (editor/backend/api.mjs). A readable but incomplete answer ({}, null,
+// [] or a missing field) does not confirm anything: the change may or may not have been made, so the result is unknown.
+// Writes not listed here (archive or restore a conversation, add or remove a person, delete a draft item) answer an
+// empty object when they succeed; for them only an object counts.
+const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const hasText = (answer, key) => typeof answer[key] === 'string' && answer[key].trim() !== '';
+const isRevision = value => Number.isInteger(value) && value >= 0;
+const CONFIRMATIONS = [
+  [/^POST \/(structure|pages\/[^/]+)\/publish$|^POST \/publishes\/[^/]+\/restore$/, answer => hasText(answer, 'message')],
+  [/^POST \/items\/[^/]+\/(publish|unpublish)$/, answer => hasText(answer, 'message') && isRecord(answer.item) && hasText(answer.item, 'id') && isRevision(answer.item.revision)],
+  [/^PUT \/structure$/, answer => isRevision(answer.revision) && isRecord(answer.fields) && Array.isArray(answer.fields.nodes)],
+  [/^PUT \/pages\/[^/]+$/, answer => isRevision(answer.revision)],
+  [/^(POST \/items|PUT \/items\/[^/]+|POST \/items\/[^/]+\/restore)$/, answer => hasText(answer, 'id') && isRevision(answer.revision)],
+  [/^POST \/files$/, answer => typeof answer.id === 'string' && /^file-[a-f0-9]{24}$/.test(answer.id) && hasText(answer, 'url')],
+  [/^POST \/media$/, answer => hasText(answer, 'mediaId') && hasText(answer, 'src')],
+  [/^PUT \/settings$/, answer => isRecord(answer.notifications)],
+  [/^POST \/conversations\/[^/]+\/(replies|retry-reply)$/, answer => hasText(answer, 'status') && hasText(answer, 'message')],
+];
+function confirmed(method, path, answer) {
+  if (!isRecord(answer)) return false;
+  const rule = CONFIRMATIONS.find(([route]) => route.test(`${method} ${path.split('?')[0]}`));
+  return rule ? rule[1](answer) : true;
+}
+// One reading of every answer (fetch or upload). A success needs a readable JSON body (for a write, the complete
+// answer above); an error needs the server's own JSON message to count as a known failure. Anything else after a
+// write is an unknown result.
 function settleAnswer(method, path, status, text) {
   const data = readJson(text), write = method !== 'GET';
   if (status >= 200 && status < 300) {
+    if (write) { if (confirmed(method, path, data)) return data; throw uncertain(path); }
     if (data !== undefined) return data;
-    if (write) throw uncertain(path);
     throw Object.assign(new Error('The server sent an answer Pond Desk could not read. Reload the page, then try again.'), { status: 0, code: 'protocol', diagnostics: [] });
   }
   if (write && !(data && typeof data.message === 'string')) throw uncertain(path);
@@ -345,7 +369,7 @@ function upload(path, body, steps, { prefer = '' } = {}) {
 }
 // Long operations (publishing, restoring, checking a PDF or a video) ask the server to answer at once with a job
 // (HTTP 202) and report its real steps at GET /jobs/:id. 202 only means "accepted"; a poll answered 200 only means
-// "still known": success is state "done", and its result is exactly what the direct request would have returned.
+// "still known": success is state "done" with the complete result the direct request would have returned.
 // A server without jobs answers the request directly, which is a confirmed result too.
 // Polling: every second, then every 3 seconds. A short network cut is retried (reading is safe); a lost job (404 after
 // a restart or expiry), a lost sign-in, an unreadable reply or a longer cut ends with an unknown result.
@@ -364,7 +388,8 @@ async function followJob(path, accepted, steps) {
     const job = response.ok ? readJson(text) : undefined;
     if (!job || typeof job !== 'object' || !['running', 'done', 'failed'].includes(job.state) || !Array.isArray(job.steps)) throw uncertain(path);
     steps?.server(job.steps);
-    if (job.state === 'done') return job.result ?? {};
+    // "done" without the operation's complete result confirms nothing.
+    if (job.state === 'done') { if (confirmed('POST', path, job.result)) return job.result; throw uncertain(path); }
     if (job.state === 'failed') {
       const failure = job.error && typeof job.error === 'object' ? job.error : {};
       throw Object.assign(new Error(typeof failure.message === 'string' && failure.message ? failure.message : 'The server could not finish. Check Settings → Site history before trying again.'), { status: Number(failure.status) || 500, code: failure.code || '', diagnostics: Array.isArray(failure.diagnostics) ? failure.diagnostics : [] });
@@ -438,7 +463,12 @@ function topBar({ title, small, actions = [] }) {
   return h('div', { class: 'top' }, h('button', { class: 'back', type: 'button', 'aria-label': 'Back', onclick: () => { if (guardLeave()) { state.dirty = false; setPane('list'); } } }, '←'),
     h('div', { class: 'grow' }, h('h2', { text: title }), small ? h('small', { text: small }) : null), ...actions);
 }
-function main(...children) { const box = $('#main'); box.replaceChildren(...children.filter(child => child !== null && child !== undefined && child !== false)); progressCard.keep(); setPane('main'); box.focus({ preventScroll: true }); }
+// Every main() shows a new screen. An action that ends after the person moved to another screen must not bring its
+// old screen back over the new one, nor mark the new screen's unsaved changes as saved.
+let shownScreen = 0;
+const screenMark = () => { const mark = shownScreen; return () => shownScreen === mark; };
+const siteListShown = () => $('#list-title')?.textContent === 'Site zones';
+function main(...children) { shownScreen++; const box = $('#main'); box.replaceChildren(...children.filter(child => child !== null && child !== undefined && child !== false)); progressCard.keep(); setPane('main'); box.focus({ preventScroll: true }); }
 function welcome(text) { $('#main').replaceChildren(h('div', { class: 'welcome' }, h('div', {}, h('p', { class: 'frog', 'aria-hidden': 'true' }, '🐸'), h('p', { text })))); }
 function markCurrent(list, current) { list.querySelectorAll('.row').forEach(row => row.setAttribute('aria-current', String(row === current))); }
 
@@ -451,8 +481,8 @@ const treeChildren=id=>siteTree.fields.nodes.filter(n=>n.parentId===id);
 // Lily-pad screens are shown on the site in alphabetical order of their names (src/components/pond/screen-order.js).
 const screenCollator=new Intl.Collator('en',{sensitivity:'base',ignorePunctuation:true,numeric:true});
 const byScreenName=(a,b)=>screenCollator.compare(a.title,b.title)||String(a.id).localeCompare(String(b.id));
-async function saveTree(tree){siteTree=await call('PUT','/structure',{revision:siteTree.revision,structure:tree});state.dirty=false;await listSite(false);}
-async function publishTree(steps){try{await track('/structure/publish',{revision:siteTree.revision},steps);steps?steps.finish('Site layout published ✓'):toast('Site layout published ✓');siteTree=await call('GET','/structure');await listSite(false);}catch(e){toast(e.message);}}
+async function saveTree(tree){const still=screenMark();siteTree=await call('PUT','/structure',{revision:siteTree.revision,structure:tree});if(still())state.dirty=false;if(siteListShown())await listSite(false);}
+async function publishTree(steps){try{await track('/structure/publish',{revision:siteTree.revision},steps);steps?steps.finish('Site layout published ✓'):toast('Site layout published ✓');siteTree=await call('GET','/structure');if(siteListShown())await listSite(false);}catch(e){toast(e.message);}}
 const publishTreeButton=event=>busy(event.currentTarget,publishTree,PLAN.publishOnly);
 async function listSite(showWelcome=true){
  $('#list-title').textContent='Site zones';$('#search').placeholder='Search sections';
@@ -508,8 +538,8 @@ function openNode(id){
  ['menu','page'].includes(node.kind)?h('div',{class:'field'},h('label',{for:text.id,text:'Page text'}),text):null,
  ['link','anchor'].includes(node.kind)?h('div',{class:'field'},h('label',{for:href.id,text:'Link (HTTPS, page.html or #section)'}),href,node.zone==='footer'?networkHint:null):null,
  h('p',{class:'hint',text:node.slug?'Address: '+node.slug+'.html — kept when you rename this section.':'A link has no page of its own.'}));
- const save=async(steps,publishing)=>{if(!messageOk()){message?.focus();return false;}try{const draft=structuredClone(siteTree.fields),edited=draft.nodes.find(n=>n.id===id);Object.assign(edited,{title:name.value.trim(),text:text.value,href:href.value.trim(),visible:visible.checked,newTab:newTab.checked});if(message&&(message.value.trim()||'message' in edited))edited.message=message.value.trim();await saveTree(draft);if(publishing)steps?.step(1);else steps?steps.finish('Layout draft saved ✓ Not on the site yet.'):toast('Layout draft saved ✓');if(!publishing)openNode(id);return true;}catch(e){toast(e.message);return false;}};
- const actions=[h('button',{class:'btn main',type:'button',onclick:writer(async(event,steps)=>{if(await save(steps,true)){await publishTree(steps);openNode(id);}},PLAN.publish)},'Save and publish')];
+ const save=async(steps,publishing)=>{if(!messageOk()){message?.focus();return false;}const still=screenMark();try{const draft=structuredClone(siteTree.fields),edited=draft.nodes.find(n=>n.id===id);Object.assign(edited,{title:name.value.trim(),text:text.value,href:href.value.trim(),visible:visible.checked,newTab:newTab.checked});if(message&&(message.value.trim()||'message' in edited))edited.message=message.value.trim();await saveTree(draft);if(publishing)steps?.step(1);else steps?steps.finish('Layout draft saved ✓ Not on the site yet.'):toast('Layout draft saved ✓');if(!publishing&&still())openNode(id);return true;}catch(e){toast(e.message);return false;}};
+ const actions=[h('button',{class:'btn main',type:'button',onclick:writer(async(event,steps)=>{const still=screenMark();if(await save(steps,true)){await publishTree(steps);if(still())openNode(id);}},PLAN.publish)},'Save and publish')];
  const content=editableKinds[node.kind]?h('button',{class:'btn soft',type:'button',onclick:()=>{if(guardLeave()){state.dirty=false;openSection(node.id);}}},'Edit content'):node.kind==='croak'?h('button',{class:'btn soft',type:'button',onclick:()=>{if(guardLeave())openPage('home');}},'Edit text'):null;
  main(topBar({title:node.title,small:'Section settings — '+(rootZones.find(z=>z.id===node.zone)?.title??node.zone),actions}),h('div',{class:'body'},fields,h('div',{class:'bar-inline'},h('button',{class:'btn soft',type:'button',onclick:writer((event,steps)=>save(steps,false),PLAN.save)},'Save draft'),content),
  node.kind==='menu'&&node.zone==='menus'?h('section',{class:'panel'},h('h3',{text:'Subsections'}),...treeChildren(id).map(child=>h('button',{class:'row',type:'button',onclick:()=>{if(guardLeave())openNode(child.id);}},child.title))):null));
@@ -718,13 +748,14 @@ async function openItem(id) {
   const save = async (publish, steps) => {
     const fields = readForm(form, specs); const problems = publish ? check(form, specs, fields) : check(form, specs.filter(spec => spec.name === 'title'), fields);
     showProblems(form, problems); if (problems.length) return;
+    const still = screenMark();
     try {
       let saved = item.id ? await call('PUT', `/items/${item.id}`, { revision: item.revision, fields }) : await call('POST', '/items', { section: section.slug, fields });
       Object.assign(item, saved); steps?.step(1);
       const said = text => steps ? steps.finish(text) : toast(text);
       if (publish) { const result = await track(`/items/${item.id}/publish`, { revision: item.revision }, steps); Object.assign(item, result.item || {}); said(result.message || 'Published ✓ Live on the site in a minute or two.'); }
       else said('Saved ✓ Not on the site yet.');
-      state.dirty = false; openSection(section.slug).then(() => openItem(item.id));
+      if (still()) { state.dirty = false; openSection(section.slug).then(() => openItem(item.id)); }
     } catch (error) {
       if (error.status === 409) toast('Someone else edited this at the same time. Copy your text, then reopen it.');
       else { const problems = serverProblems(error, specs); if (problems.length) showProblems(form, problems); else toast(error.message); }
@@ -732,8 +763,8 @@ async function openItem(id) {
   };
   const actions = item.id ? [menu([
     ['View on the site', () => window.open(`${state.publicUrls?.a || 'http://127.0.0.1:4321'}/${section.slug}.html`, '_blank', 'noopener')],
-    ...(item.status !== 'draft' ? [['Take off the site (keep here)', async () => { if (!confirm('Take this off the site? It stays here and can be published again.')) return; await call('POST', `/items/${item.id}/unpublish`, { revision: item.revision }); toast('Taken off the site ✓'); openSection(section.slug); }]] : []),
-    ['Delete', async () => { if (!confirm('Delete this item? If it is on the site, it is removed right away. You can bring it back from Settings → Deleted.')) return; await call('DELETE', `/items/${item.id}`); toast('Deleted ✓'); state.dirty = false; openSection(section.slug); }, true],
+    ...(item.status !== 'draft' ? [['Take off the site (keep here)', async () => { if (!confirm('Take this off the site? It stays here and can be published again.')) return; const still = screenMark(); await call('POST', `/items/${item.id}/unpublish`, { revision: item.revision }); toast('Taken off the site ✓'); if (still()) openSection(section.slug); }]] : []),
+    ['Delete', async () => { if (!confirm('Delete this item? If it is on the site, it is removed right away. You can bring it back from Settings → Deleted.')) return; const still = screenMark(); await call('DELETE', `/items/${item.id}`); toast('Deleted ✓'); if (still()) { state.dirty = false; openSection(section.slug); } }, true],
   ])] : [];
   main(topBar({ title: item.id ? item.fields.title || 'Untitled' : `New ${NOUN[section.kind]}`, small: section.title, actions: [item.id ? statusBadge(item.status) : null, ...actions].filter(Boolean) }),
     h('div', { class: 'body' }, form, h('div', { class: 'bar' },
@@ -752,7 +783,8 @@ async function openPage(slug) {
     ...page.fields.map(spec => buildField(spec, data.fields[spec.name], media)));
   const publish = async (event, steps) => {
     const fields = readForm(form, page.fields); const problems = check(form, page.fields, fields); showProblems(form, problems); if (problems.length) return;
-    try { const saved = await call('PUT', `/pages/${slug}`, { revision: data.revision, fields }); data.revision = saved.revision; steps?.step(1); const result = await track(`/pages/${slug}/publish`, {}, steps); state.dirty = false; const text = result.message || 'Published ✓ Live on the site in a minute or two.'; if (steps) steps.finish(text); else toast(text); }
+    const still = screenMark();
+    try { const saved = await call('PUT', `/pages/${slug}`, { revision: data.revision, fields }); data.revision = saved.revision; steps?.step(1); const result = await track(`/pages/${slug}/publish`, {}, steps); if (still()) state.dirty = false; const text = result.message || 'Published ✓ Live on the site in a minute or two.'; if (steps) steps.finish(text); else toast(text); }
     catch (error) { const problems = serverProblems(error, page.fields); if (problems.length) showProblems(form, problems); else toast(error.message); }
   };
   main(topBar({ title: page.title, small: page.small, actions: [viewOnSite(slug)] }),
@@ -811,7 +843,8 @@ async function openWording() {
   };
   const save = async () => {
     const problems = local(); showProblems(form, problems); if (problems.length) return false;
-    try { const saved = await call('PUT', '/pages/wording', { revision: data.revision, fields: values() }); data.revision = saved.revision; state.dirty = false; return true; }
+    const still = screenMark();
+    try { const saved = await call('PUT', '/pages/wording', { revision: data.revision, fields: values() }); data.revision = saved.revision; if (still()) state.dirty = false; return true; }
     catch (error) {
       const found = serverProblems(error, keys.map(name => ({ name, label: name })));
       if (found.length) showProblems(form, found);
@@ -896,8 +929,9 @@ async function openConversation(id, box, quiet = false, force = false) {
   const text = h('textarea', { class: 'text', rows: '1', placeholder: 'Write a reply…', 'aria-label': state.mail === 'simulated' ? `Your reply to ${talk.name} (test version, no email sent)` : `Your reply, emailed to ${talk.name}` });
   const send = async () => {
     const value = text.value.trim(); if (!value) { text.focus(); return; }
-    try { const result = await call('POST', `/conversations/${id}/replies`, { text: value }); text.value = ''; toast(result?.status === 'simulated' || state.mail === 'simulated' ? 'Reply saved ✓ (test version: no email sent)' : 'Reply sent by email ✓'); openConversation(id, box, false, true); }
-    catch (error) { if (error.status === 409 && /simulation/i.test(error.message)) { text.value = ''; toast('Reply saved ✓ (test version: no email sent)'); openConversation(id, box, false, true); } else toast(error.message); }
+    const still = screenMark();
+    try { const result = await call('POST', `/conversations/${id}/replies`, { text: value }); text.value = ''; toast(result?.status === 'simulated' || state.mail === 'simulated' ? 'Reply saved ✓ (test version: no email sent)' : 'Reply sent by email ✓'); if (still()) openConversation(id, box, false, true); }
+    catch (error) { if (error.status === 409 && /simulation/i.test(error.message)) { text.value = ''; toast('Reply saved ✓ (test version: no email sent)'); if (still()) openConversation(id, box, false, true); } else toast(error.message); }
   };
   const sendButton = h('button', { class: 'send', type: 'button', 'aria-label': state.mail === 'simulated' ? 'Save the reply (test version)' : 'Send the reply by email', onclick: () => busy(sendButton, send) }, '➤');
   text.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) busy(sendButton, send); });
