@@ -23,6 +23,25 @@ test('published preview only installs a complete current build; a changed public
   fail=false;await p.refresh();assert(await p.current());assert.notEqual(p.release(),old);assert.equal(builds,3);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+test('preview checks share an in-flight read but never cache success, revocation or failure',async()=>{
+ const root=await mkdtemp('/tmp/fpb-preview-reads-');let generation='one',queries=0,hold,settle;
+ const reader={loadPublished:async()=>({generation,snapshot:{site:{}},files:[]}),current:async id=>{queries++;if(hold)return hold;return id===generation;}};
+ try{
+  const p=await preparePublishedSite({root,reader,builder:async()=>{}});queries=0;
+  hold=new Promise(resolve=>{settle=resolve;});
+  const burst=Array.from({length:40},()=>p.current());await Promise.resolve();assert.equal(queries,1);
+  settle(true);assert((await Promise.all(burst)).every(Boolean));hold=null;
+  generation='two';assert.equal(await p.current(),false);assert.equal(queries,2,'success was not retained');
+  await p.refresh();assert.equal(await p.current(),true,'a rebuilt generation does not reuse a negative answer');
+  hold=new Promise((_resolve,reject)=>{settle=reject;});
+  const failed=[p.current(),p.current()];const observed=Promise.all(failed.map(value=>assert.rejects(value,/reader disconnected/)));
+  await Promise.resolve();settle(Error('reader disconnected'));await observed;hold=null;
+  assert.equal(await p.current(),true,'a rejected query does not poison later reads');
+  hold=new Promise(resolve=>{settle=resolve;});const outdated=p.current();await Promise.resolve();
+  hold=null;generation='three';await p.refresh();settle(true);assert.equal(await outdated,false,'an old query cannot authorize a newly installed build');
+  assert.equal(await p.current(),true);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
 test('handover failure before a snapshot closes its listener',async()=>{
  const busy=Object.assign(Error('busy'),{code:'POND_WRITER_BUSY'});
  const app=await startHostedHandover({root:'/tmp',port:0,builder:async()=>{},createApp:async()=>{throw Error('must not create an app');},openWriter:async()=>{throw busy;},openReader:async()=>{throw Error('reader unavailable');}});

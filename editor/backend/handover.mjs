@@ -10,7 +10,19 @@ import {referencedFiles} from './file-references.mjs';
 // previous writer invalidates this preview until the replacement is built.
 export async function preparePublishedSite({root,reader,builder}) {
  const folder=path.join(root,'.local-editor/v2');await mkdir(folder,{recursive:true,mode:0o700});
- let installed=null;
+ let installed=null,pendingCurrent=null;
+ // Concurrent requests share only the in-flight read, never a cached answer.
+ // A later request still observes revocation immediately, even after success.
+ async function current(){
+  if(!installed)return false;
+  const generation=installed.generation;
+  if(pendingCurrent?.generation!==generation){
+   const entry={generation};
+   entry.promise=Promise.resolve().then(()=>reader.current(generation)).then(valid=>installed?.generation===generation&&valid).finally(()=>{if(pendingCurrent===entry)pendingCurrent=null;});
+   pendingCurrent=entry;
+  }
+  return pendingCurrent.promise;
+ }
  async function refresh(){
   if(installed&&await reader.current(installed.generation))return true;
   const publication=await reader.loadPublished(),id='warm-'+randomBytes(12).toString('hex');
@@ -22,7 +34,7 @@ export async function preparePublishedSite({root,reader,builder}) {
  return {
   initialize:async()=>{},close:async()=>{},purge:async()=>{},
   release:()=>installed?.id,refresh,
-  current:async()=>!!installed&&await reader.current(installed.generation),
+  current,
   async publicFile(id,res,head=false){
    const publication=installed;
    if(!/^file-[a-f0-9]{24}$/.test(id)||!publication?.used.has(id))return false;
