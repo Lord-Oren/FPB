@@ -115,8 +115,12 @@ body.variant-b { display:block }
 .hm-kicker, [data-skin=modern] .hm-kicker { margin:0; padding:6px 14px; background:var(--aero-blue); color:var(--midnight); border:3px solid var(--v3-ink); box-shadow:4px 4px 0 var(--v3-ink); font-weight:900; font-size:.8rem; letter-spacing:.12em; text-transform:uppercase }
 .hm-head h2, .hm-cta h2 { margin:0; padding:10px 22px; background:var(--cream); color:var(--midnight); border:var(--v3-bw) solid var(--v3-ink); box-shadow:var(--v3-sh) var(--v3-sh) 0 var(--v3-ink); font-family:Boohong,sans-serif; font-weight:400; font-size:clamp(2rem,4vw,3.4rem); line-height:.95; text-transform:uppercase; text-shadow:none; -webkit-text-stroke:0 }
 #latest .hm-head::before { content:""; position:absolute; z-index:-1; left:calc(50% - 330px); top:-24px; width:70px; height:70px; translate:none; background:var(--dandelion); clip-path:polygon(50% 0,61% 30%,95% 25%,70% 50%,95% 75%,61% 70%,50% 100%,39% 70%,5% 75%,30% 50%,5% 25%,39% 30%) }
-.hm-mosaic { display:grid; grid-template-columns:2fr 1fr 1fr; grid-auto-rows:220px; gap:24px; margin:0; padding:0; list-style:none }
-.hm-mosaic .hm-tile--big { grid-row:span 2 }
+.hm-mosaic { display:grid; grid-template-columns:2fr 1fr 1fr; grid-auto-rows:minmax(220px,auto); gap:24px; margin:0; padding:0; list-style:none }
+.hm-mosaic .hm-tile--big { grid-column:auto; grid-row:span 2 }
+/* T22-F02 (T23): the B grid owns the tiles. Older home-sections.css phone rules (300 px cards, horizontal scroll,
+   snap, negative margins) must not apply, or the caption is cut off. The image gives way to the caption, never the reverse. */
+.hm-mosaic .hm-tile, .hm-ribbit-grid .hm-tile { height:auto; min-height:0; flex:none; scroll-snap-align:none }
+.hm-mosaic:not(.hm-ribbit-grid) .hm-tile img { flex:1 1 0; min-height:120px }
 .hm-tile a { position:relative; display:flex; flex-direction:column; height:100%; overflow:hidden; background:var(--cream); color:var(--midnight); text-decoration:none; border:var(--v3-bw) solid var(--v3-ink); box-shadow:var(--v3-sh) var(--v3-sh) 0 var(--v3-ink); border-radius:0; transition:transform .12s, box-shadow .12s }
 .hm-tile a:hover { transform:translate(-2px,-2px); box-shadow:calc(var(--v3-sh) + 2px) calc(var(--v3-sh) + 2px) 0 var(--v3-ink) }
 .hm-tile img { flex:1; min-height:0; width:100%; object-fit:cover; display:block; border-radius:0 }
@@ -131,6 +135,12 @@ body.variant-b { display:block }
 .hm-people { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr)); gap:24px; margin:0; padding:0; list-style:none }
 .hm-people li { display:flex; flex-direction:column; align-items:center; gap:4px; padding:18px; background:var(--cream); color:var(--midnight); border:var(--v3-bw) solid var(--v3-ink); box-shadow:var(--v3-sh) var(--v3-sh) 0 var(--v3-ink) }
 .hm-people img, .hm-people .hm-frog { width:96px; height:96px; object-fit:cover }
+/* T22-F01 (T23): names and roles stay dark on the cream cards, whatever the page background, and the phone rules of
+   home-sections.css (44 px thumbnails in a grid) do not shrink the photos of B. */
+.hm-people li img, .hm-people li .hm-frog { grid-row:auto; width:96px; height:96px; margin:0 }
+.hm-people li img { object-position:50% 30% }
+.hm-people b { color:var(--midnight); font-weight:900; text-align:center; overflow-wrap:anywhere }
+.hm-people span { color:var(--midnight); text-align:center; overflow-wrap:anywhere }
 .hm-people .hm-frog { filter:var(--v3-outline) }
 .hm-ribbit, .hm-croak { margin-top:84px; padding:22px; align-self:start; background:var(--cream); color:var(--midnight); border:var(--v3-bw) solid var(--v3-ink); box-shadow:var(--v3-sh) var(--v3-sh) 0 var(--v3-ink) }
 .hm-croak { background:var(--aero-blue) }
@@ -175,6 +185,9 @@ body.variant-b { display:block }
 /* Content blocks of the inner pages as cards (cream, square ink border, hard shadow) */
 [data-skin=modern] .interior-page main.content-page { width:100%; max-width:1320px; margin:0 auto; padding:0 32px 20px; box-sizing:border-box; text-align:left; background:none; color:var(--b-text) }
 [data-skin=modern] .content-page :is(.about-section,.about-team,.about-cta,.work-card,.event-card,.press-item,.job-card,.empty-content,.legal-page,.croak-feature) { padding:22px 24px; background:var(--cream); color:var(--midnight); border:var(--v3-bw) solid var(--v3-ink); box-shadow:var(--v3-sh) var(--v3-sh) 0 var(--v3-ink); border-radius:0; text-align:left }
+/* T22-F01 (T23), About page: the team cards kept the dark card of neo-b.css while their text turned midnight
+   (invisible). In B they are cream cards with dark text, like the home page. */
+[data-skin=modern] .content-page .about-team .team-member { background:var(--cream); color:var(--midnight); border:var(--v3-bw) solid var(--v3-ink); box-shadow:var(--v3-sh) var(--v3-sh) 0 var(--v3-ink); border-radius:0 }
 [data-skin=modern] .case-detail > section { padding:22px 24px; background:var(--cream); color:var(--midnight); border:var(--v3-bw) solid var(--v3-ink); box-shadow:var(--v3-sh) var(--v3-sh) 0 var(--v3-ink) }
 [data-skin=modern] .content-page :is(.about-section,.about-team,.about-cta,.work-card,.event-card,.press-item,.job-card,.empty-content,.legal-page,.croak-feature,.case-detail > section) :is(h2,h3,p,li,span,b,.case-text) { color:var(--midnight); -webkit-text-fill-color:currentColor }
 [data-skin=modern] .content-page :is(.about-section,.about-team,.about-cta,.work-card,.event-card,.press-item,.job-card,.empty-content,.legal-page,.croak-feature,.case-detail > section) a:not(.about-btn) { color:var(--midnight); text-decoration:underline; text-decoration-thickness:2px }
@@ -202,9 +215,13 @@ body.motion-paused :is(.v3-frog-art,.v3-caustics,.v3-pad,.v3-ring,.v3-fly)::befo
   .v3-hero { grid-template-columns:1fr }
   .v3-screens { grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:60px }
   .v3-pad-2, .v3-pad-4 { margin-top:0 }
-  .hm-mosaic { grid-template-columns:1fr 1fr; grid-auto-rows:180px }
-  .hm-mosaic .hm-tile--big { grid-column:span 2; grid-row:auto }
-  .home-more { grid-template-columns:1fr } .home-more > .hm-ribbit:has(+ .hm-croak), .home-more > .hm-ribbit + .hm-croak { grid-column:1 }
+  .hm-mosaic { display:grid; grid-auto-rows:auto; overflow:visible; scroll-snap-type:none; margin:0; padding:0 }
+  .hm-mosaic:not(.hm-ribbit-grid) { grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .hm-mosaic .hm-tile--big { grid-column:1 / -1; grid-row:auto }
+  .hm-mosaic:not(.hm-ribbit-grid) .hm-tile img { flex:none; height:auto; min-height:0; aspect-ratio:4 / 3 }
+  .hm-mosaic:not(.hm-ribbit-grid) .hm-tile--big img { aspect-ratio:16 / 9 }
+  .hm-mosaic .hm-cap { flex:1 }
+  .home-more { grid-template-columns:minmax(0,1fr) } .home-more > .hm-ribbit:has(+ .hm-croak), .home-more > .hm-ribbit + .hm-croak { grid-column:1 }
   .v3-phead, [data-skin=modern] .page-head.v3-phead { grid-template-columns:1fr } .v3-phead .v3-tag { justify-self:start }
 }
 /* Phone */
