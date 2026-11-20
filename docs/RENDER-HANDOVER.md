@@ -1,6 +1,6 @@
-# Render handover - local implementation, November 17, 2026
+# Render handover - implementation and production verification
 
-Version 0.23.0 implements a published-only startup mode. It has not been deployed or verified through Render's actual traffic switch. Keep the existing `/livez` health path and one writer instance; no new account, plan, DNS entry or environment secret is required.
+Version 0.23.0 introduced a published-only startup mode. Version 0.23.1 was deployed and observed on Render on November 19, 2026; the implementation notes below were originally prepared November 17. Keep the existing `/livez` health path and one writer instance; no new account, plan, DNS entry or environment secret is required.
 
 ## Why the former startup interrupted traffic
 
@@ -28,3 +28,8 @@ Before rollout, restore-check an encrypted backup, stop editorial publishing tem
 ## November 19 follow-up (0.23.1)
 
 Simultaneous public readiness checks share one in-flight database query per installed publication. The answer is discarded when the query settles, including failure. Later requests query again; a rebuilt generation does not reuse an old check. No one-second success cache is used, so the existing immediate revocation behavior is preserved. Refresh and file-generation checks still use fresh reads. A 40-request test verifies sharing, immediate revocation, recovery after a rebuild and recovery after a database error.
+
+
+## Production observation - November 19, rechecked November 20
+
+The 0.23.1 deployment reached public readiness after 14.215 seconds, acquired the writer after 137.618 seconds, and became write-ready after 151.292 seconds. The recorded rollout observed 180 successful public A/B requests and 21 temporary 503 responses from Desk readiness before it became ready. This verifies that rollout, not a permanent availability guarantee. The November 20 review found no subsequent startup failure in the available logs. Generic historical nonzero-exit events cannot all be attributed to the writer lock from their timestamps alone.

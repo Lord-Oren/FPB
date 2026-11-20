@@ -1,3 +1,17 @@
+# Hosting status - checked November 20, 2026
+
+The live Render service runs 4c3d473 / 0.23.1. The Starter service (0.5 CPU / 512 MB) and original PostgreSQL Basic-256mb database are available in Virginia. The database has no expiration date and the application connection matches the provider's internal connection for that database. No replacement or migration is required. Earlier free-plan warnings do not describe the current provider state.
+
+Read-only comparison against the authenticated and locally restored November 19 backup confirmed preserved binary files, metadata, wording and retained public snapshots. The site structure has since been published twice. The history retains ten entries; three older entries have rotated out following three new publications. Temporary database network access was closed and the original restrictions verified. No editorial data was modified by these checks.
+
+27 HTTP checks passed: A/B public pages, redirect, closed forms, protected Desk and rejected direct/forged-token access. Historical logs on November 16-17 include POND_WRITER_BUSY startup failures. Version 0.23.1 already contains the published-only handover correction, and its November 19 rollout successfully served public pages before acquiring the writer lock. No new stop event appeared on November 19-20 in the available service events/logs. The email-reported exit at 7:03 could not be matched conclusively without its full timestamp/timezone; its exact cause and outage duration remain unverified. Do not treat generic status 1 as proof of a particular defect.
+
+0.24.0 is prepared locally and requires separate written deployment approval. Forms and notifications stay closed. No new hosting charge, account or DNS change is included.
+
+---
+
+## Earlier status records (historical)
+
 # Current routing — 0.21.0
 
 The owner approved public A on https://frogpondboys.com, public B on https://b.frogpondboys.com, and the existing private Pond Desk on https://desk.frogpondboys.com. Version 0.21.0 implements this configuration using the existing Render Starter service and Basic-256mb database. Published content is shared; drafts and private inbox data remain protected. Forms and notifications stay closed. Earlier status entries below are historical; consult the deployment receipt for the completed rollout.
