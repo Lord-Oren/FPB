@@ -1,3 +1,15 @@
+# Hosting status - November 20, 2026, 0.24.2 preparation
+
+The pre-deployment check at 15:18 UTC confirmed 0580ed5 / 0.24.1 live on the existing Starter service, with the original paid Basic-256mb PostgreSQL database available in Virginia. No expiration, replacement or database migration is required. The application uses the provider's expected internal database connection; external access remains closed.
+
+The complete available app-log window from November 18 through this check contained no new errors. The historical email-reported 7:03 exit remains unconfirmed without the email timestamp/timezone. Earlier observations below are historical, not evidence of a new outage.
+
+The owner authorized 0.24.2 after review, a new archive/PDF and a fresh backup restored and compared. Deployment and real-content checks will be recorded separately. Forms and notifications remain disabled. No new account, DNS change or hosting charge is included.
+
+---
+
+## Previous records (historical)
+
 # Hosting status - checked November 20, 2026
 
 At the November 20 pre-deployment check, Render still ran 4c3d473 / 0.23.1. The owner has authorized 0.24.1; its completed deployment is recorded in a separate receipt. The Starter service (0.5 CPU / 512 MB) and original PostgreSQL Basic-256mb database are available in Virginia. The database has no expiration date and the application connection matches the provider's internal connection for that database. No replacement or migration is required. Earlier free-plan warnings do not describe the current provider state.
