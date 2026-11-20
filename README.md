@@ -2,7 +2,7 @@
 
 The Frog Pond Boys website and Pond Desk, the private content editor. Version A is the pixel presentation on frogpondboys.com. Version B is the modern presentation on b.frogpondboys.com. Both use the same published content and the same private Pond Desk at desk.frogpondboys.com.
 
-Version 0.24.0 introduces the new version B layout across the home and inner pages, a Standard / Cream background choice in Pond Desk, and tongue-and-fly menus for version A on phones. This is a local release candidate; the last confirmed live release is 0.23.1 (November 20, 2026). The original website is preserved on [`archive/original-site`](https://github.com/Lord-Oren/FPB/tree/archive/original-site). A push to main can deploy the application; publish only after the owner approves the reviewed release. See [release notes](docs/RELEASE-0.24.0.md).
+Version 0.24.1 introduces the new version B layout across the home and inner pages, visitor-controlled Standard / Cream backgrounds in B's header, and tongue-and-fly menus for version A on phones. Each visitor's choice is stored only in their browser; Pond Desk no longer offers this setting. The original website is preserved on [`archive/original-site`](https://github.com/Lord-Oren/FPB/tree/archive/original-site). A push to main can deploy the application; publish only after the owner approves the reviewed release. See [release notes](docs/RELEASE-0.24.1.md).
 
 ## Local development
 
@@ -35,10 +35,10 @@ CI checks pull requests and pushes to `main`. The Render template requests deplo
 
 ## Current limits
 
-The application integrates the 65-text Site wording editor and both public variants, with concurrent-edit protection, the reviewed editor and mobile version A updates, a production seed without demonstration content and migration rules that preserve edited owner content. Contact and Join remain closed pending email and verification-widget setup. Public PDF/video publication and private Join attachment processing are integrated. Incoming email authentication, Word XML validation and confirmed manual retry have regression tests. Read docs/RELEASE-0.24.0.md and docs/MAIL-AND-FORMS.md for the remaining launch requirements.
+The application integrates the 65-text Site wording editor and both public variants, with concurrent-edit protection, the reviewed editor and mobile version A updates, a production seed without demonstration content and migration rules that preserve edited owner content. Contact and Join remain closed pending email and verification-widget setup. Public PDF/video publication and private Join attachment processing are integrated. Incoming email authentication, Word XML validation and confirmed manual retry have regression tests. Read docs/RELEASE-0.24.1.md and docs/MAIL-AND-FORMS.md for the remaining launch requirements.
 
 Pond Desk and its data must remain private. Never publish the editor state, sessions, incoming messages, resumes, or database backups to GitHub Pages or Git.
 
 The Site wording backend supports 65 editable strings. The editor screen and both page designs are integrated; see [the API contract](docs/SITE-WORDING.md).
 
-Screen messages and the opt-in operation API are described in [the integration contract](docs/SCREEN-MESSAGES-AND-PROGRESS.md). The new layout has passed local integration review; deployment and live acceptance of B V3 still require owner approval.
+Screen messages and the opt-in operation API are described in [the integration contract](docs/SCREEN-MESSAGES-AND-PROGRESS.md). The new layout and visitor background switch passed independent integration review. The owner authorized this release on November 20, 2026; deployment verification is recorded separately from the immutable preparation archive.
