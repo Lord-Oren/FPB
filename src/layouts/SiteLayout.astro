@@ -28,6 +28,8 @@ import inquiryForms from '../scripts/inquiry-forms.js?raw';
 import fonts from '../styles/fonts.js';
 import frogMenus from '../scripts/frog-menus.js?raw';
 import frogMenusB from '../scripts/frog-menus-b.js?raw';
+import bBackgroundSwitch from '../scripts/b-background.js?raw';
+import bBackgroundEarly from '../scripts/b-background-early.js?raw';
 import bV3 from '../styles/b-v3.css?raw';
 import flyCursor from '../scripts/fly-cursor.js?raw';
 import pondMotion from '../scripts/pond-motion.js?raw';
@@ -43,7 +45,8 @@ const svgUrl = svg => 'url("data:image/svg+xml;base64,' + Buffer.from(svg).toStr
 // Phone pond of A: small PNG sprites on one 3 px grid, inlined so the page stays self-contained (CSP img-src data:).
 const pondMobileVars = ':root{' + Object.entries({ log: pmLog, frog: pmFrog, stone: pmStone, water: pmWater }).map(([key, value]) => `--pm-${key}:url("${value}")`).join(';') + '}';
 const lilyStyle = `:root{--h2-lily:${svgUrl(pixelLily)};--px-frog:${svgUrl(pixelFrog)};--px-stone:${svgUrl(pixelStone)}}`;
-// B V3: background chosen in Pond Desk (site.home.look.bBackground, standard | cream). Version B only.
+// B V3: the visitor picks Standard or Cream with the switch in the B header (remembered in their browser).
+// site.home.look.bBackground (standard by default, no longer shown in Pond Desk) is only the starting value. Version B only.
 const bBackground = look === 'modern' ? site.home.look.bBackground : null;
 const { title = 'Frog Pond Boys — Creative Agency', pond = false, operations = false, form = false, cases = false } = Astro.props;
 ---
@@ -53,14 +56,14 @@ const { title = 'Frog Pond Boys — Creative Agency', pond = false, operations =
   <meta charset="utf-8" />
   <meta name="referrer" content="no-referrer" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>{title}</title>
-  <style is:inline set:html={fonts + flyStyles + motionStyles + (pond && look === 'modern' ? variantB + homeSections : styles) + (operations ? infoStyles : '') + (cases ? caseStyles : '') + (pond && artworkMode === 'original' ? originalArtwork + homeRetroA + `:root{--px-pond:${svgUrl(pixelPond)}}` : '') + (!pond ? contentStyles + interiorStyles + (look === 'pixel' ? lilyStyle + retroA : '') : '') + (look === 'modern' ? neoB : '') + clientMeeting + (pond && look === 'pixel' ? pondExpansionA : '') + (look === 'pixel' ? mobileA : '') + (pond && look === 'pixel' && artworkMode === 'original' ? pondMobileVars + pondMobileA : '') + (pond ? screenMessage : '') + (look === 'modern' ? bV3 : '') + (bBackground === 'cream' ? neoBCream : '')}></style>
+  <title>{title}</title>{look === 'modern' && <script is:inline set:html={bBackgroundEarly}></script>}
+  <style is:inline set:html={fonts + flyStyles + motionStyles + (pond && look === 'modern' ? variantB + homeSections : styles) + (operations ? infoStyles : '') + (cases ? caseStyles : '') + (pond && artworkMode === 'original' ? originalArtwork + homeRetroA + `:root{--px-pond:${svgUrl(pixelPond)}}` : '') + (!pond ? contentStyles + interiorStyles + (look === 'pixel' ? lilyStyle + retroA : '') : '') + (look === 'modern' ? neoB : '') + clientMeeting + (pond && look === 'pixel' ? pondExpansionA : '') + (look === 'pixel' ? mobileA : '') + (pond && look === 'pixel' && artworkMode === 'original' ? pondMobileVars + pondMobileA : '') + (pond ? screenMessage : '') + (look === 'modern' ? bV3 : '') + (look === 'modern' ? neoBCream : '')}></style>
 </head>
 <body class:list={{ 'interior-page': !pond, 'home-page': pond && look !== 'modern', 'variant-b': pond && look === 'modern' }}>
   <a class="skip-link" href="#main">Skip to content</a>
   <FlyCursor />
   <slot />
-  {pond && look !== 'modern' && <script is:inline set:html={frogMenus}></script>}{look === 'modern' && <script is:inline set:html={frogMenusB}></script>}
+  {pond && look !== 'modern' && <script is:inline set:html={frogMenus}></script>}{look === 'modern' && <script is:inline set:html={frogMenusB}></script>}{look === 'modern' && <script is:inline set:html={bBackgroundSwitch}></script>}
   <script is:inline set:html={pondMotion}></script>
   {form && <script is:inline set:html={inquiryForms}></script>}
   {form && (import.meta.env.DEV || import.meta.env.POND_HOSTED_BUILD === '1') && <script is:inline set:html={localForms}></script>}

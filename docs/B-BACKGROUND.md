@@ -34,3 +34,7 @@ The return to standard is an ordinary save and publication. This is different fr
 Local real builds compare the legacy, explicit standard and cream snapshots against all 52 baseline A/B pages. At this backend-only stage, both variants remain byte-identical: the new visual behavior is intentionally left for the frontend integration. The final frontend acceptance must additionally demonstrate that cream changes every B page while A stays identical.
 
 Next: approve the interior-page mockup, integrate the B V3 frontend and Desk selector, then perform the complete release review. No deployment, DNS change, new service or subscription is part of this preparation. Forms and notifications remain disabled.
+
+## Change of November 20, 2026: the visitor chooses
+
+The owner decided that the B background is chosen by each visitor, not in Pond Desk. Pond Desk no longer shows `look_bBackground`. The server contract above is unchanged: the value stays validated, defaults to `standard`, and is only the starting value of the page. The visitor's switch in the B header stores `standard` or `cream` in that browser's `localStorage` (`fpb-b-background`); nothing is sent to the server and version A is unaffected. Existing drafts keep their value because editors that omit the field preserve it.

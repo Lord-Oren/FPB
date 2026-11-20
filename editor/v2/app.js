@@ -236,8 +236,6 @@ const FIELDS = {
 };
 const PAGES = {
   home: { title: 'Home titles, text and Croak', small: 'Headings and text shown on your website', lead: ['Use Publish to the site, at the bottom, to save and publish this page.', 'An empty optional text is simply not shown on the site.'], fields: [
-    // B V3 (T19): closed choice stored by the server as look_bBackground (standard | cream), never free CSS.
-    { name: 'look_bBackground', label: 'Background of the site (version B)', type: 'choice', options: [['standard', 'Standard', 'Deep blue-green, as today'], ['cream', 'Cream', 'Light cream with dark text']], hint: 'Applies to every page of version B once you publish. Version A does not change.' },
     ...[
       ['homeLatestTitle','Latest work heading — Fresh from the pond',true],
       ['homeLatestKicker','Label above latest work',false],

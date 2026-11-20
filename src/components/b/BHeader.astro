@@ -1,10 +1,17 @@
 ---
 // B V3 (T19): header shared by every page of version B. Client logo on the left (home link), then the "stones"
-// zone of Pond Desk (About, Contact, Join Us… as the owners name and order them) on the right.
+// zone of Pond Desk (About, Contact, Join Us… as the owners name and order them) on the right, then the visitor's
+// Standard / Cream background switch (hidden until b-background.js runs, so it never shows without JavaScript).
 import badgeLogo from '../../assets/logos/badge-green.webp?inline';
 import { zoneNodes, nodeHref } from '../../data/public-pages.js';
 ---
 <header class="v3-header">
   <a class="v3-logo v3-blk v3-press" href="index.html"><img src={badgeLogo} alt="Frog Pond Boys — home" width="48" height="52" /></a>
-  <nav class="v3-stones" aria-label="Main navigation">{zoneNodes('stones').map(node => <a class="v3-blk v3-press" href={nodeHref(node)} target={node.newTab ? '_blank' : undefined} rel={node.newTab ? 'noopener noreferrer' : undefined}>{node.title}</a>)}</nav>
+  <div class="v3-hright">
+    <nav class="v3-stones" aria-label="Main navigation">{zoneNodes('stones').map(node => <a class="v3-blk v3-press" href={nodeHref(node)} target={node.newTab ? '_blank' : undefined} rel={node.newTab ? 'noopener noreferrer' : undefined}>{node.title}</a>)}</nav>
+    <div class="v3-bg" role="group" aria-label="Background colour" data-bg-switch hidden>
+      <button class="v3-blk v3-press" type="button" data-bg="standard" aria-pressed="true"><span class="v3-sw v3-sw-standard" aria-hidden="true"></span>Standard</button>
+      <button class="v3-blk v3-press" type="button" data-bg="cream" aria-pressed="false"><span class="v3-sw v3-sw-cream" aria-hidden="true"></span>Cream</button>
+    </div>
+  </div>
 </header>
