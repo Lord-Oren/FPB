@@ -1,0 +1,10 @@
+---
+// B V3 (T19): header shared by every page of version B. Client logo on the left (home link), then the "stones"
+// zone of Pond Desk (About, Contact, Join Us… as the owners name and order them) on the right.
+import badgeLogo from '../../assets/logos/badge-green.webp?inline';
+import { zoneNodes, nodeHref } from '../../data/public-pages.js';
+---
+<header class="v3-header">
+  <a class="v3-logo v3-blk v3-press" href="index.html"><img src={badgeLogo} alt="Frog Pond Boys — home" width="48" height="52" /></a>
+  <nav class="v3-stones" aria-label="Main navigation">{zoneNodes('stones').map(node => <a class="v3-blk v3-press" href={nodeHref(node)} target={node.newTab ? '_blank' : undefined} rel={node.newTab ? 'noopener noreferrer' : undefined}>{node.title}</a>)}</nav>
+</header>

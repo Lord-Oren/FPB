@@ -2,6 +2,9 @@
 import SiteLayout from '../layouts/SiteLayout.astro';
 import PageNavigation from '../components/PageNavigation.astro';
 import Footer from '../components/Footer.astro';
+import { look } from '../data/presentation.js';
+import { pages } from '../data/public-pages.js';
+const casesPage = pages.find(page => page.slug === 'case-studies');
 import CaseImage from '../components/case-studies/CaseImage.astro';
 import { caseStudies } from '../data/public-case-studies.js';
 import { site } from '../data/public-site-content.js';
@@ -13,10 +16,10 @@ const { item } = Astro.props;
 const nextCase = caseStudies[caseStudies.findIndex(value => value.id === item.id) + 1];
 ---
 <SiteLayout title={`${item.title} — Frog Pond Boys`} cases={true}>
-  <PageNavigation />
+  <PageNavigation current={casesPage?.node} />
   <main id="main" class="content-page case-detail">
-    <p class="page-group">Advertising / <a href="case-studies.html">Case Studies</a></p>
-    <h1>{item.title}</h1>
+    {look === 'modern' ? <div class="page-head v3-phead v3-blk"><span class="v3-star" aria-hidden="true"></span>{casesPage && <p class="page-group v3-kicker">{casesPage.group ? <>{casesPage.group} / </> : null}<a href="case-studies.html">{casesPage.title}</a></p>}<h1 class="v3-boo v3-b-title">{item.title}</h1></div> : <p class="page-group">Advertising / <a href="case-studies.html">Case Studies</a></p>}
+    {look !== 'modern' && <h1>{item.title}</h1>}
     <p class="case-text">{item.summary}</p>
     {item.client && <p class="case-text"><strong>{w['case.client']}</strong> {item.client}</p>}
     {item.documentId && <p class="case-more"><a class="case-open" href={`files/${item.documentId}`} target="_blank" rel="noopener">{w['case.openPdf']} <span aria-hidden="true">↗</span></a></p>}

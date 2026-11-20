@@ -1,0 +1,10 @@
+---
+// B V3 (T19): top of every inner page of version B: header, then the compact row of the three frogs (same tongue
+// menus as on the home page). "current" is the page's node, to mark its section and its fly.
+import RubenArtwork from '../pond/RubenArtwork.astro';
+import BHeader from './BHeader.astro';
+import BFrogs from './BFrogs.astro';
+const { current = null } = Astro.props;
+---
+<RubenArtwork />
+<div class="v3-wrap v3-top"><BHeader /><BFrogs size="compact" current={current} /></div>

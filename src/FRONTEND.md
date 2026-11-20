@@ -109,3 +109,15 @@ Presentations are gone from Case Studies and Pond Desk. Case studies are a thumb
 - A write is confirmed only by its complete answer (`CONFIRMATIONS` in `editor/v2/app.js`, `api:start` block): revision and tree for the layout, revision for a page, id and revision for an item, `message` (and `item`) for a publication, file id and url, photo `mediaId` and `src`, settings with notifications, reply status and message. `{}`, `null`, `[]`, a missing field, or a job `done` without its result is "Result unknown": nothing is sent again, the form and its typing stay as they were. Writes whose real answer is `{}` (conversation state, people, deleting a draft) still accept an object only.
 - `screenMark()`: an action that ends after the person opened another screen no longer re-opens its old screen over the new one, and no longer clears the new screen's unsaved-changes warning.
 - Tests: `scripts/front-answer-shapes.test.mjs`.
+
+## B V3 — 20 November 2026 (T19)
+
+Layout validated by the owner (`interne/design/b-v3/`). Version B only; A keeps its files and output, except its phone frog menu.
+
+- **Styles**: `styles/b-v3.css`, loaded last for `look === modern` (then `neo-b-cream.css` when cream is chosen). Square ink outlines (stepped shadows), hard shadows, Boohong titles, Nunito Sans text. New classes are prefixed `v3-` so the older B pond styles never apply to them.
+- **Home** (`pond/PondB.astro`): header (`b/BHeader.astro`: client logo, "stones" zone), hero (title from Site wording, Grand Central and tagline from the home fields), the three frog panels (`b/BFrogs.astro`), then the pond across the whole width with the lily-pad TVs (titles, 14-character messages and links from Lily-pad screens), then `HomeSections` restyled (label + outlined title + star, Ribbit and Croak side by side).
+- **Inner pages**: `PageNavigation.astro` renders `b/BTop.astro` for B (header + compact frog row marking the current section and fly); the page title is an outlined block (group label, title, intro from Pond Desk). Content blocks are cream cards. `[page].astro` and `case-study-[slug].astro` keep A's markup byte for byte.
+- **Frog menus of B**: `scripts/frog-menus-b.js` (A keeps `frog-menus.js`). Same keyboard, Escape, outside click and focus rules; the drawn colour also excludes the frog's own panel colour.
+- **Background**: `site.home.look.bBackground` (`standard | cream`, server contract `docs/B-BACKGROUND.md`) sets `data-b-background` on `<html>` and appends `neo-b-cream.css` on every page of B. Pond Desk: Home titles → "Background of the site (version B)", two cards with a preview.
+- **A on phones** (`mobile-a.css`, ≤600 px): the frog menu comes out as the tongue with winged flies (44 px targets), like on a computer, instead of a panel of buttons (Nahano, 20 Nov 2026).
+- Tests: `scripts/front-b-background.test.mjs`.

@@ -257,3 +257,18 @@ input.text[aria-invalid="true"] { border-color:var(--bad) }
 .row-photo { display:flex; align-items:center; gap:8px }
 .row-photo img { width:56px; height:56px; object-fit:cover; border:3px solid var(--ink) }
 @media (max-width:860px) { .subrow.with-photo { grid-template-columns:1fr auto } .subrow.with-photo .row-photo { grid-column:1 / -1 } .subrow.with-photo input { grid-column:1 } }
+
+/* B background choice (T19): two cards with a miniature of version B */
+.choice { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); gap:12px }
+.choice-card { position:relative; display:flex; flex-direction:column; gap:10px; padding:12px; background:var(--bg2); border:2px solid var(--line); cursor:pointer; min-height:44px }
+.choice-card:has(input:checked) { border-color:var(--dandelion); box-shadow:4px 4px 0 var(--dandelion) }
+.choice-card:has(input:focus-visible) { outline:3px solid var(--dandelion); outline-offset:2px }
+.choice-card input { position:absolute; opacity:0; width:1px; height:1px }
+.choice-text { display:flex; flex-direction:column } .choice-text small { color:var(--muted) }
+.choice-preview { display:grid; grid-template-rows:auto auto 1fr; gap:6px; height:116px; padding:10px; border:2px solid var(--ink); background-image:linear-gradient(var(--cp-grid) 1px,transparent 1px),linear-gradient(90deg,var(--cp-grid) 1px,transparent 1px); background-size:12px 12px }
+.choice-standard { --cp-grid:rgb(171 216 213 / .1); background-color:#05353a }
+.choice-cream { --cp-grid:rgb(25 24 51 / .08); background-color:var(--brand-cream) }
+.cp-title { width:55%; height:16px; background:#003359; border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink) }
+.cp-frogs { display:grid; grid-template-columns:repeat(3,1fr); border:2px solid var(--ink); box-shadow:3px 3px 0 var(--ink) }
+.cp-frogs i { height:20px; background:var(--aero) } .cp-frogs i + i { background:var(--dandelion); border-left:2px solid var(--ink) } .cp-frogs i:last-child { background:#ecadb0 }
+.cp-pond { background:#003359; border:2px solid var(--ink); margin:0 -4px }

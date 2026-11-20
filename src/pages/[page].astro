@@ -2,6 +2,7 @@
 import SiteLayout from '../layouts/SiteLayout.astro';
 import PageNavigation from '../components/PageNavigation.astro';
 import Footer from '../components/Footer.astro';
+import { look } from '../data/presentation.js';
 import ContactPage from '../components/pages/contact.astro';
 import JoinPage from '../components/pages/join.astro';
 import CaseStudiesPage from '../components/pages/case-studies.astro';
@@ -25,10 +26,10 @@ const operations = ['contact', 'join', 'about'].includes(page.slug);
 const siblings = pages.filter(item => item.node.parentId === page.node.parentId && item.node.zone === page.node.zone && !item.hidden).sort((a,b)=>a.title.localeCompare(b.title,'en'));
 ---
 <SiteLayout title={`${page.title} — Frog Pond Boys`} operations={operations} cases={page.slug === 'case-studies'} form={['contact', 'join'].includes(page.slug)}>
-  <PageNavigation />
+  <PageNavigation current={page.node} />
   <main id="main" class:list={['content-page', { 'content-page--operations': operations }]}>
-    {page.node.parentId && <p class="page-group">{page.group}</p>}
-    <div class="page-head"><h1>{page.title}</h1>{site.intros[page.section] && <p class="page-lede">{site.intros[page.section]}</p>}</div>
+    {look === 'modern' ? <div class="page-head v3-phead v3-blk"><span class="v3-star" aria-hidden="true"></span>{page.node.parentId && <p class="page-group v3-kicker">{page.group}</p>}<h1 class="v3-boo v3-b-title">{page.title}</h1>{site.intros[page.section] && <p class="page-lede v3-tag">{site.intros[page.section]}</p>}</div> : page.node.parentId && <p class="page-group">{page.group}</p>}
+    {look !== 'modern' && <div class="page-head"><h1>{page.title}</h1>{site.intros[page.section] && <p class="page-lede">{site.intros[page.section]}</p>}</div>}
     <div class="page-content">{Single ? <Single /> : List ? <List rubric={page.section} /> : <p class="section-body">{page.node.text || site.wording['empty.page']}</p>}</div>
     {subsections.length>0 && <section class="subsections"><h2>Explore {page.title}</h2><ul>{subsections.map(node=><li><a href={nodeHref(node)} target={node.newTab?'_blank':undefined} rel={node.newTab?'noopener noreferrer':undefined}>{node.title} →</a></li>)}</ul></section>}
     <nav class="related-pages" aria-label="Related pages">

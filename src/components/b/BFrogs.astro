@@ -1,0 +1,27 @@
+---
+// B V3 (T19): the frogs are the menu. One coloured panel per root of the "menus" zone of Pond Desk; a click on the
+// frog brings its tongue out of the mouth with the sub-sections as square flies (frog-menus-b.js). The frog draws a
+// brand colour that no other frog wears and that is not its own panel's colour.
+// size "large" on the home page, "compact" on the inner pages (current = the page's own node, to mark its section).
+import { tree, zoneNodes, childNodes, nodeHref } from '../../data/public-pages.js';
+const { size = 'large', current = null } = Astro.props;
+const panels = ['aero-blue', 'dandelion', 'pink'];
+const skins = ['dandelion', 'blue-marine', 'aero-blue'];
+const roots = zoneNodes('menus');
+const rootOf = node => { let at = node; while (at?.parentId) at = tree.nodes.find(n => n.id === at.parentId); return at?.id; };
+const here = current ? rootOf(current) : null;
+---
+<div class:list={['v3-menus', `v3-menus--${size}`]} role="group" aria-label="Explore Frog Pond Boys">
+  {roots.map((node, index) => {
+    const flies = childNodes(node.id).length ? childNodes(node.id) : [node];
+    const id = `menu-${size}-${node.id}`;
+    return <div class:list={['v3-menu', { 'v3-here': node.id === here }]} data-panel={panels[index % 3]}>
+      <h2 class="v3-boo">{node.title}</h2>
+      <div class="v3-frog" data-frog-color={skins[index % 3]}>
+        <svg class="v3-frog-art" viewBox="0 0 64.95 60.992" aria-hidden="true" focusable="false"><use href="#art-frog" /></svg>
+        <button class="v3-frog-button" type="button" aria-label={`${node.title} menu`} aria-expanded="false" aria-controls={id}></button>
+        <div class="v3-tongue" id={id} hidden><ul class="v3-flies" aria-label={node.title}>{flies.map(child => <li><a class="v3-fly" href={nodeHref(child)} target={child.newTab ? '_blank' : undefined} rel={child.newTab ? 'noopener noreferrer' : undefined} aria-current={current && child.id === current.id ? 'page' : undefined}>{child.title}</a></li>)}</ul></div>
+      </div>
+    </div>;
+  })}
+</div>

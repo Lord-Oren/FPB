@@ -236,6 +236,8 @@ const FIELDS = {
 };
 const PAGES = {
   home: { title: 'Home titles, text and Croak', small: 'Headings and text shown on your website', lead: ['Use Publish to the site, at the bottom, to save and publish this page.', 'An empty optional text is simply not shown on the site.'], fields: [
+    // B V3 (T19): closed choice stored by the server as look_bBackground (standard | cream), never free CSS.
+    { name: 'look_bBackground', label: 'Background of the site (version B)', type: 'choice', options: [['standard', 'Standard', 'Deep blue-green, as today'], ['cream', 'Cream', 'Light cream with dark text']], hint: 'Applies to every page of version B once you publish. Version A does not change.' },
     ...[
       ['homeLatestTitle','Latest work heading — Fresh from the pond',true],
       ['homeLatestKicker','Label above latest work',false],
@@ -580,6 +582,7 @@ function buildField(spec, value, media) {
   if (spec.type === 'image' || spec.type === 'gallery') control = imageControl(spec, value, media, id);
   else if (spec.type === 'file') control = fileControl(spec, value, id);
   else if (spec.type === 'rows') control = rowsControl(spec, value, id, media);
+  else if (spec.type === 'choice') control = choiceControl(spec, value, id);
   else if (spec.type === 'page') {
     control = h('select', { class: 'text', id, name: spec.name }, h('option', { value: '' }, '— none —'), ...SECTIONS.flatMap(group => group.items).filter(item => item.slug !== 'home').map(item => h('option', { value: `${item.slug}.html` }, item.title)));
     control.value = value || '';
@@ -589,7 +592,19 @@ function buildField(spec, value, media) {
     control.value = value || '';
   }
   if (control.matches?.('input, textarea, select')) control.setAttribute('aria-describedby', [hint && `${id}-hint`, `${id}-error`].filter(Boolean).join(' '));
-  return h('div', { class: 'field', 'data-field': spec.name, hidden: spec.hidden }, spec.type === 'image' || spec.type === 'gallery' || spec.type === 'rows' || spec.type === 'file' ? h('p', { class: 'label', id: `${id}-label` }, h('b', { text: spec.label }), spec.optional ? h('span', { class: 'opt', text: ' (optional)' }) : null) : label, control, hint, error);
+  return h('div', { class: 'field', 'data-field': spec.name, hidden: spec.hidden }, spec.type === 'image' || spec.type === 'gallery' || spec.type === 'rows' || spec.type === 'file' || spec.type === 'choice' ? h('p', { class: 'label', id: `${id}-label` }, h('b', { text: spec.label }), spec.optional ? h('span', { class: 'opt', text: ' (optional)' }) : null) : label, control, hint, error);
+}
+// Two or more fixed options shown as cards with a small preview (B background: Standard / Cream).
+// The value is always one of spec.options; the server refuses anything else.
+function choiceControl(spec, value, id) {
+  const current = spec.options.some(([key]) => key === value) ? value : spec.options[0][0];
+  const box = h('div', { class: 'choice', role: 'radiogroup', 'aria-labelledby': `${id}-label`, 'data-choice': spec.name },
+    ...spec.options.map(([key, title, text], index) => h('label', { class: 'choice-card' },
+      h('input', { type: 'radio', name: spec.name, value: key, id: index ? undefined : id, checked: key === current }),
+      h('span', { class: `choice-preview choice-${key}`, 'aria-hidden': 'true' }, h('span', { class: 'cp-title' }), h('span', { class: 'cp-frogs' }, h('i'), h('i'), h('i')), h('span', { class: 'cp-pond' })),
+      h('span', { class: 'choice-text' }, h('b', { text: title }), h('small', { text })))));
+  box.read = () => box.querySelector('input:checked')?.value || current;
+  return box;
 }
 function imageControl(spec, value, media, id) {
   const many = spec.type === 'gallery'; const limit = spec.limit || 12;
@@ -699,7 +714,7 @@ function readForm(form, specs) {
   const fields = {};
   for (const spec of specs) {
     const wrapper = form.querySelector(`[data-field="${spec.name}"]`);
-    const custom = wrapper.querySelector('[data-images], [data-rows], [data-file]');
+    const custom = wrapper.querySelector('[data-images], [data-rows], [data-file], [data-choice]');
     fields[spec.name] = custom ? custom.read() : wrapper.querySelector('input, textarea, select').value.trim();
   }
   return fields;

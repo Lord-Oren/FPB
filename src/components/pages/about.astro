@@ -3,6 +3,7 @@
 // the team and the extended team. Every title is editable; a part with no text is not shown.
 import { site } from '../../data/public-site-content.js';
 import RubenArtwork from '../pond/RubenArtwork.astro';
+import { look } from '../../data/presentation.js';
 const a = site.about;
 const w = site.wording;
 const skins = ['var(--aero-blue)', 'var(--dandelion)', '#7cc4ff', '#f4a7b9'];
@@ -22,7 +23,7 @@ const teams = [
   {parts.map(([id, title, body]) => <section class="about-section" aria-labelledby={id}><h2 id={id} class="section-title">{title}</h2><div class="editorial-space">{paragraphs(body).map(p => <p>{p}</p>)}</div></section>)}
 </div>
 {a.photos.length > 0 && <ul class="about-photos">{a.photos.map(image => <li><img src={image.src} alt={image.alt} loading="lazy" decoding="async" /></li>)}</ul>}
-{teams.some(([, , , people]) => people.length > 0) && <RubenArtwork />}
+{look !== 'modern' && teams.some(([, , , people]) => people.length > 0) && <RubenArtwork />}
 {teams.map(([id, title, body, people]) => <section class="about-team" aria-labelledby={id}><h2 id={id} class="section-title">{title}</h2>
   {body && body.trim() && <div class="editorial-space">{paragraphs(body).map(p => <p>{p}</p>)}</div>}
   {people.length > 0 && <ul class="team-grid">{people.map((person, index) => <li class="team-member" style={`--frog-skin:${skins[index % skins.length]}`}>
