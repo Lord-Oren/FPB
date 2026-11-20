@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {resolveHomeLook} from './home-look.js';
 import {resolveWording} from './wording.js';
 import {aboutDefaults,contactDefaults} from './page-fields.js';
 import {prepareStructure,collectionKinds} from './structure.js';
@@ -90,7 +91,7 @@ export function prepareSiteContent(snapshot, options = {}) {
   const seen = new Set();
   const unique = (key, where) => { assert(!seen.has(key), `${where}: duplicate identifier`); seen.add(key); return key; };
 
-  plain(snapshot.home, ['announcement', 'gram', 'editorial', 'navigation'], 'home');
+  plain(snapshot.home, ['announcement', 'gram', 'editorial', 'navigation', 'look'], 'home');
   plain(snapshot.home.announcement, ['title', 'text', 'link'], 'home.announcement');
   plain(snapshot.home.gram, ['label', 'url'], 'home.gram');
   const editorial = { ...editorialDefaults, ...snapshot.home.editorial };
@@ -100,7 +101,7 @@ export function prepareSiteContent(snapshot, options = {}) {
   plain(navigation, Object.keys(navigationDefaults), 'home.navigation');
   for (const key of Object.keys(navigation)) navigation[key] = text(navigation[key], 40, key);
   const home = {
-    editorial, navigation,
+    editorial, navigation, look: resolveHomeLook(snapshot.home.look),
     announcement: { title: text(snapshot.home.announcement.title, 60, 'home.announcement.title', false), text: text(snapshot.home.announcement.text, 140, 'home.announcement.text', false), link: page(snapshot.home.announcement.link, 'home.announcement.link') },
     gram: { label: text(snapshot.home.gram.label, 40, 'home.gram.label'), url: url(snapshot.home.gram.url, 'home.gram.url') },
   };
